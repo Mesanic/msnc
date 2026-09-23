@@ -64,6 +64,14 @@ test('implementer works one ticket test-first with Trim and tdd, checks after ev
     assert.ok(body.includes(item), `report: ${item}`);
 });
 
+test('implementer decides reversible choices and reports them for the caller to log; stops on irreversible ones', () => {
+  const { body } = agent('implementer');
+  assert.match(body, /A reversible choice the ticket leaves open → decide it; don't ask/);
+  assert.match(body, /Don't write `docs\/decisions\.md` or the ticket: the caller records them/);
+  assert.match(body, /irreversible or destructive decision.*→ stop and report it; don't guess/);
+  assert.match(body, /^- Decisions: one line each, `decision · why · undo`\.$/m);
+});
+
 test('/msnc:implement dispatches msnc:implementer and leaves the per-ticket rules to the agent', () => {
   const skill = read('skills/implement/SKILL.md');
   assert.match(skill, /ONE `msnc:implementer` subagent in the foreground/);
@@ -91,6 +99,14 @@ test('the planner sizes the task the same way and opens its plan with the size',
   const { body } = agent('planner');
   assertSizing(body, 'planner');
   assert.match(body, /Return:\n1\. The size and why, in one line\./);
+});
+
+// Spec "Decide to Decide" (ticket 13): decide and log reversible choices; ask only about irreversible ones.
+test('Tuner decides reversible choices and logs them, and asks one question with a recommendation otherwise', () => {
+  const tuner = read('context/tuner.md');
+  assert.match(tuner, /^Reversible → decide, say it in one line, log to `docs\/decisions\.md`: date · decision · why · undo\./m);
+  assert.match(tuner, /Irreversible\/destructive → one question \+ recommended answer\./);
+  assert.match(read('context/clear.md'), /^- Destructive step → confirm first\.$/m, 'Clear keeps its override');
 });
 
 test('Tuner sends plan-mode sweeps to msnc:explorer', () => {

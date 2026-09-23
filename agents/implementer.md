@@ -14,10 +14,11 @@ After every change, run the typecheck and the affected test file your brief name
 
 Never commit, stage, push or switch branches: the caller verifies and commits.
 
-The ticket needs a decision it doesn't make, or something outside the repo → stop and report it; don't guess.
+A reversible choice the ticket leaves open → decide it; don't ask. Don't write `docs/decisions.md` or the ticket: the caller records them from your report. An irreversible or destructive decision the ticket doesn't make, or something outside the repo → stop and report it; don't guess.
 
 Report:
 - Files changed.
 - Which test covers each acceptance criterion.
 - The last result line of each check: typecheck and tests.
+- Decisions: one line each, `decision · why · undo`.
 - Open questions: anything the ticket left undecided.

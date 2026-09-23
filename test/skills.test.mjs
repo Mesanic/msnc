@@ -81,6 +81,23 @@ test('implement runs one foreground msnc:implementer per ticket and uses the Sco
   assert.match(body, /sextant check/);
 });
 
+test('implement records the decisions made inside a ticket in its ## Comments and docs/decisions.md, in that ticket\'s commit', () => {
+  const body = read('skills/implement/SKILL.md');
+  assert.match(body, /decisions the subagent reported.*that ticket's `## Comments`.*`docs\/decisions\.md`.*`date · decision · why · undo`/);
+  assert.match(body, /in the same commit/);
+  assert.match(body, /needs an irreversible or destructive decision it doesn't make/);
+  assert.match(body, /the one decision you need, with your recommended answer/);
+});
+
+// Spec "Decide to Decide" (ticket 13): one reply takes every recommendation; every accepted answer is logged.
+test('grill offers "accept all" each round and logs every accepted answer in docs/decisions.md', () => {
+  const body = read('skills/grill/SKILL.md');
+  assert.match(body, /Close every round with: `Reply "accept all" to take every recommendation\.`/);
+  assert.match(body, /"accept all" reply settles every question in the round with its recommended answer/);
+  assert.match(body, /append each settled answer to `docs\/decisions\.md` as `date · decision · why · undo`/);
+  assert.match(body, /create the file if missing/);
+});
+
 test('trim triggers on code work', () => {
   assert.match(frontmatter('trim'), /coding task: writing, adding, refactoring, fixing, reviewing, or designing/);
 });

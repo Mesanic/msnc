@@ -26,17 +26,18 @@ Every stop below ends the run with one message saying why and what the user can 
    > Implement ticket `<path or #N>`. Typecheck: `<typecheck>`. Tests: `<test command>`.
 3. Verify it yourself: rerun the typecheck and that ticket's tests. With a Scope index, those are the covering tests `sextant impact` named, plus `sextant check`. Don't trust the report alone.
 4. Checks fail → brief one fresh subagent with the failure output. Fails again → stop (section 3).
-5. Commit this ticket alone: stage the files the subagent reported (stray changes in `git status` → ask), message `<feat|fix|refactor>: <ticket title>`, plus `Closes #N` for GitHub tickets. Local tickets: set `**Status:** done` and tick the acceptance boxes in the same commit. Never close or edit a parent issue.
-6. With a Scope index, rescan after the commit (`/msnc:scope init` again) so the next ticket's impact is current.
-7. Tell the user one line: `Ticket 3 of 7 done: <title>. Next: <title>.`
+5. Record the decisions the subagent reported: one line each in that ticket's `## Comments` (added if missing; local file, or a comment on the GitHub issue) and appended to `docs/decisions.md` (created if missing), as `date · decision · why · undo`.
+6. Commit this ticket alone: stage the files the subagent reported plus `docs/decisions.md` (stray changes in `git status` → ask), message `<feat|fix|refactor>: <ticket title>`, plus `Closes #N` for GitHub tickets. Local tickets: set `**Status:** done`, tick the acceptance boxes and add the comments in the same commit. Never close or edit a parent issue.
+7. With a Scope index, rescan after the commit (`/msnc:scope init` again) so the next ticket's impact is current.
+8. Tell the user one line: `Ticket 3 of 7 done: <title>. Next: <title>.`
 
 ## 3. Stop and ask when
 
 - A ticket's checks fail after the retry.
-- A ticket needs a decision it doesn't make, or depends on something outside the repo.
+- A ticket needs an irreversible or destructive decision it doesn't make, or depends on something outside the repo.
 - Every remaining ticket is blocked.
 
-Say which ticket, what failed (`file:line`, expected vs got), and the one decision you need.
+Say which ticket, what failed (`file:line`, expected vs got), and the one decision you need, with your recommended answer.
 
 ## 4. Finish
 

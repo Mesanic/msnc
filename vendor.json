@@ -45,6 +45,7 @@
     "changes": [
       "Skills renamed grilling, to-spec, to-tickets → grill, spec, tickets; tdd and codebase-design keep their names",
       "grill: grill-me (a typed alias that ran /grilling) merged in; typed as /msnc:grill, still model-invoked",
+      "grill: each round offers \"accept all\" (take every recommendation); each settled answer is appended to docs/decisions.md",
       "Cross-references: /grilling → /msnc:grill, /setup-matt-pocock-skills → /msnc:setup, /codebase-design → /msnc:codebase-design, the code-review skill → the built-in /code-review",
       "spec, tickets: tracker read from docs/agents/issue-tracker.md; none there → the local Markdown tracker under .scratch/<feature-slug>/",
       "Skills renamed wait-what, setup-matt-pocock-skills → rephrase, setup; handoff keeps its name. All three stay typed-only",
