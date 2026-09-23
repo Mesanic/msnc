@@ -92,6 +92,23 @@ test('implement runs one foreground msnc:implementer per ticket and uses the Sco
   assert.match(body, /sextant check/);
 });
 
+test('implement builds a missing Scope index only in a repo that uses Scope, committed on its own', () => {
+  const body = read('skills/implement/SKILL.md');
+  assert.match(body, /`\.gitignore` lists `\.atlas\/…` entries but `\.atlas\/` is missing → run `\/msnc:scope init`/);
+  assert.match(body, /Neither → leave Scope alone/);
+  assert.match(body, /then commit its output alone as `chore: build Scope index`/);
+  assert.doesNotMatch(body, /^- Scope index:.*`\.atlas\/` missing → run/m);
+});
+
+test('implement rescans before each ticket\'s commit and stages the index in it, so the tree is clean after every commit', () => {
+  const body = read('skills/implement/SKILL.md');
+  const rescan = body.indexOf('rescan (`/msnc:scope init` again)');
+  const commit = body.indexOf('Commit this ticket alone');
+  assert.ok(rescan > 0 && rescan < commit, 'rescan comes before the commit step');
+  assert.match(body, /stage the rescan's `\.atlas\/` and `\.map\/` changes/);
+  assert.doesNotMatch(body, /rescan after the commit/i);
+});
+
 test('implement records the decisions made inside a ticket in its ## Comments and docs/decisions.md, in that ticket\'s commit', () => {
   const body = read('skills/implement/SKILL.md');
   assert.match(body, /decisions the subagent reported.*that ticket's `## Comments`.*`docs\/decisions\.md`.*`date · decision · why · undo`/);
