@@ -22,11 +22,9 @@ Every stop below ends the run with one message saying why and what the user can 
 ## 2. Loop, one ticket at a time
 
 1. Pick the next ticket on the frontier: the lowest-numbered one whose "Blocked by" tickets are all done. A ticket is done once its commit is on this branch.
-2. Run ONE `msnc:implementer` subagent in the foreground (never two at once, never in the background) with this brief:
-   > Implement ticket `<path or #N>` and nothing else. Load the `msnc:trim` and `msnc:tdd` skills, then work test-first at the seam the ticket names. After every change run `<typecheck>` and the affected test file; fix failures before the next change. Don't commit. Report: files changed, which test covers each acceptance criterion, the last result line of each check, and anything the ticket left undecided.
-
-   With a Scope index, add: "Run `sextant impact <file|symbol>` before each edit; the covering tests it names are the affected tests."
-3. Verify it yourself: rerun the typecheck and that ticket's tests. With a Scope index, those are the covering tests impact named, plus `sextant check`. Don't trust the report alone.
+2. Run ONE `msnc:implementer` subagent in the foreground (never two at once, never in the background). The agent carries the per-ticket rules (Trim, test-first, impact before edits, checks after every change, no commits, the report); brief it with:
+   > Implement ticket `<path or #N>`. Typecheck: `<typecheck>`. Tests: `<test command>`.
+3. Verify it yourself: rerun the typecheck and that ticket's tests. With a Scope index, those are the covering tests `sextant impact` named, plus `sextant check`. Don't trust the report alone.
 4. Checks fail → brief one fresh subagent with the failure output. Fails again → stop (section 3).
 5. Commit this ticket alone: stage the files the subagent reported (stray changes in `git status` → ask), message `<feat|fix|refactor>: <ticket title>`, plus `Closes #N` for GitHub tickets. Local tickets: set `**Status:** done` and tick the acceptance boxes in the same commit. Never close or edit a parent issue.
 6. With a Scope index, rescan after the commit (`/msnc:scope init` again) so the next ticket's impact is current.

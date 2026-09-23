@@ -9,10 +9,7 @@ import { fileURLToPath } from 'node:url';
 const root = fileURLToPath(new URL('..', import.meta.url));
 
 // Referenced before the ticket that builds them lands. Each ticket deletes its own names from here.
-const PENDING = {
-  explorer: '08-agents',
-  implementer: '08-agents',
-};
+const PENDING = {};
 
 const exists = (name) =>
   [join('skills', name, 'SKILL.md'), join('commands', `${name}.md`), join('agents', `${name}.md`)]

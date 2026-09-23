@@ -20,8 +20,15 @@ None of the three sets `model` or `effort`, so each user's `CLAUDE_CODE_SUBAGENT
 
 **Blocked by:** 05, 07
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] `/msnc:implement` dispatches `msnc:implementer`.
-- [ ] explorer's tool list cannot write files.
-- [ ] Tuner names `msnc:explorer` for plan-mode sweeps.
+- [x] `/msnc:implement` dispatches `msnc:implementer`.
+- [x] explorer's tool list cannot write files.
+- [x] Tuner names `msnc:explorer` for plan-mode sweeps.
+
+## Comments
+
+- 2026-09-23 · explorer: `disallowedTools: Write, Edit, MultiEdit, NotebookEdit, Agent, EnterWorktree`; Bash/PowerShell stay for the sextant CLI, so a Bash write is blocked only by its instructions · a dispatcher PreToolUse deny on `agent_type` = `msnc:explorer` could close it once that field is confirmed to reach the hook.
+- planner is read-only by instructions only (like the author's `Plan.md`); its `impact --depth 2` appends to `.atlas/`'s impact log, so plan mode may prompt.
+- `skills/implement/SKILL.md` now sends a one-line brief; the rules live in `agents/implementer.md`. `test/references.test.mjs` `PENDING` is empty.
+- Not verified live: `skills:` preload with namespaced names (`msnc:trim`), `${CLAUDE_PLUGIN_ROOT}` substitution in agent bodies. doctor's always-loaded estimate doesn't count agent descriptions yet.
