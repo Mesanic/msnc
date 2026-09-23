@@ -1,6 +1,6 @@
 ---
 name: doctor
-description: MSNC health check. Shows which MSNC options are on, what is always loaded, duplicate skills, conflicting project plugin settings and old Scope layouts, then audits context use across agents, skills, MCP servers and rules. Reads only.
+description: MSNC health check. Shows which MSNC options are on, what is always loaded, duplicate skills, conflicting project plugin settings, old Scope layouts and recipe use, then audits context use across agents, skills, MCP servers and rules. Reads only.
 disable-model-invocation: true
 metadata:
   origin: ECC
@@ -38,6 +38,8 @@ It prints one line per finding. Put the lines at the top of the report, and give
 - `Duplicate skills: <folder> has …` personal (`~/.claude/skills`) or project skills MSNC now ships. `/msnc:declutter` moves them to trash.
 - `Project settings: <file> turns on <id>` that project re-enables a plugin that duplicates MSNC. Remove the entry unless that project needs the plugin. `turns off <id>` is an override to review: it only matters while the plugin is on for the user, so it can go once the user-level entry is off. `turns off msnc@…` means MSNC is off in that project.
 - `Old Scope layout:` vendored `.claude/skills/atlas`, `.claude/skills/scalpel` or `.claude/skills/sextant` folders, sextant project hooks or the `<!-- sextant:begin -->` block in `CLAUDE.md`. Remove them, keep `.atlas/` data, then run `/msnc:scope init`.
+- `Recipes unused 30+ days:` recipes (typed-only skills, `disable-model-invocation: true`, in the project's or the personal `.claude/skills`) with no use in any project's transcripts for 30 days and no change to their `SKILL.md` in that time. A use is the typed command or a Skill call. Unused recipes are clutter: `/msnc:declutter` moves them to trash, or keep one that's seasonal.
+- `Most-corrected recipes:` the top 3 recipes by corrections, rejected tool calls and failed checks that followed them in the same session, over the last 30 days. Each is a refine candidate: run `/msnc:refine <name>`.
 
 
 ### Phase 1: Inventory

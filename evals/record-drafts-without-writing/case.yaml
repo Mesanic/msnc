@@ -1,0 +1,6 @@
+schema_version: "1.1"
+name: record-drafts-without-writing
+description: After a release that went well, /msnc:record drafts a typed-only recipe and writes nothing before a yes.
+tags: [record]
+context:
+  history_file: history.jsonl

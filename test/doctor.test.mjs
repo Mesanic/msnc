@@ -1,7 +1,7 @@
 // /msnc:doctor's mechanical checks: given a home dir, a repo dir and an MSNC root, expect these report lines.
 import { test, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, rmSync, utimesSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { doctor } from '../skills/doctor/doctor.mjs';
@@ -116,4 +116,42 @@ test('layout check flags vendored atlas/scalpel/sextant skill folders, sextant p
   ]);
   const clean = fixture({ '.atlas/graph/nodes.jsonl': '', '.claude/settings.json': { hooks: {} } });
   assert.deepEqual(doctor({ home: fixture(), cwd: clean, root: msnc() }).filter((l) => l.startsWith('Old Scope layout:')), ['Old Scope layout: none']);
+});
+
+// Recipe use. A recipe is a typed-only skill (disable-model-invocation: true) in the project's or the personal
+// .claude/skills. A use is a typed /name or a Skill call in any project's transcript; a correction, rejected tool
+// call or failed check counts against the skill used last before it in that session (skills/refine/corrections.mjs).
+test('recipe use lists recipes unused for 30 days and the most-corrected ones', () => {
+  const now = Date.now();
+  const day = (n) => new Date(now - n * 864e5).toISOString();
+  const jsonl = (...lines) => lines.map((l) => JSON.stringify(l)).join('\n');
+  const user = (ts, content) => ({ type: 'user', timestamp: ts, message: { role: 'user', content } });
+  const typed = (ts, name) => user(ts, `<command-message>${name}</command-message>\n<command-name>/${name}</command-name>`);
+  const skillCall = (ts, skill) => ({ type: 'assistant', timestamp: ts, message: { role: 'assistant', content: [{ type: 'tool_use', name: 'Skill', input: { skill } }] } });
+  const recipe = (name) => `---\nname: ${name}\ndescription: x\ndisable-model-invocation: true\n---\n`;
+  const cwd = fixture({
+    '.claude/skills/deploy/SKILL.md': recipe('deploy'),
+    '.claude/skills/stale/SKILL.md': recipe('stale'),
+    '.claude/skills/fresh/SKILL.md': recipe('fresh'), // never used, but made this week
+    '.claude/skills/helper/SKILL.md': '---\nname: helper\ndescription: x\n---\n', // model-invoked: not a recipe
+  });
+  const home = fixture({
+    '.claude/skills/release/SKILL.md': recipe('release'),
+    '.claude/skills/old/SKILL.md': recipe('old'),
+    '.claude/projects/p1/a.jsonl': jsonl(
+      typed(day(3), 'deploy'), user(day(3), 'no, use the staging branch'), user(day(3), "don't skip the tests"),
+      skillCall(day(2), 'release'), user(day(2), 'stop, wrong version'),
+      skillCall(day(1), 'msnc:trim'), user(day(1), 'actually, not that'), // not a recipe
+    ),
+    '.claude/projects/p2/b.jsonl': jsonl(typed(day(40), 'old'), user(day(40), 'no, wrong')), // too long ago
+  });
+  const old = new Date(now - 60 * 864e5);
+  for (const [dir, names] of [[cwd, ['deploy', 'stale', 'helper']], [home, ['release', 'old']]])
+    for (const n of names) utimesSync(join(dir, '.claude', 'skills', n, 'SKILL.md'), old, old);
+  const lines = doctor({ home, cwd, root: msnc() });
+  assert.equal(line(lines, 'Recipes unused 30+ days:'), 'Recipes unused 30+ days: stale (project), old (personal)');
+  assert.equal(line(lines, 'Most-corrected recipes:'), 'Most-corrected recipes: deploy 2, release 1 (last 30 days)');
+  const empty = doctor({ home: fixture(), cwd: fixture(), root: msnc() });
+  assert.equal(line(empty, 'Recipes unused 30+ days:'), 'Recipes unused 30+ days: none');
+  assert.equal(line(empty, 'Most-corrected recipes:'), 'Most-corrected recipes: none');
 });

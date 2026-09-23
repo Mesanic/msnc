@@ -184,9 +184,11 @@ test('the shipped Trim texts load per level and keep Tuner + Clear + Trim under 
   }
 });
 
-test('hooks.json sends exactly the ticket-03 and Scope gate events to the dispatcher, exec form', () => {
+test('hooks.json sends exactly the ticket-03, Scope gate and recipe-note events to the dispatcher, exec form', () => {
   const { hooks } = JSON.parse(readFileSync(new URL('../hooks/hooks.json', import.meta.url), 'utf8'));
-  assert.deepEqual(Object.keys(hooks).sort(), ['PreToolUse', 'SessionStart', 'SubagentStart', 'UserPromptSubmit']);
+  assert.deepEqual(Object.keys(hooks).sort(), ['PostToolUse', 'PreToolUse', 'SessionStart', 'SubagentStart', 'UserPromptExpansion', 'UserPromptSubmit']);
+  assert.deepEqual(hooks.PostToolUse.map((g) => g.matcher), ['Skill']);
+  assert.deepEqual(hooks.UserPromptExpansion.map((g) => g.matcher), [undefined]);
   assert.equal(hooks.SessionStart[0].matcher, 'startup|resume|clear|compact');
   // The gate: every file-writing tool call, and only the Bash calls whose command word writes files.
   const [files, bash] = hooks.PreToolUse;
@@ -207,4 +209,55 @@ test('hooks.json sends exactly the ticket-03 and Scope gate events to the dispat
 test('with clear off, subagent output contains no Clear', () => {
   const ctx = subContext(run(sub(), { env: { CLAUDE_PLUGIN_OPTION_CLEAR: 'false' } }));
   assert.equal(ctx, 'TUNER-TEXT');
+});
+
+// Recipe notes: after a Skill call, project notes (<cwd>/.claude/msnc/notes/) and personal notes
+// (<home>/.claude/msnc/notes/) for that skill come back next to the result. `plugin:skill` → `<plugin>/<skill>.md`.
+function notesFixture(files) {
+  const dir = mkdtempSync(join(tmpdir(), 'msnc-notes-'));
+  for (const [p, v] of Object.entries(files)) {
+    mkdirSync(join(dir, p, '..'), { recursive: true });
+    writeFileSync(join(dir, p), v);
+  }
+  return dir;
+}
+const homeEnv = (home) => ({ HOME: home, USERPROFILE: home });
+const skillUsed = (skill, cwd) => ({ hook_event_name: 'PostToolUse', session_id: 's1', cwd, tool_name: 'Skill', tool_input: { skill }, tool_response: {} });
+const postContext = (r) => {
+  const o = JSON.parse(r.out);
+  assert.equal(o.hookSpecificOutput.hookEventName, 'PostToolUse');
+  return o.hookSpecificOutput.additionalContext;
+};
+
+test('after a Skill call, project and personal notes for that skill come back next to the result', () => {
+  const cwd = notesFixture({ '.claude/msnc/notes/deploy.md': 'PROJECT-NOTE\n', '.claude/msnc/notes/msnc/trim.md': 'TRIM-PROJECT-NOTE\n' });
+  const home = notesFixture({ '.claude/msnc/notes/deploy.md': 'PERSONAL-NOTE\n' });
+  const ctx = postContext(run(skillUsed('deploy', cwd), { env: homeEnv(home) }));
+  assert.match(ctx, /deploy/);
+  assert.match(ctx, /PROJECT-NOTE[\s\S]*PERSONAL-NOTE/);
+  assert.match(ctx, /\.claude\/msnc\/notes\/deploy\.md/);
+  // Namespaced skills live in a folder named after the plugin; only one side has notes here.
+  const trim = postContext(run(skillUsed('msnc:trim', cwd), { env: homeEnv(home) }));
+  assert.match(trim, /TRIM-PROJECT-NOTE/);
+  assert.doesNotMatch(trim, /PERSONAL-NOTE|PROJECT-NOTE\n[\s\S]*deploy/);
+});
+
+test('no notes, another tool, or a name that escapes the notes folder: no output', () => {
+  const cwd = notesFixture({ '.claude/msnc/notes/other.md': 'x', '.claude/secret.md': 'SECRET' });
+  const home = notesFixture({});
+  for (const e of [skillUsed('deploy', cwd), skillUsed('msnc:trim', cwd), skillUsed('../secret', cwd), skillUsed('..:secret', cwd),
+    skillUsed('', cwd), { ...skillUsed('other', cwd), tool_name: 'Read' }, { ...skillUsed('other', cwd), tool_input: {} }]) {
+    const { code, out } = run(e, { env: homeEnv(home) });
+    assert.equal(code, 0);
+    assert.equal(out, '', JSON.stringify(e.tool_input));
+  }
+});
+
+test('a typed slash command gets its notes too (UserPromptExpansion bypasses the Skill tool)', () => {
+  const cwd = notesFixture({ '.claude/msnc/notes/msnc/record.md': 'RECORD-NOTE\n' });
+  const e = { hook_event_name: 'UserPromptExpansion', session_id: 's1', cwd, expansion_type: 'slash_command', command_name: 'msnc:record', command_args: '', prompt: '/msnc:record' };
+  const o = JSON.parse(run(e, { env: homeEnv(notesFixture({})) }).out);
+  assert.equal(o.hookSpecificOutput.hookEventName, 'UserPromptExpansion');
+  assert.match(o.hookSpecificOutput.additionalContext, /RECORD-NOTE/);
+  assert.equal(run({ ...e, command_name: 'msnc:trim' }, { env: homeEnv(notesFixture({})) }).out, '');
 });

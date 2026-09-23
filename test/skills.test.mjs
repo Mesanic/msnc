@@ -121,3 +121,49 @@ test('scope is model-invoked with a short description and gives the CLI path, in
   assert.match(body, /no hooks? and no `CLAUDE\.md` block/i);
   assert.match(body, /CSS|HTML/);
 });
+
+// Record: spec "Record" and "ProcessDriven credit".
+const CREDIT = 'principles inspired by [ProcessDriven](https://processdriven.co) by Layla Pomper';
+
+test('record and refine ship typed-only and credit ProcessDriven without implying endorsement', () => {
+  for (const name of ['record', 'refine']) {
+    assert.match(frontmatter(name), /^disable-model-invocation: true$/m, name);
+    const body = read(`skills/${name}/SKILL.md`);
+    assert.ok(body.includes(CREDIT), `${name}: credit line`);
+    assert.match(body, /ProcessDriven® is a registered trademark/, name);
+    assert.match(body, /not affiliated with or endorsed by/, name);
+  }
+});
+
+test('record drafts a typed-only recipe with why, when to use, steps and done-check, and writes nothing before a yes', () => {
+  const body = read('skills/record/SKILL.md');
+  for (const s of ['**Why:**', '**When to use:**', '## Steps', '## Done-check', 'disable-model-invocation: true'])
+    assert.ok(body.includes(s), s);
+  assert.match(body, /one path to one outcome/i);
+  assert.match(body, /Show the full draft/);
+  assert.match(body, /Write nothing before the user says yes/);
+  assert.match(body, /anything but yes → write nothing/);
+  assert.ok(body.includes('.claude/skills/<name>/SKILL.md'), 'project path');
+  assert.ok(body.includes('~/.claude/skills/<name>/SKILL.md'), 'personal path on request');
+  assert.match(body, /never overwrite/i);
+});
+
+test('refine reads context-mode memory or the transcripts, proposes exactly one change with evidence, and notes what the user does not own', () => {
+  const body = read('skills/refine/SKILL.md');
+  assert.ok(body.includes('`ctx_search`') && body.includes('sort: "timeline"'), 'context-mode source');
+  assert.ok(body.includes('node "${CLAUDE_SKILL_DIR}/corrections.mjs"'), 'transcript fallback');
+  assert.match(body, /exactly one change/i);
+  assert.match(body, /as a diff/);
+  assert.match(body, /quoted, with the kind \(correction.*when it happened/);
+  assert.match(body, /Apply it only after a yes/);
+  assert.ok(body.includes('.claude/msnc/notes/'), 'writes a note');
+  assert.match(body, /Not the user's own: .*never edit it\. The fix goes into a recipe note instead/);
+  assert.match(body, /`msnc:trim` → `\.claude\/msnc\/notes\/msnc\/trim\.md`/);
+});
+
+test('doctor explains the recipe-use lines', () => {
+  const body = read('skills/doctor/SKILL.md');
+  assert.match(body, /`Recipes unused 30\+ days:`/);
+  assert.match(body, /`Most-corrected recipes:`/);
+  assert.match(body, /\/msnc:refine/);
+});

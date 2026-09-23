@@ -1,9 +1,9 @@
 // MSNC's one hook dispatcher: event JSON on stdin → context on stdout.
 // Never blocks on stdin, never exits non-zero: a broken hook must not break a session.
-// New events (PostToolUse for recipe notes) add a case to handle().
+// New events add a case to handle().
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { basename, join, relative, resolve, sep } from 'node:path';
-import { tmpdir } from 'node:os';
+import { homedir, tmpdir } from 'node:os';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const ROOT = process.env.CLAUDE_PLUGIN_ROOT || fileURLToPath(new URL('..', import.meta.url));
@@ -111,9 +111,31 @@ async function scopeGate(e) {
   return JSON.stringify({ hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'deny', permissionDecisionReason: reason } });
 }
 
+// --- Recipe notes: the user's notes for a skill, added next to it whenever it loads. Project notes
+// <cwd>/.claude/msnc/notes/<name>.md, then personal ~/.claude/msnc/notes/<name>.md. A namespaced skill
+// `plugin:skill` maps to <plugin>/<skill>.md (':' can't be in a Windows file name).
+function notes(e, name, event) {
+  const parts = String(name ?? '').split(':');
+  if (!parts.every((p) => /^[\w.-]+$/.test(p) && !/^\.+$/.test(p))) return;
+  const rel = `.claude/msnc/notes/${parts.join('/')}.md`;
+  const found = [['Project', e.cwd || process.cwd(), rel], ['Personal', homedir(), `~/${rel}`]]
+    .map(([who, dir, shown]) => {
+      let t = '';
+      try { t = readFileSync(join(dir, rel), 'utf8').trim(); } catch { /* no notes here */ }
+      return t && `${who} notes (${shown}):\n${t}`;
+    })
+    .filter(Boolean);
+  if (!found.length) return;
+  const additionalContext = [`Recipe notes for ${name}. Where they differ from the skill, follow the notes.`, ...found].join('\n\n');
+  return JSON.stringify({ hookSpecificOutput: { hookEventName: event, additionalContext } });
+}
+
 function handle(e) {
   switch (e.hook_event_name) {
     case 'PreToolUse': return scopeGate(e);
+    case 'PostToolUse': return e.tool_name === 'Skill' ? notes(e, e.tool_input?.skill, 'PostToolUse') : undefined;
+    // A typed /name never goes through the Skill tool; this is where typed-only recipes load.
+    case 'UserPromptExpansion': return notes(e, e.command_name, 'UserPromptExpansion');
     case 'SessionStart': return context(e.session_id);
     // SubagentStart drops plain stdout; only the hookSpecificOutput form reaches the subagent.
     case 'SubagentStart': return JSON.stringify({ hookSpecificOutput: { hookEventName: 'SubagentStart', additionalContext: context(e.session_id, true) } });

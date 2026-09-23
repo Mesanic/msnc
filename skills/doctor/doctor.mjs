@@ -1,8 +1,9 @@
 // Usage: node doctor.mjs   (run from the repo to check; reads only, never writes)
 // /msnc:doctor's mechanical checks, one report line (or more) per check.
-import { existsSync, readdirSync, readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { basename, join, resolve } from 'node:path';
+import { readEvents } from '../refine/corrections.mjs';
 
 const read = (p) => { try { return readFileSync(p, 'utf8').replace(/\r\n/g, '\n'); } catch { return ''; } };
 const dirs = (p) => { try { return readdirSync(p, { withFileTypes: true }).filter((e) => e.isDirectory()).map((e) => e.name); } catch { return []; } };
@@ -112,7 +113,31 @@ function oldScope(cwd) {
   return (out.length ? out : ['none']).map((l) => `Old Scope layout: ${l}`);
 }
 
-export function doctor({ home, cwd, root }) {
+// Recipes: typed-only skills (disable-model-invocation: true) in the project's and the personal .claude/skills.
+// Use and corrections come from every project's transcripts touched in the last 30 days (a personal recipe runs
+// anywhere): a typed /name or a Skill call is a use; a correction, rejected tool call or failed check counts against
+// the skill used last before it in that session. Unused = no use in 30 days and SKILL.md not changed in 30 days.
+const MONTH = 30 * 864e5;
+function recipeUse(home, cwd, now) {
+  const recipes = [['project', cwd], ['personal', home]].flatMap(([where, dir]) => skillDirs(join(dir, '.claude', 'skills'))
+    .filter((d) => /^disable-model-invocation: true$/m.test(/^---\n([\s\S]*?)\n---/.exec(read(join(dir, '.claude', 'skills', d, 'SKILL.md')))?.[1] ?? ''))
+    .sort().map((name) => ({ name, where, changed: statSync(join(dir, '.claude', 'skills', name, 'SKILL.md')).mtimeMs })));
+  const since = now - MONTH;
+  const projects = join(home, '.claude', 'projects');
+  const events = dirs(projects).flatMap((p) => readEvents(join(projects, p), since)).filter((e) => Date.parse(e.ts) >= since);
+  const used = new Set(events.filter((e) => e.kind === 'use').map((e) => e.skill));
+  const unused = recipes.filter((r) => !used.has(r.name) && r.changed < since).map((r) => `${r.name} (${r.where})`);
+  const names = new Set(recipes.map((r) => r.name));
+  const counts = new Map();
+  for (const e of events) if (e.kind !== 'use' && names.has(e.skill)) counts.set(e.skill, (counts.get(e.skill) ?? 0) + 1);
+  const top = [...counts].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).slice(0, 3).map(([n, c]) => `${n} ${c}`);
+  return [
+    `Recipes unused 30+ days: ${unused.join(', ') || 'none'}`,
+    `Most-corrected recipes: ${top.length ? `${top.join(', ')} (last 30 days)` : 'none'}`,
+  ];
+}
+
+export function doctor({ home, cwd, root, now = Date.now() }) {
   const opts = options(home, root);
   const names = msncNames(root);
   return [
@@ -121,6 +146,7 @@ export function doctor({ home, cwd, root }) {
     ...duplicates(home, cwd, names),
     ...projectSettings(home, names),
     ...oldScope(cwd),
+    ...recipeUse(home, cwd, now),
   ];
 }
 
