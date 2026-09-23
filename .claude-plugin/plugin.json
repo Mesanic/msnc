@@ -1,0 +1,28 @@
+{
+  "name": "msnc",
+  "version": "0.1.0",
+  "description": "More Signal, No Clutter",
+  "author": { "name": "Mesanic" },
+  "repository": "https://github.com/Mesanic/msnc",
+  "license": "MIT",
+  "userConfig": {
+    "clear": {
+      "type": "boolean",
+      "title": "Clear",
+      "description": "Load the Clear reply shape in every session and subagent",
+      "default": true
+    },
+    "trim_default": {
+      "type": "string",
+      "title": "Trim default level",
+      "description": "Trim level at session start: off (on demand), lite, full or ultra",
+      "default": "off"
+    },
+    "scope_gate": {
+      "type": "boolean",
+      "title": "Scope gate",
+      "description": "Route code searches through the Scope index when one exists",
+      "default": true
+    }
+  }
+}

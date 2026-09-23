@@ -1,0 +1,12 @@
+{
+  "name": "msnc",
+  "version": "0.1.0",
+  "private": true,
+  "description": "More Signal, No Clutter",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "test": "node --test",
+    "check": "node scripts/check.mjs"
+  }
+}

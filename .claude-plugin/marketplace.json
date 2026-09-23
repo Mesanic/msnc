@@ -1,0 +1,12 @@
+{
+  "name": "msnc",
+  "owner": { "name": "Mesanic" },
+  "description": "More Signal, No Clutter",
+  "plugins": [
+    {
+      "name": "msnc",
+      "source": "./",
+      "description": "More Signal, No Clutter"
+    }
+  ]
+}
