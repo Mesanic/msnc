@@ -87,6 +87,44 @@ test('no shipped text uses blame wording', () => {
   assert.deepEqual(hits, []);
 });
 
+// README (ticket 10): its sections are cut at `## ` headings.
+const section = (heading) => read('README.md').split(/^## /m).find((s) => s.startsWith(heading)) ?? '';
+
+test('the README options table lists exactly the options plugin.json declares', () => {
+  const declared = Object.keys(JSON.parse(read('.claude-plugin/plugin.json')).userConfig).sort();
+  const documented = [...section('Options').matchAll(/^\| `([a-z_]+)` \|/gm)].map((m) => m[1]).sort();
+  assert.deepEqual(documented, declared);
+});
+
+// Authors are not in vendor.json; the spec's module table names them.
+const AUTHORS = {
+  'DietrichGebert/ponytail': 'Dietrich Gebert',
+  'ayghri/i-have-adhd': 'Ayoub Ghriss',
+  'mattpocock/skills': 'Matt Pocock',
+  'affaan-m/ECC': 'Affaan Mustafa',
+  'Mesanic/sextant': 'Mesanic',
+};
+
+test('README "Built on" credits every pinned upstream with author, repo link and license on one line', () => {
+  const vendor = JSON.parse(read('vendor.json'));
+  assert.deepEqual(vendor.map((v) => v.repo).sort(), Object.keys(AUTHORS).sort(), 'five upstreams');
+  const lines = section('Built on').split('\n');
+  for (const { repo, license } of vendor) {
+    const line = lines.find((l) => l.includes(`](https://github.com/${repo})`)) ?? '';
+    assert.ok(line.includes(AUTHORS[repo]), `${repo}: author`);
+    assert.match(line, new RegExp(`\\b${license}\\b`), `${repo}: license`);
+  }
+  const companion = lines.find((l) => l.includes('](https://github.com/mksglu/context-mode)')) ?? '';
+  assert.match(companion, /\bELv2\b/, 'context-mode companion and its license');
+});
+
+test('README credits ProcessDriven exactly, with the trademark notice and no implied endorsement', () => {
+  const credits = section('Built on');
+  assert.ok(credits.includes('principles inspired by [ProcessDriven](https://processdriven.co) by Layla Pomper'));
+  assert.match(credits, /ProcessDriven® is a registered trademark/);
+  assert.match(credits, /not affiliated with or endorsed by/);
+});
+
 test('pending names are not built yet (drop a name from PENDING when its ticket lands)', () => {
   assert.deepEqual(Object.keys(PENDING).filter(exists), []);
 });
