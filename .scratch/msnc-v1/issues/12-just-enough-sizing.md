@@ -15,7 +15,14 @@ Take the size signals from ECC's orch-pipeline classifier: files touched, unknow
 
 **Blocked by:** 03, 08
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Evals: a one-line fix goes straight to editing with no tickets, and a multi-module feature request starts with grill and spec.
-- [ ] A test keeps Tuner at 200 tokens or fewer (characters ÷ 4).
+- [x] Evals (written, run in ticket 09): a one-line fix goes straight to editing with no tickets, and a multi-module feature request starts with grill and spec.
+- [x] A test keeps Tuner at 200 tokens or fewer (characters ÷ 4).
+
+## Comments
+
+- 2026-09-23 · Sizing paraphrased from ECC orch-pipeline "Step 0" at pinned `5064474` (identical to the 2.2.0 cache); no text copied, so only a credit line in `THIRD_PARTY_NOTICES.md`.
+- Tuner tightened to 784 chars (~196 tokens) to fit the new ≤ 200-token test; "That is the caller check" dropped (Trim already says it). Only ~16 chars of headroom left for ticket 13.
+- `/msnc:tickets`, `/msnc:spec`, `/msnc:implement` are typed-only, so for medium/large tasks the model can only tell the user to type them.
+- Open: spec also credits sizing to ProcessDriven; where that credit goes is ticket 10's call.

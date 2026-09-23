@@ -172,6 +172,12 @@ test('the shipped Tuner and Clear texts load from the plugin root, with credits'
   assert.ok(r.stdout.length < 10000, 'Claude Code moves hook output over 10,000 characters to a file');
 });
 
+// Spec "Tuner": a ~150-token always-loaded list. Ticket 12 caps it at 200 tokens (characters ÷ 4).
+test('the shipped Tuner stays at 200 tokens or fewer', () => {
+  const chars = readFileSync(new URL('../context/tuner.md', import.meta.url), 'utf8').length;
+  assert.ok(chars / 4 <= 200, `Tuner is ~${chars / 4} tokens (${chars} characters)`);
+});
+
 test('the shipped Trim texts load per level and keep Tuner + Clear + Trim under the 10,000-character cap', () => {
   for (const level of ['lite', 'full', 'ultra']) {
     const env = { ...baseEnv, CLAUDE_PLUGIN_DATA: mkdtempSync(join(tmpdir(), 'msnc-data-')), CLAUDE_PLUGIN_OPTION_TRIM_DEFAULT: level };

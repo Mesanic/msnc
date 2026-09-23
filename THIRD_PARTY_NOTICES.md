@@ -90,6 +90,8 @@ SOFTWARE.
 
 https://github.com/affaan-m/ECC at `5064474d4d762dc9640234a41617cccb79185cec` (v2.2.1). License: MIT.
 
+Idea credit, no text copied: the small / medium / large task sizing in `context/tuner.md` and `agents/planner.md` paraphrases the size classifier in `skills/orch-pipeline/SKILL.md` ("Step 0 — Classify size").
+
 ```text
 MIT License
 

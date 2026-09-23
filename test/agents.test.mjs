@@ -73,6 +73,26 @@ test('/msnc:implement dispatches msnc:implementer and leaves the per-ticket rule
   assert.doesNotMatch(brief, /commit|msnc:trim|msnc:tdd|Report:/i, 'the agent carries these');
 });
 
+// Spec "Just enough sizing" (ticket 12): Tuner and the planner size the same way, with ECC orch-pipeline's signals.
+const assertSizing = (text, who) => {
+  assert.match(text, /^(?=.*one line)(?=.*size)(?=.*why)/im,`${who}: states size and why in one line`);
+  for (const signal of ['files', 'unknowns', 'irreversible steps', 'modules crossed'])
+    assert.ok(text.includes(signal), `${who}: signal ${signal}`);
+  assert.match(text, /Small: [^.]*do it/, `${who}: small`);
+  assert.match(text, /Medium: \/msnc:tickets → \/msnc:implement/, `${who}: medium`);
+  assert.match(text, /Large: \/msnc:grill → \/msnc:spec → medium/, `${who}: large`);
+};
+
+test('Tuner sizes multi-step work before planning', () => {
+  assertSizing(read('context/tuner.md'), 'Tuner');
+});
+
+test('the planner sizes the task the same way and opens its plan with the size', () => {
+  const { body } = agent('planner');
+  assertSizing(body, 'planner');
+  assert.match(body, /Return:\n1\. The size and why, in one line\./);
+});
+
 test('Tuner sends plan-mode sweeps to msnc:explorer', () => {
   assert.match(read('context/tuner.md'), /In plan mode ctx calls need approval: use Read\/Grep\/Glob or the `msnc:explorer` agent/);
 });
