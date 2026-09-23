@@ -1,0 +1,42 @@
+[
+  {
+    "repo": "DietrichGebert/ponytail",
+    "ref": "v4.10.0",
+    "commit": "1d95ff7d39de12d87014ea40d4e22201bddc501b",
+    "license": "MIT",
+    "paths": {},
+    "changes": []
+  },
+  {
+    "repo": "ayghri/i-have-adhd",
+    "ref": "main",
+    "commit": "839872f9d1cd634fed642b4589ce7226199cc15f",
+    "license": "MIT",
+    "paths": {},
+    "changes": []
+  },
+  {
+    "repo": "mattpocock/skills",
+    "ref": "v1.2.3",
+    "commit": "6acc160e4e0cd062dbbbd7a1b26ae92855edf07e",
+    "license": "MIT",
+    "paths": {},
+    "changes": []
+  },
+  {
+    "repo": "affaan-m/ECC",
+    "ref": "v2.2.1",
+    "commit": "5064474d4d762dc9640234a41617cccb79185cec",
+    "license": "MIT",
+    "paths": {},
+    "changes": []
+  },
+  {
+    "repo": "Mesanic/sextant",
+    "ref": "main",
+    "commit": "2fa30a379e707e959cae398a80c553c063b2a0df",
+    "license": "MIT",
+    "paths": {},
+    "changes": []
+  }
+]
