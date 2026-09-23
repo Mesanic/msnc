@@ -37,13 +37,19 @@
       "skills/spec": "skills/engineering/to-spec",
       "skills/tickets": "skills/engineering/to-tickets",
       "skills/tdd": "skills/engineering/tdd",
-      "skills/codebase-design": "skills/engineering/codebase-design"
+      "skills/codebase-design": "skills/engineering/codebase-design",
+      "skills/rephrase": "skills/productivity/wait-what",
+      "skills/handoff": "skills/productivity/handoff",
+      "skills/setup": "skills/engineering/setup-matt-pocock-skills"
     },
     "changes": [
       "Skills renamed grilling, to-spec, to-tickets → grill, spec, tickets; tdd and codebase-design keep their names",
       "grill: grill-me (a typed alias that ran /grilling) merged in; typed as /msnc:grill, still model-invoked",
       "Cross-references: /grilling → /msnc:grill, /setup-matt-pocock-skills → /msnc:setup, /codebase-design → /msnc:codebase-design, the code-review skill → the built-in /code-review",
       "spec, tickets: tracker read from docs/agents/issue-tracker.md; none there → the local Markdown tracker under .scratch/<feature-slug>/",
+      "Skills renamed wait-what, setup-matt-pocock-skills → rephrase, setup; handoff keeps its name. All three stay typed-only",
+      "rephrase: CONTEXT.md vocabulary only when the file exists",
+      "setup: rewritten around MSNC (options, context-mode, local tracker default, /msnc:scope init, subagent model); every settings change shown and confirmed before writing. Not copied: domain.md, triage-labels.md (MSNC ships no triage or domain-modeling skills)",
       "Not copied: agents/openai.yaml (Codex harness metadata)",
       "Details in each folder's UPSTREAM.md"
     ]
@@ -53,8 +59,19 @@
     "ref": "v2.2.1",
     "commit": "5064474d4d762dc9640234a41617cccb79185cec",
     "license": "MIT",
-    "paths": {},
-    "changes": []
+    "paths": {
+      "skills/aside": "commands/aside.md",
+      "skills/verify": "skills/verification-loop",
+      "skills/doctor": "skills/context-budget",
+      "skills/declutter": "skills/config-gc"
+    },
+    "changes": [
+      "Renamed: aside command → aside skill; verification-loop, context-budget, config-gc → verify, doctor, declutter. All four typed-only",
+      "verify: sextant check phase when the repo has a Scope index",
+      "doctor: MSNC checks added, run by doctor.mjs (options, always-loaded estimate, duplicate skills, project plugin settings, old Scope layouts)",
+      "declutter: MSNC duplicates and project plugin overrides added as scan channels; trash-first and ask-per-item rules kept",
+      "Details in each folder's UPSTREAM.md"
+    ]
   },
   {
     "repo": "Mesanic/sextant",

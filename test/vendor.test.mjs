@@ -44,6 +44,15 @@ test('check lists every differing file per copied folder', () => {
   ]);
 });
 
+test('check compares a single upstream file (a command) with the copy folder\'s SKILL.md', () => {
+  const up = fixture({ LICENSE: MIT, 'commands/aside.md': 'aside\n', 'commands/other.md': 'not copied\n' });
+  const same = fixture({ 'skills/aside/SKILL.md': 'aside\r\n', 'skills/aside/LICENSE': MIT, 'skills/aside/UPSTREAM.md': 'n\n' });
+  const edited = fixture({ 'skills/aside/SKILL.md': 'our aside\n', 'skills/aside/extra.md': 'x\n' });
+  const aside = entry({ 'skills/aside': 'commands/aside.md' });
+  assert.deepEqual(checkUpstream(aside, up, same, MIT), ['in sync']);
+  assert.deepEqual(checkUpstream(aside, up, edited, MIT), ['skills/aside: changed: SKILL.md', 'skills/aside: local only: extra.md']);
+});
+
 test('check says "nothing copied yet" for an upstream with no copied paths', () => {
   assert.deepEqual(checkUpstream(entry({}), fixture({ LICENSE: MIT }), fixture({}), MIT), ['nothing copied yet']);
 });

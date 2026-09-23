@@ -13,8 +13,6 @@ const PENDING = {
   scope: '07-scope-module',
   explorer: '08-agents',
   implementer: '08-agents',
-  setup: '06-calibrate-and-helper-skills',
-  verify: '06-calibrate-and-helper-skills',
 };
 
 const exists = (name) =>
@@ -38,7 +36,7 @@ test('every msnc:<name> in skills, context, hooks and the README resolves to a s
 });
 
 // Claude Code built-ins that MSNC texts may name as bare slash commands.
-const BUILTIN = new Set(['plugin', 'code-review']);
+const BUILTIN = new Set(['plugin', 'code-review', 'config']);
 
 // Bare `/name` commands and `name` skills that are neither msnc:<name> nor a built-in: leftover upstream names.
 function strayRefs(text) {

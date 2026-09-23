@@ -1,7 +1,7 @@
 // Usage: node scripts/sync-upstream.mjs --check   (checking is the only mode)
 // Compares every copied folder, and THIRD_PARTY_NOTICES.md, against its upstream at the pinned commit (vendor.json).
 // Read-only: upstreams are fetched into a temp dir; nothing in this repo is ever written. Exit 1 on any difference.
-import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs';
+import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, relative } from 'node:path';
 import { spawnSync } from 'node:child_process';
@@ -18,14 +18,17 @@ const files = (dir) =>
         .filter((f) => f !== 'LICENSE' && f !== 'UPSTREAM.md')
     : [];
 
+// A single upstream file (an upstream command) is copied as the folder's SKILL.md.
 function diffDirs(upDir, localDir) {
-  const up = new Set(files(upDir));
+  const single = existsSync(upDir) && statSync(upDir).isFile();
+  const upFile = (f) => (single ? upDir : join(upDir, f));
+  const up = new Set(single ? ['SKILL.md'] : files(upDir));
   const local = new Set(files(localDir));
   const out = [];
   for (const f of [...new Set([...up, ...local])].sort()) {
     if (!local.has(f)) out.push(`upstream only: ${f}`);
     else if (!up.has(f)) out.push(`local only: ${f}`);
-    else if (read(join(upDir, f)) !== read(join(localDir, f))) out.push(`changed: ${f}`);
+    else if (read(upFile(f)) !== read(join(localDir, f))) out.push(`changed: ${f}`);
   }
   return out;
 }
@@ -52,7 +55,7 @@ function fetchUpstream({ repo, commit, paths }, dir) {
   git(dir, 'remote', 'add', 'origin', `https://github.com/${repo}`); // named remote so checkout can lazy-load blobs
   git(dir, 'fetch', '-q', '--depth', '1', '--filter=blob:none', 'origin', commit);
   // Sparse + full checkout, not `checkout -- <paths>`: only a full checkout lazy-loads the filtered blobs.
-  git(dir, 'sparse-checkout', 'set', '--no-cone', '/LICENSE', ...Object.values(paths).map((p) => `/${p}/`));
+  git(dir, 'sparse-checkout', 'set', '--no-cone', '/LICENSE', ...Object.values(paths).map((p) => `/${p}`)); // no trailing slash: a path may be a file
   git(dir, 'checkout', '-q', 'FETCH_HEAD');
 }
 

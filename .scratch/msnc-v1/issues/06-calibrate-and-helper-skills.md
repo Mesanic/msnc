@@ -26,9 +26,18 @@
 
 **Blocked by:** 02
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] All seven skills have `disable-model-invocation: true`.
-- [ ] Run on this machine, doctor flags the Jarvis and Hackathon project settings.
-- [ ] setup shows every settings change and waits for a yes before writing.
-- [ ] Every copied folder has LICENSE and UPSTREAM.md.
+- [x] All seven skills have `disable-model-invocation: true`.
+- [x] Run on this machine, doctor flags the Jarvis and Hackathon project settings.
+- [x] setup shows every settings change and waits for a yes before writing.
+- [x] Every copied folder has LICENSE and UPSTREAM.md.
+
+## Comments
+
+- 2026-09-23 · Copied from pinned ECC v2.2.1 `5064474` and mattpocock v1.2.3 `6acc160`; `sync-upstream` now also handles a single-file upstream path (aside).
+- doctor's mechanical checks live in `skills/doctor/doctor.mjs` (read-only). Option values come from `~/.claude/settings.json` `pluginConfigs["msnc@…"].options`, falling back to `plugin.json` defaults. Projects come from `~/.claude.json` `projects`. A project that turns a duplicating plugin off is reported as an override, not a conflict.
+- A duplicate is a skill or command named like an MSNC skill or like the upstream folder it was copied from (`vendor.json` `paths`); `~/.claude/skills` and the repo's `.claude/skills` are checked too.
+- Old layout = `.claude/skills/{atlas,scalpel,sextant}`, sextant project hooks, or a `sextant:begin` block.
+- setup explains options but never writes them (`/config` does); dropped upstream's CLAUDE.md block, triage labels, domain docs, PR triage and Wayfinding. Unconfirmed against docs: subagent model fallback wording and `/plugin marketplace add mksglu/context-mode`.
+- Real run: always-loaded ~655 tokens (Tuner ~148, Clear ~395, 4 model-invoked descriptions ~112). Skills not run live (CLI auth expired).
