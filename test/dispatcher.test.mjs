@@ -172,6 +172,18 @@ test('the shipped Tuner and Clear texts load from the plugin root, with credits'
   assert.ok(r.stdout.length < 10000, 'Claude Code moves hook output over 10,000 characters to a file');
 });
 
+test('the shipped Trim texts load per level and keep Tuner + Clear + Trim under the 10,000-character cap', () => {
+  for (const level of ['lite', 'full', 'ultra']) {
+    const env = { ...baseEnv, CLAUDE_PLUGIN_DATA: mkdtempSync(join(tmpdir(), 'msnc-data-')), CLAUDE_PLUGIN_OPTION_TRIM_DEFAULT: level };
+    const main = spawnSync(process.execPath, [SCRIPT], { input: JSON.stringify(start('compact')), env, encoding: 'utf8' }).stdout;
+    const subOut = spawnSync(process.execPath, [SCRIPT], { input: JSON.stringify(sub()), env, encoding: 'utf8' }).stdout;
+    assert.match(main, new RegExp(`TRIM ACTIVE — level: ${level}\\n`), level);
+    assert.match(main, /Scope index → `sextant impact`/, level);
+    assert.match(subContext({ out: subOut }), new RegExp(`TRIM ACTIVE — level: ${level}\\n`), level);
+    for (const out of [main, subOut]) assert.ok(out.length < 10000, `${level}: ${out.length} characters`);
+  }
+});
+
 test('hooks.json sends exactly the ticket-03 events to the dispatcher, exec form', () => {
   const { hooks } = JSON.parse(readFileSync(new URL('../hooks/hooks.json', import.meta.url), 'utf8'));
   assert.deepEqual(Object.keys(hooks).sort(), ['SessionStart', 'SubagentStart', 'UserPromptSubmit']);

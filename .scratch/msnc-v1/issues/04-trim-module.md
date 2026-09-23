@@ -19,8 +19,15 @@ Record every change in `UPSTREAM.md`.
 
 **Blocked by:** 02, 03
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] `/msnc:trim` loads the skill. After `/msnc:trim full`, a new subagent receives Trim, and it still applies after `/compact`.
-- [ ] The references test finds no remaining `/ponytail` command.
-- [ ] `UPSTREAM.md` lists the renames and the caller-check change, and LICENSE is present.
+- [x] `/msnc:trim` loads the skill. After `/msnc:trim full`, a new subagent receives Trim, and it still applies after `/compact`.
+- [x] The references test finds no remaining `/ponytail` command.
+- [x] `UPSTREAM.md` lists the renames and the caller-check change, and LICENSE is present.
+
+## Comments
+
+- 2026-09-23 · Copied from pinned `1d95ff7` (identical to the 4.9.0 cache for these four skills), converted to LF · level texts generated with ponytail's own `filterSkillBodyForMode`; `test/skills.test.mjs` fails if `SKILL.md` and the level files drift.
+- `test/references.test.mjs` keeps `PENDING = { scope: '07-scope-module', explorer: '08-agents' }`; each ticket removes its own entry (a second test fails once a pending name exists).
+- Live `/compact` and subagent runs not done (CLI auth expired); covered by the dispatcher tests.
+- Open for later: Trim's `## Output` section repeats Clear rule 2 (spec: no rule in two places); `trim`'s ~800-char upstream description stays loaded (spec wants short); the why rule belongs to ticket 14; `sync-upstream --check` now exits 1 for every intentionally edited copy.

@@ -4,8 +4,20 @@
     "ref": "v4.10.0",
     "commit": "1d95ff7d39de12d87014ea40d4e22201bddc501b",
     "license": "MIT",
-    "paths": {},
-    "changes": []
+    "paths": {
+      "skills/trim": "skills/ponytail",
+      "skills/trim-review": "skills/ponytail-review",
+      "skills/trim-audit": "skills/ponytail-audit",
+      "skills/trim-debt": "skills/ponytail-debt"
+    },
+    "changes": [
+      "Skills renamed ponytail, ponytail-review, ponytail-audit, ponytail-debt → trim, trim-review, trim-audit, trim-debt; /ponytail → /msnc:trim, \"stop ponytail\" → \"stop trim\"",
+      "trim: caller check reads \"repo has a Scope index → `sextant impact`; otherwise grep every caller\"",
+      "trim: marker comment `ponytail:` → `trim:`; trim-debt harvests `trim:` and legacy `ponytail:`",
+      "trim-review, trim-audit, trim-debt: disable-model-invocation: true",
+      "trim/levels/{lite,full,ultra}.md added: the skill filtered per level by upstream hooks/ponytail-instructions.js, for the MSNC dispatcher",
+      "Details in each folder's UPSTREAM.md"
+    ]
   },
   {
     "repo": "ayghri/i-have-adhd",
