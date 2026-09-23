@@ -19,6 +19,27 @@ test('each skill is named after its folder and is model-invoked or typed-only pe
   }
 });
 
+test('Relay ships grill, tdd and codebase-design model-invoked; spec, tickets and implement typed-only', () => {
+  for (const name of ['grill', 'tdd', 'codebase-design']) assert.doesNotMatch(frontmatter(name), /disable-model-invocation/, name);
+  for (const name of ['spec', 'tickets', 'implement']) assert.match(frontmatter(name), /^disable-model-invocation: true$/m, name);
+  assert.match(frontmatter('grill'), /grill|stress-test/);
+});
+
+test('implement stops with a message, never waits, outside a git repo or with uncommitted changes', () => {
+  const body = read('skills/implement/SKILL.md');
+  assert.match(body, /^- Not inside a git repo.*→ stop: say/im);
+  assert.match(body, /^- Uncommitted changes.*→ stop and ask/im);
+  assert.match(body, /never (hang|wait)/i);
+});
+
+test('implement runs one foreground msnc:implementer per ticket and uses the Scope index when present', () => {
+  const body = read('skills/implement/SKILL.md');
+  assert.match(body, /ONE `msnc:implementer` subagent in the foreground/);
+  assert.match(body, /\/msnc:scope init/);
+  assert.match(body, /sextant impact/);
+  assert.match(body, /sextant check/);
+});
+
 test('trim triggers on code work', () => {
   assert.match(frontmatter('trim'), /coding task: writing, adding, refactoring, fixing, reviewing, or designing/);
 });

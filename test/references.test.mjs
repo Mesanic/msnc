@@ -12,6 +12,9 @@ const root = fileURLToPath(new URL('..', import.meta.url));
 const PENDING = {
   scope: '07-scope-module',
   explorer: '08-agents',
+  implementer: '08-agents',
+  setup: '06-calibrate-and-helper-skills',
+  verify: '06-calibrate-and-helper-skills',
 };
 
 const exists = (name) =>
@@ -32,6 +35,40 @@ test('every msnc:<name> in skills, context, hooks and the README resolves to a s
     for (const [, name] of read(f).matchAll(/(?<![\w-])\/?msnc:([a-z][a-z0-9-]*)/g))
       if (!exists(name) && !PENDING[name]) missing.push(`${f}: msnc:${name}`);
   assert.deepEqual(missing, []);
+});
+
+// Claude Code built-ins that MSNC texts may name as bare slash commands.
+const BUILTIN = new Set(['plugin', 'code-review']);
+
+// Bare `/name` commands and `name` skills that are neither msnc:<name> nor a built-in: leftover upstream names.
+function strayRefs(text) {
+  const out = [];
+  for (const [, name] of text.matchAll(/(?<=^|[\s`(])\/([a-z][a-z0-9-]*(?::[a-z][a-z0-9-]*)?)(?![\w:/-]|\.\w)/gm))
+    if (!name.startsWith('msnc:') && !BUILTIN.has(name)) out.push(`/${name}`);
+  for (const [list] of text.matchAll(/(?:`[^`\n]+`(?:,? (?:and|or) |, )?)+ skills?\b/g))
+    for (const [, name] of list.matchAll(/`\/?([^`]+)`/g))
+      if (!name.startsWith('msnc:')) out.push(`${name} skill`);
+  return out;
+}
+
+test('stray reference check flags upstream commands and skills, not paths, code or built-ins', () => {
+  const text = [
+    'Run a `/grilling` session, then /setup-matt-pocock-skills. Suggest `/verification-loop`.',
+    'See the `code-review` skill. Load the `ponytail:ponytail` and `tdd` skills.',
+    'Fine: `/msnc:grill`, /msnc:trim-review. The built-in `/code-review`. /plugin install msnc@msnc',
+    "Fine: .scratch/<feature>/issues, feature/<slug>, fetch('/orders'), /users/${id}, s.replace(/x/g, ''), the `msnc:tdd` skill.",
+  ].join('\n');
+  assert.deepEqual(strayRefs(text), [
+    '/grilling', '/setup-matt-pocock-skills', '/verification-loop',
+    'code-review skill', 'ponytail:ponytail skill', 'tdd skill',
+  ]);
+});
+
+test('every slash command and skill named in skills, context and the README is MSNC or a Claude Code built-in', () => {
+  const hits = [];
+  for (const f of shipped.filter((f) => /^(skills|context|agents|commands)\/.*\.md$|^README\.md$/.test(f) && !f.endsWith('UPSTREAM.md')))
+    for (const s of strayRefs(read(f))) hits.push(`${f}: ${s}`);
+  assert.deepEqual(hits, []);
 });
 
 test('pending names are not built yet (drop a name from PENDING when its ticket lands)', () => {

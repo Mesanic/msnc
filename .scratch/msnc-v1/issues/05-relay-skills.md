@@ -26,8 +26,16 @@
 
 **Blocked by:** 02
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] The references test passes: every skill or command mentioned exists in MSNC or is a Claude Code built-in.
-- [ ] `implement` stops with a clear message, never hangs, when run outside a git repo or with uncommitted changes.
-- [ ] Every copied folder has LICENSE and UPSTREAM.md.
+- [x] The references test passes: every skill or command mentioned exists in MSNC or is a Claude Code built-in.
+- [x] `implement` stops with a clear message, never hangs, when run outside a git repo or with uncommitted changes.
+- [x] Every copied folder has LICENSE and UPSTREAM.md.
+
+## Comments
+
+- 2026-09-23 · Copied from pinned mattpocock v1.2.3 `6acc160` (all five folders exist there), not the local clone `c55ee46` · ticket 02 pins the latest release · move the pin in `vendor.json` and recopy.
+- `agents/openai.yaml` (Codex metadata) not copied; shows as "upstream only" in sync reports.
+- The author's implement skill had no CSS/HTML stop condition, so ticket 07 has nothing to drop.
+- For ticket 07: "has a Scope index but it's missing" is read as `.gitignore` lists `.atlas/` but the folder is absent; the rescan is written as "`/msnc:scope init` again". Confirm or rename both.
+- "Stops outside a git repo / with uncommitted changes" is covered by skill text plus a wording test; not run live (CLI auth expired).

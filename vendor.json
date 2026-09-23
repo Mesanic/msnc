@@ -32,8 +32,21 @@
     "ref": "v1.2.3",
     "commit": "6acc160e4e0cd062dbbbd7a1b26ae92855edf07e",
     "license": "MIT",
-    "paths": {},
-    "changes": []
+    "paths": {
+      "skills/grill": "skills/productivity/grilling",
+      "skills/spec": "skills/engineering/to-spec",
+      "skills/tickets": "skills/engineering/to-tickets",
+      "skills/tdd": "skills/engineering/tdd",
+      "skills/codebase-design": "skills/engineering/codebase-design"
+    },
+    "changes": [
+      "Skills renamed grilling, to-spec, to-tickets → grill, spec, tickets; tdd and codebase-design keep their names",
+      "grill: grill-me (a typed alias that ran /grilling) merged in; typed as /msnc:grill, still model-invoked",
+      "Cross-references: /grilling → /msnc:grill, /setup-matt-pocock-skills → /msnc:setup, /codebase-design → /msnc:codebase-design, the code-review skill → the built-in /code-review",
+      "spec, tickets: tracker read from docs/agents/issue-tracker.md; none there → the local Markdown tracker under .scratch/<feature-slug>/",
+      "Not copied: agents/openai.yaml (Codex harness metadata)",
+      "Details in each folder's UPSTREAM.md"
+    ]
   },
   {
     "repo": "affaan-m/ECC",
