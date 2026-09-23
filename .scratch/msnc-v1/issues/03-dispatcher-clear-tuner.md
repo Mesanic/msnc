@@ -29,12 +29,20 @@ Tuner's starting text (~150 tokens):
 
 **Blocked by:** 01
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] `node:test` cases pass for:
+- [x] `node:test` cases pass for:
   - each event's output, given the event JSON, option env vars and session state
   - "normal mode" and `/msnc:trim` parsing (whole-message match only)
   - state isolation between two session ids
-- [ ] With `clear` off, neither main-session nor subagent output contains Clear.
-- [ ] The hook never blocks on stdin (timeout fallback) and never exits non-zero on bad input.
-- [ ] A timing script prints the cold-run time, targeting under 100 ms on the author's Windows machine.
+- [x] With `clear` off, neither main-session nor subagent output contains Clear.
+- [x] The hook never blocks on stdin (timeout fallback) and never exits non-zero on bad input.
+- [x] A timing script prints the cold-run time, targeting under 100 ms on the author's Windows machine.
+
+## Comments
+
+- 2026-09-23 · Trim texts live at `skills/trim/levels/<lite|full|ultra>.md` (ticket 04 writes them); a missing file injects nothing · keeps the dispatcher free of ponytail content.
+- Commands match the whole message only; case, repeated spaces and trailing `. ! ?` are ignored. Bare `/msnc:trim` reports the level. "normal mode" has no undo for Clear in that session; `/msnc:trim <level>` turns Trim back on.
+- Subagents read the parent's state by `session_id`. SessionStart source `fork` is not handled.
+- Not verified live: that a typed `/msnc:trim` reaches UserPromptSubmit as literal text, and that hooks.json exec form (`command` + `args`) loads on 2.1.268. The local `claude -p` smoke run failed with "OAuth session expired".
+- Cold run 40.5 ms (target < 100 ms). Old session files are never cleaned up.
