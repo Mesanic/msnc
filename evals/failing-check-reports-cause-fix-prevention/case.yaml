@@ -1,0 +1,6 @@
+schema_version: "1.1"
+name: failing-check-reports-cause-fix-prevention
+description: /msnc:implement on a repo whose test suite already fails stops and reports cause, fix and a recipe-change prevention, with no blame wording.
+tags: [pacing, relay]
+context:
+  scaffold_script: fixture.sh

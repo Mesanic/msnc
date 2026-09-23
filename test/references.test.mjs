@@ -66,6 +66,27 @@ test('every slash command and skill named in skills, context and the README is M
   assert.deepEqual(hits, []);
 });
 
+// Spec "Human pacing" (ticket 15): failures are reported without blame. Phrases that pin a failure on a person.
+const BLAME = /\b(you should have|you should've|you forgot|you failed to|you broke|your fault|whose fault|mistake by|fault of)\b/gi;
+const blame = (text) => [...text.matchAll(BLAME)].map((m) => m[0].toLowerCase());
+
+test('blame check flags wording that pins a failure on someone, not neutral failure reports', () => {
+  const text = [
+    'You should have run the tests. That was your fault. A mistake by the implementer. You forgot the import.',
+    'Cause: the import is missing at src/a.js:3. Fix: add it. Prevention: a recipe note. `git blame` shows the line.',
+  ].join('\n');
+  assert.deepEqual(blame(text), ['you should have', 'your fault', 'mistake by', 'you forgot']);
+});
+
+// Upstream copies are scanned too: they ship under MSNC's name. A sync that brings blame wording in fails
+// here and gets a local change. Exempt: evals (graders name the phrases they reject) and the credit records.
+test('no shipped text uses blame wording', () => {
+  const hits = [];
+  for (const f of shipped.filter((f) => /\.(md|mjs|json|html)$/.test(f) && !/^evals\//.test(f) && !/(^vendor\.json|UPSTREAM\.md)$/.test(f)))
+    for (const b of blame(read(f))) hits.push(`${f}: ${b}`);
+  assert.deepEqual(hits, []);
+});
+
 test('pending names are not built yet (drop a name from PENDING when its ticket lands)', () => {
   assert.deepEqual(Object.keys(PENDING).filter(exists), []);
 });

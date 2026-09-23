@@ -116,9 +116,11 @@ Scope:     [PASS/FAIL/SKIPPED]
 Overall:   [READY/NOT READY] for PR
 
 Issues to Fix:
-1. ...
+1. <cause> · <fix> · <prevention>
 2. ...
 ```
+
+Each issue: **Cause** (what failed, `file:line`, expected vs got) · **Fix** (what makes it pass) · **Prevention**: the recipe change that stops a repeat, proposed through `/msnc:refine <recipe>` (the recipe the work followed) or as a recipe note. Say what happened, not who did it.
 
 ## Continuous Mode
 

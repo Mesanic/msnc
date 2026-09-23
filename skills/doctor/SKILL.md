@@ -32,7 +32,7 @@ node "${CLAUDE_SKILL_DIR}/doctor.mjs"
 
 It prints one line per finding. Put the lines at the top of the report, and give each flagged line its fix:
 
-- `Options:` MSNC's three options (`/config` changes them). No fix; context for the rest.
+- `Options:` MSNC's four options (`/config` changes them). No fix; context for the rest.
 - `Always loaded:` what every session pays before work starts (Tuner, Clear, Trim when on by default, model-invoked skill descriptions). MSNC's own share is small; a big number here means Clear or `trim_default` choices, not bloat.
 - `Duplicate skills: plugin <id> has …` another enabled plugin ships a skill MSNC ships (by MSNC name or by the upstream name MSNC copied). Turn that plugin off with `/plugin`, or keep it and accept two skills answering the same prompt.
 - `Duplicate skills: <folder> has …` personal (`~/.claude/skills`) or project skills MSNC now ships. `/msnc:declutter` moves them to trash.

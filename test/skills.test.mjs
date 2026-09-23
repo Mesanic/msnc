@@ -35,7 +35,7 @@ test('setup shows every settings change and writes only after a yes, and pins no
   assert.match(body, /Before changing any file.*show the exact change/);
   assert.match(body, /anything but yes → write nothing/);
   assert.match(body, /one yes per change/i);
-  for (const s of ['`clear`', '`trim_default`', '`scope_gate`', 'context-mode', 'ctx_purge', 'ctx_upgrade', 'docs/agents/issue-tracker.md', '/msnc:scope init', 'CLAUDE_CODE_SUBAGENT_MODEL', 'claude-opus-5-5'])
+  for (const s of ['`clear`', '`trim_default`', '`scope_gate`', '`pace` (default 3)', 'context-mode', 'ctx_purge', 'ctx_upgrade', 'docs/agents/issue-tracker.md', '/msnc:scope init', 'CLAUDE_CODE_SUBAGENT_MODEL', 'claude-opus-5-5'])
     assert.ok(body.includes(s), s);
   assert.match(body, /MSNC itself pins no model/);
 });
@@ -106,6 +106,34 @@ test('implement puts the ticket\'s why in each commit body, deriving it for a ti
   assert.match(body, /message `<feat\|fix\|refactor>: <ticket title>`, then a body line `Why: <the ticket's Why line>`/);
   assert.match(body, /No Why line \(older tickets\) → derive it from the user story the ticket or its spec links, else from its What to build/);
   assert.match(body, /`\*\*Why:\*\* … \(derived\)`/);
+});
+
+// Spec "Human pacing" (ticket 15): a stop offered every `pace` tickets; stopping writes a handoff.
+test('implement offers a stop every pace tickets and stopping writes a handoff and shows the state line', () => {
+  const body = read('skills/implement/SKILL.md');
+  assert.ok(body.includes('`${user_config.pace}`'), 'pace from /config');
+  assert.match(body, /`pace <n>` in the arguments overrides it for this run/);
+  assert.match(body, /0 → never offer a stop/);
+  assert.match(body, /every `pace` tickets done in this run, and another ticket is left/);
+  assert.ok(body.includes('`${CLAUDE_SKILL_DIR}/../handoff/SKILL.md`'), 'handoff is typed-only: read, not invoked');
+  assert.match(body, /Stop → write the handoff .*then show the state line and the handoff's path/);
+  assert.match(frontmatter('implement'), /^argument-hint: .*pace <n>/m);
+});
+
+// Spec "Human pacing" (ticket 15): a failure improves the system; prevention is a recipe change.
+const PREVENTION = /\*\*Prevention\*\*.*`\/msnc:refine <recipe>`.*recipe note/;
+
+test('implement and verify report every failure as cause, fix and prevention', () => {
+  const implement = read('skills/implement/SKILL.md');
+  assert.match(implement, /Failing before you start → stop and report it as below/);
+  assert.match(implement, /^- \*\*Cause\*\*: .*`file:line`, expected vs got/m);
+  assert.match(implement, /^- \*\*Fix\*\*: .*recommended answer/m);
+  assert.match(implement, PREVENTION);
+  assert.match(implement, /Say what happened, not who did it/);
+  const verify = read('skills/verify/SKILL.md');
+  assert.match(verify, /1\. <cause> · <fix> · <prevention>/);
+  assert.match(verify, PREVENTION);
+  assert.match(read('skills/verify/UPSTREAM.md'), /^- Issues to Fix .*cause · fix · prevention/m);
 });
 
 // Spec "Decide to Decide" (ticket 13): one reply takes every recommendation; every accepted answer is logged.
@@ -208,6 +236,7 @@ test('refine reads context-mode memory or the transcripts, proposes exactly one 
 
 test('doctor explains the recipe-use lines', () => {
   const body = read('skills/doctor/SKILL.md');
+  assert.match(body, /`Options:` MSNC's four options/);
   assert.match(body, /`Recipes unused 30\+ days:`/);
   assert.match(body, /`Most-corrected recipes:`/);
   assert.match(body, /\/msnc:refine/);

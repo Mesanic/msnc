@@ -8,7 +8,7 @@ disable-model-invocation: true
 
 Walk the user through the choices MSNC leaves to them:
 
-- **Options** — MSNC's three `/config` switches
+- **Options** — MSNC's four `/config` options
 - **Quiet** — the optional context-mode companion, and `ask` rules for its two destructive tools
 - **Issue tracker** — where `/msnc:spec`, `/msnc:tickets` and `/msnc:implement` read and write tickets (local markdown by default)
 - **Scope index** — `/msnc:scope init` for the current repo
@@ -43,6 +43,7 @@ Lead each section with the recommended answer so the user can accept it in a wor
 - `clear` (default on) — the focus reply shape in the main session and in subagents. The exact message "normal mode" drops it for one session.
 - `trim_default` (default off) — Trim's level at session start. off = Trim loads when code work starts; lite, full or ultra = on from the first message.
 - `scope_gate` (default on) — route code searches through the Scope index when a repo has one.
+- `pace` (default 3) — `/msnc:implement` offers a stop after this many tickets, writing a handoff if you take it. 0 = never offer one.
 
 The user changes these in `/config` (the MSNC rows). This skill never writes them.
 

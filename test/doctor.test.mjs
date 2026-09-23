@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import { mkdtempSync, mkdirSync, rmSync, utimesSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { doctor } from '../skills/doctor/doctor.mjs';
 
 const base = mkdtempSync(join(tmpdir(), 'msnc-doctor-'));
@@ -40,6 +41,13 @@ test('options line shows each MSNC option, the user\'s value over the default', 
   const home = fixture({ '.claude/settings.json': { pluginConfigs: { 'msnc@msnc': { options: { trim_default: 'full', clear: false } } } } });
   assert.equal(line(doctor({ home, cwd: fixture(), root: msnc() }), 'Options:'), 'Options: clear off, trim_default full, scope_gate on');
   assert.equal(line(doctor({ home: fixture(), cwd: fixture(), root: msnc() }), 'Options:'), 'Options: clear on, trim_default off, scope_gate on');
+});
+
+test('options line lists every option the shipped manifest declares, pace included', () => {
+  const root = fileURLToPath(new URL('..', import.meta.url));
+  assert.equal(line(doctor({ home: fixture(), cwd: fixture(), root }), 'Options:'), 'Options: clear on, trim_default off, scope_gate on, pace 3');
+  const home = fixture({ '.claude/settings.json': { pluginConfigs: { 'msnc@msnc': { options: { pace: 0 } } } } });
+  assert.match(line(doctor({ home, cwd: fixture(), root }), 'Options:'), /, pace 0$/);
 });
 
 test('always-loaded estimate counts Tuner, Clear when on, Trim when on by default, and model-invoked skill descriptions', () => {
