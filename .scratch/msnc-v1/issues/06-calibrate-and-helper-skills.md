@@ -1,0 +1,34 @@
+# 06: Calibrate and helper skills
+
+**What to build:** Seven typed-only skills:
+- **aside:** from ECC `commands\aside.md`.
+- **rephrase:** from mattpocock `wait-what`. It should work without a `CONTEXT.md` when the repo has none.
+- **handoff:** from mattpocock.
+- **verify:** ECC verification-loop, plus a `sextant check` step when the repo is indexed.
+- **doctor:** ECC context-budget, plus MSNC checks:
+  - which MSNC options are on
+  - an estimate of the always-loaded tokens
+  - duplicate skills from other enabled plugins, such as `mattpocock-skills` or `ecc`
+  - project-level plugin settings that conflict with MSNC
+  - old three-folder atlas/scalpel/sextant layouts in the current repo
+- **declutter:** ECC config-gc. Keep its rules: move to trash first, ask per item.
+- **setup:**
+  - walks through the three options
+  - offers the context-mode install and `ask` rules for `ctx_purge` and `ctx_upgrade`
+  - writes the local tracker config to `docs/agents/`
+  - offers `/msnc:scope init` for the current repo
+  - explains how subagent models are chosen and, after a yes, sets a default with `CLAUDE_CODE_SUBAGENT_MODEL` in the user's `env`. A model id such as `claude-opus-5-5` pins a version; an alias follows the family. MSNC itself pins nothing.
+
+**Context:**
+- ECC 2.2.0 cache: `skills\verification-loop`, `skills\context-budget`, `skills\config-gc`, `commands\aside.md`.
+- mattpocock clone: `skills\productivity\wait-what`, `skills\productivity\handoff`, and `skills\engineering\setup-matt-pocock-skills` (including `issue-tracker-local.md`).
+- The duplicates and conflicts doctor should find on this machine: project settings in `Desktop\AI Projects\Jarvis` (full mattpocock-skills plugin on) and `Hackathon` (ecc on, ponytail off).
+
+**Blocked by:** 02
+
+**Status:** ready-for-agent
+
+- [ ] All seven skills have `disable-model-invocation: true`.
+- [ ] Run on this machine, doctor flags the Jarvis and Hackathon project settings.
+- [ ] setup shows every settings change and waits for a yes before writing.
+- [ ] Every copied folder has LICENSE and UPSTREAM.md.
