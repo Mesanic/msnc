@@ -78,7 +78,16 @@
     "ref": "main",
     "commit": "2fa30a379e707e959cae398a80c553c063b2a0df",
     "license": "MIT",
-    "paths": {},
-    "changes": []
+    "paths": {
+      "skills/scope": "."
+    },
+    "changes": [
+      "Copy = pin + patches/sextant/0001 (impact answers CSS/HTML from the file graph and records the entry) and 0002 (scan --no-claude-md); not yet upstream, so sync --check reports scripts/impact-fallback.test.mjs as local only (and part of the scripts/sextant.mjs change) until the pin moves",
+      "Repo root copied to skills/scope as the scope skill; SKILL.md rewritten for MSNC (model-invoked, CLI via ${CLAUDE_SKILL_DIR}, /msnc:scope init)",
+      "sextant.mjs: scan never writes project hooks or a CLAUDE.md block (MSNC dispatcher is the gate, Tuner the routing)",
+      "Edit gate rebuilt in hooks/msnc.mjs from scripts/pre-edit-hook.mjs",
+      "Not copied: grep-nudge-hook.mjs (dropped), pre-edit-hook.mjs, session-hook.mjs, README.md, .gitignore, .gitattributes",
+      "Details in skills/scope/UPSTREAM.md"
+    ]
   }
 ]

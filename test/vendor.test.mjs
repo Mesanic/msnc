@@ -53,6 +53,15 @@ test('check compares a single upstream file (a command) with the copy folder\'s 
   assert.deepEqual(checkUpstream(aside, up, edited, MIT), ['skills/aside: changed: SKILL.md', 'skills/aside: local only: extra.md']);
 });
 
+test('check compares a folder copied from the upstream root ("."), ignoring the checkout\'s .git', () => {
+  const up = fixture({ LICENSE: MIT, 'README.md': 'r\n', 'scripts/a.mjs': 'a\n', '.git/HEAD': 'ref\n' });
+  const local = fixture({ 'skills/s/scripts/a.mjs': 'a\n', 'skills/s/SKILL.md': 'ours\n', 'skills/s/LICENSE': MIT, 'skills/s/UPSTREAM.md': 'n\n' });
+  assert.deepEqual(checkUpstream(entry({ 'skills/s': '.' }), up, local, MIT), [
+    'skills/s: upstream only: README.md',
+    'skills/s: local only: SKILL.md',
+  ]);
+});
+
 test('check says "nothing copied yet" for an upstream with no copied paths', () => {
   assert.deepEqual(checkUpstream(entry({}), fixture({ LICENSE: MIT }), fixture({}), MIT), ['nothing copied yet']);
 });

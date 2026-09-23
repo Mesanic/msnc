@@ -108,3 +108,16 @@ test('each level text is the trim skill filtered to that level, as ponytail inje
     assert.doesNotMatch(text, /^name:/m);
   }
 });
+
+test('scope is model-invoked with a short description and gives the CLI path, init mode and core loop', () => {
+  const fm = frontmatter('scope');
+  const description = /^description: (.+)$/m.exec(fm)[1];
+  assert.ok(description.length <= 200, `${description.length} characters`);
+  const body = read('skills/scope/SKILL.md');
+  assert.ok(body.includes('node "${CLAUDE_SKILL_DIR}/scripts/sextant.mjs"'), 'CLI path');
+  assert.match(body, /`\/msnc:scope init`/);
+  assert.match(body, /\$ARGUMENTS/);
+  for (const cmd of ['map', 'query', 'locate', 'impact', 'slice', 'check', 'scan']) assert.match(body, new RegExp(`\\$S ${cmd}\\b`), cmd);
+  assert.match(body, /no hooks? and no `CLAUDE\.md` block/i);
+  assert.match(body, /CSS|HTML/);
+});

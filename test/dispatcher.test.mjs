@@ -184,10 +184,18 @@ test('the shipped Trim texts load per level and keep Tuner + Clear + Trim under 
   }
 });
 
-test('hooks.json sends exactly the ticket-03 events to the dispatcher, exec form', () => {
+test('hooks.json sends exactly the ticket-03 and Scope gate events to the dispatcher, exec form', () => {
   const { hooks } = JSON.parse(readFileSync(new URL('../hooks/hooks.json', import.meta.url), 'utf8'));
-  assert.deepEqual(Object.keys(hooks).sort(), ['SessionStart', 'SubagentStart', 'UserPromptSubmit']);
+  assert.deepEqual(Object.keys(hooks).sort(), ['PreToolUse', 'SessionStart', 'SubagentStart', 'UserPromptSubmit']);
   assert.equal(hooks.SessionStart[0].matcher, 'startup|resume|clear|compact');
+  // The gate: every file-writing tool call, and only the Bash calls whose command word writes files.
+  const [files, bash] = hooks.PreToolUse;
+  assert.equal(files.matcher, 'Edit|Write|MultiEdit|NotebookEdit');
+  assert.equal(files.hooks.length, 1);
+  assert.equal(files.hooks[0].if, undefined);
+  assert.equal(bash.matcher, 'Bash');
+  assert.deepEqual(bash.hooks.map((h) => h.if),
+    ['sed', 'perl', 'ruby', 'tee', 'cp', 'mv', 'install', 'rsync', 'rm', 'unlink', 'truncate', 'shred', 'dd'].map((w) => `Bash(${w} *)`));
   for (const [event, groups] of Object.entries(hooks)) {
     for (const h of groups.flatMap((g) => g.hooks)) {
       assert.equal(h.command, 'node', event);

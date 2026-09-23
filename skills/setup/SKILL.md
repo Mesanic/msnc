@@ -64,7 +64,7 @@ Default posture: **local markdown** — MSNC's skills use it when no tracker is 
 
 Record the choice in `docs/agents/issue-tracker.md`.
 
-**Section D — Scope index.** Skip when `.atlas/` exists or the repo has no code. Otherwise offer `/msnc:scope init` for the current repo: it builds the code map that impact checks and searches use, writes only index data (`.atlas/`), and adds no hooks and no `CLAUDE.md` block. Recommended: **yes** for a code repo. Run it only after the yes.
+**Section D — Scope index.** Skip when `.atlas/` exists or the repo has no code. Otherwise offer `/msnc:scope init` for the current repo: it builds the code map that impact checks and searches use, writes only index data (`.atlas/`, `.map/` and their `.gitignore` lines), and adds no hooks and no `CLAUDE.md` block. Recommended: **yes** for a code repo. Run it only after the yes.
 
 **Section E — Subagent model.** Explain how the model is chosen: MSNC's agents pin no `model` or `effort`, so every subagent uses `CLAUDE_CODE_SUBAGENT_MODEL` when it is set, and otherwise Claude Code's own default for subagents; effort follows the session. Show the current value.
 

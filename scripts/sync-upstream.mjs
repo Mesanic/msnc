@@ -9,13 +9,13 @@ import { spawnSync } from 'node:child_process';
 const norm = (s) => s.replace(/\r\n/g, '\n');
 const read = (p) => norm(readFileSync(p, 'latin1'));
 
-// Files under dir as '/'-separated relative paths; the folder's own credit files are not upstream content.
+// Files under dir as '/'-separated relative paths; the folder's own credit files and a checkout's .git are not upstream content.
 const files = (dir) =>
   existsSync(dir)
     ? readdirSync(dir, { recursive: true, withFileTypes: true })
         .filter((e) => e.isFile())
         .map((e) => relative(dir, join(e.parentPath, e.name)).replaceAll('\\', '/'))
-        .filter((f) => f !== 'LICENSE' && f !== 'UPSTREAM.md')
+        .filter((f) => f !== 'LICENSE' && f !== 'UPSTREAM.md' && !f.startsWith('.git/'))
     : [];
 
 // A single upstream file (an upstream command) is copied as the folder's SKILL.md.
@@ -55,7 +55,8 @@ function fetchUpstream({ repo, commit, paths }, dir) {
   git(dir, 'remote', 'add', 'origin', `https://github.com/${repo}`); // named remote so checkout can lazy-load blobs
   git(dir, 'fetch', '-q', '--depth', '1', '--filter=blob:none', 'origin', commit);
   // Sparse + full checkout, not `checkout -- <paths>`: only a full checkout lazy-loads the filtered blobs.
-  git(dir, 'sparse-checkout', 'set', '--no-cone', '/LICENSE', ...Object.values(paths).map((p) => `/${p}`)); // no trailing slash: a path may be a file
+  // No trailing slash: a path may be a file. '.' is the whole repo.
+  git(dir, 'sparse-checkout', 'set', '--no-cone', '/LICENSE', ...Object.values(paths).map((p) => (p === '.' ? '/*' : `/${p}`)));
   git(dir, 'checkout', '-q', 'FETCH_HEAD');
 }
 

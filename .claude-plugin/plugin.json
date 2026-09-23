@@ -21,7 +21,7 @@
     "scope_gate": {
       "type": "boolean",
       "title": "Scope gate",
-      "description": "Route code searches through the Scope index when one exists",
+      "description": "Refuse edits to files in the Scope index until sextant impact has run on them",
       "default": true
     }
   }

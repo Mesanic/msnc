@@ -10,7 +10,6 @@ const root = fileURLToPath(new URL('..', import.meta.url));
 
 // Referenced before the ticket that builds them lands. Each ticket deletes its own names from here.
 const PENDING = {
-  scope: '07-scope-module',
   explorer: '08-agents',
   implementer: '08-agents',
 };
@@ -62,9 +61,10 @@ test('stray reference check flags upstream commands and skills, not paths, code 
   ]);
 });
 
+// The Scope engine's own reference docs are upstream engine internals, not text MSNC routes by.
 test('every slash command and skill named in skills, context and the README is MSNC or a Claude Code built-in', () => {
   const hits = [];
-  for (const f of shipped.filter((f) => /^(skills|context|agents|commands)\/.*\.md$|^README\.md$/.test(f) && !f.endsWith('UPSTREAM.md')))
+  for (const f of shipped.filter((f) => /^(skills|context|agents|commands)\/.*\.md$|^README\.md$/.test(f) && !f.endsWith('UPSTREAM.md') && !f.startsWith('skills/scope/engine/')))
     for (const s of strayRefs(read(f))) hits.push(`${f}: ${s}`);
   assert.deepEqual(hits, []);
 });
