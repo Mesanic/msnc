@@ -81,6 +81,18 @@ test('/msnc:implement dispatches msnc:implementer and leaves the per-ticket rule
   assert.doesNotMatch(brief, /commit|msnc:trim|msnc:tdd|Report:/i, 'the agent carries these');
 });
 
+// Spec "A why in every delegation" (ticket 14): outcome, why, recipe, done-check in the brief; report format in the agent.
+test('every implementer brief carries the outcome, the why, the recipe, the done-check and the report format', () => {
+  const skill = read('skills/implement/SKILL.md');
+  const brief = /^ {3}> (.+)$/m.exec(skill)[1];
+  for (const part of ['Outcome: ', 'Why: ', 'Recipe: ', 'Done-check: ']) assert.ok(brief.includes(part), `brief: ${part}`);
+  assert.match(skill, /fresh subagent with the same brief plus the failure output/, 'the retry brief too');
+  const { body } = agent('implementer');
+  assert.match(body, /Your brief gives the outcome, the why, the recipe to follow and the done-check/);
+  assert.match(body, /Use the why for the judgment calls the ticket leaves open/);
+  assert.match(body, /^Report:$/m, 'report format');
+});
+
 // Spec "Just enough sizing" (ticket 12): Tuner and the planner size the same way, with ECC orch-pipeline's signals.
 const assertSizing = (text, who) => {
   assert.match(text, /^(?=.*one line)(?=.*size)(?=.*why)/im,`${who}: states size and why in one line`);

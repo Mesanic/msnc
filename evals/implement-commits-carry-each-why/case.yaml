@@ -1,0 +1,6 @@
+schema_version: "1.1"
+name: implement-commits-carry-each-why
+description: /msnc:implement on a two-ticket fixture makes one commit per ticket whose body carries that ticket's Why line.
+tags: [why, relay]
+context:
+  scaffold_script: fixture.sh

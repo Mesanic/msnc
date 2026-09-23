@@ -10,5 +10,6 @@
 - Skill renamed `to-tickets` → `tickets` (typed as `/msnc:tickets`; `disable-model-invocation: true` kept from upstream).
 - Tracker line: same change as `spec`: tracker from `docs/agents/issue-tracker.md`, written by `/msnc:setup`; none there → the local Markdown tracker under `.scratch/<feature-slug>/`.
 - "`/setup-matt-pocock-skills` configured" → "`/msnc:setup` configured" (step 5).
+- Why line (MSNC ticket 14): both templates open with `**Why:** User story <N>. <purpose>` (`## Why` on a real tracker), the quiz shows each ticket's Why, and step 5 refuses to publish a ticket without a Why line linked to a user story.
 - Line endings normalized to LF.
 - Not copied: `agents/openai.yaml` (Codex harness metadata; MSNC targets Claude Code only).

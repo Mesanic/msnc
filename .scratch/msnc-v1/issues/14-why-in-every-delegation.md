@@ -14,8 +14,15 @@
 
 **Blocked by:** 04, 05, 08
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] A fixture run of `/msnc:implement` produces commits whose bodies contain each ticket's why.
-- [ ] The tickets skill refuses a ticket with no Why line.
-- [ ] Trim's text contains the why question, and UPSTREAM.md lists the change.
+- [x] (Eval written, run in ticket 09) A fixture run of `/msnc:implement` produces commits whose bodies contain each ticket's why.
+- [x] The tickets skill refuses a ticket with no Why line.
+- [x] Trim's text contains the why question, and UPSTREAM.md lists the change.
+
+## Comments
+
+- 2026-09-23 · A ticket with no Why line gets one derived (linked user story, else "What to build"), written into the ticket as `**Why:** … (derived)` in that ticket's commit · keeps runs from stalling on older tickets · switch to asking in `skills/implement/SKILL.md`.
+- The brief passes the recipe as a path to its SKILL.md (recipes are typed-only, so the implementer can't invoke them via the Skill tool). Side effect: recipe notes (added after a Skill call) don't reach the implementer.
+- Trim level files regenerated with ponytail's `filterSkillBodyForMode` at `1d95ff7` (verified byte-for-byte against the previous files first); ultra SubagentStart output 8,313 chars.
+- The eval checks the `git commit` command in the trace, so `git commit -F file` would not match. ProcessDriven credit for the why rule is left to ticket 10.

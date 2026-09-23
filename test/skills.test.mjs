@@ -45,6 +45,17 @@ test('setup\'s local tracker template is this repo\'s tracker file without its f
   assert.equal(read('skills/setup/issue-tracker-local.md'), repo);
 });
 
+// Spec "A why in every delegation" (ticket 14): each ticket's Why links a user story; none → not published.
+test('tickets gives every ticket a Why line linked to a user story and refuses to publish one without it', () => {
+  const body = read('skills/tickets/SKILL.md');
+  const local = /<local-ticket-template>([\s\S]*?)<\/local-ticket-template>/.exec(body)[1];
+  const issue = /<issue-template>([\s\S]*?)<\/issue-template>/.exec(body)[1];
+  assert.match(local, /^\*\*Why:\*\* User story <N>\. /m, 'local template');
+  assert.match(issue, /^## Why\n\nUser story <N>\. /m, 'issue template');
+  assert.match(body, /- \*\*Why\*\*: the user story it serves/, 'shown in the quiz');
+  assert.match(body, /Never publish a ticket without a Why line linked to a user story/);
+});
+
 test('rephrase uses CONTEXT.md only when the repo has one', () => {
   assert.match(read('skills/rephrase/SKILL.md'), /when the repo has a `CONTEXT\.md`, use its ubiquitous language/);
 });
@@ -89,6 +100,14 @@ test('implement records the decisions made inside a ticket in its ## Comments an
   assert.match(body, /the one decision you need, with your recommended answer/);
 });
 
+// Spec "A why in every delegation" (ticket 14): history explains itself.
+test('implement puts the ticket\'s why in each commit body, deriving it for a ticket without a Why line', () => {
+  const body = read('skills/implement/SKILL.md');
+  assert.match(body, /message `<feat\|fix\|refactor>: <ticket title>`, then a body line `Why: <the ticket's Why line>`/);
+  assert.match(body, /No Why line \(older tickets\) → derive it from the user story the ticket or its spec links, else from its What to build/);
+  assert.match(body, /`\*\*Why:\*\* … \(derived\)`/);
+});
+
 // Spec "Decide to Decide" (ticket 13): one reply takes every recommendation; every accepted answer is logged.
 test('grill offers "accept all" each round and logs every accepted answer in docs/decisions.md', () => {
   const body = read('skills/grill/SKILL.md');
@@ -100,6 +119,14 @@ test('grill offers "accept all" each round and logs every accepted answer in doc
 
 test('trim triggers on code work', () => {
   assert.match(frontmatter('trim'), /coding task: writing, adding, refactoring, fixing, reviewing, or designing/);
+});
+
+// Spec "A why in every delegation" (ticket 14): Trim asks for the why; a local change, so UPSTREAM.md lists it.
+const TRIM_WHY = '- New file, dependency or abstraction? Ask why it has to exist and state the why in one line with the change. No why → don\'t add it.';
+
+test('trim asks for the why behind every new file, dependency or abstraction, recorded as a local change', () => {
+  assert.ok(read('skills/trim/SKILL.md').includes(`\n${TRIM_WHY}\n`), 'a Rules bullet');
+  assert.match(read('skills/trim/UPSTREAM.md'), /^- Why rule \(MSNC ticket 14\): .*new file, dependency or abstraction/m);
 });
 
 // ponytail's hooks/ponytail-instructions.js at the pinned commit: drop the frontmatter, keep only this
@@ -122,6 +149,7 @@ test('each level text is the trim skill filtered to that level, as ponytail inje
       assert.equal(text.includes(`\n- ${l}: "`), l === level, `${level}: example ${l}`);
     }
     assert.match(text, /Scope index → `sextant impact`; otherwise grep every caller/);
+    assert.ok(text.includes(TRIM_WHY), `${level}: the why question`);
     assert.doesNotMatch(text, /^name:/m);
   }
 });

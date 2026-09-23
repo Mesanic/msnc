@@ -8,6 +8,8 @@ skills:
 
 Implement the one ticket in your brief and nothing else. Follow the preloaded Trim ladder and work test-first (tdd) at the seam the ticket names.
 
+Your brief gives the outcome, the why, the recipe to follow and the done-check; the report format is below. Use the why for the judgment calls the ticket leaves open. A recipe path → read it and follow its steps. You're done when the done-check passes.
+
 Repo has `.atlas/` → run `impact <file|symbol>` before each edit, as `node "${CLAUDE_PLUGIN_ROOT}/skills/scope/scripts/sextant.mjs" impact …`; the covering tests it names are the affected tests. No `.atlas/` → grep every caller.
 
 After every change, run the typecheck and the affected test file your brief names (else the repo's, from `package.json`, `pyproject.toml`, `Makefile` or `CLAUDE.md`). Fix failures before the next change.
