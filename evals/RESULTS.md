@@ -114,3 +114,25 @@ Probes were throwaway single-run cases, not part of the suite.
 - Passing runs made no Edit or Write and opened with round 1 of the grill (for example "Step 1 of 3 (grill → spec → tickets): round 1 of the design questions."). The stored `evidence` is cut at about 2,150 characters, so the size line and `/msnc:spec` weren't visible there; the judge voted PASS 9 of 9 on the full reply. Runs had no `--keep-temp`, so there are no traces.
 - Regression, `small-fix-goes-straight-to-edit` with `--judge-model sonnet` (the haiku judge is flaky, ticket 21): pass, 3/3 (1.00). Each run called Edit once, wrote no `.scratch/`, and opened with the fix ("`greet` in `src/greet.js:1` now returns `Hello, ${name}!`."), with no size overshoot.
 - `context/tuner.md` went from 800 to 783 characters. Wall clock 29–54 s per run; $0.44–0.61 per 3-run eval, $0.28 for the regression.
+
+## Rerun: reversible-name-is-decided-and-logged (ticket 19)
+
+**Date:** 2026-09-23 · **Claude Code:** 2.1.280 · **Model under test:** `claude-opus-5-5[1m]` · **Judge:** haiku · `--case reversible-name-is-decided-and-logged --ablation none --scaffold --allow-tools Edit Write --no-publish --trust-plugin -j 3`, graders unchanged.
+
+| Wording | Result | Rate | `docs/decisions.md` written |
+|---|---|---|---|
+| Before the change (after ticket 18) | **fail** | 0/3 (0.00) | 0/3 |
+| Trigger names the picks: "Reversible pick (name, file, lib) → one line: pick + why; log to …" | **fail** | 0/3 (0.00) | 0/3 |
+| Plus the line moved above the Trim line, next to the size line | **fail** | 0/3 (0.22) | 2/3 |
+| Plus "log each in `docs/decisions.md` and the reply" (the same line in both) | **fail** | 0/3 (0.33) | 3/3 |
+| "Reversible picks (name, file) → append `date · decision · why · undo` to `docs/decisions.md`; quote it in the reply." | **fail** | 1/3 (0.56) | 3/3 |
+| "Reversible picks → append `date · named X in Y · why · undo: rename/move` to …; quote it in reply." | **fail** | 1/3 (0.33) | 1/3 |
+| "Reversible name/file picks → append `date · named X in Y · why · undo: rename/move` to `docs/decisions.md`; quote it in reply." | **pass** | 3/3 (1.00) | 3/3 |
+
+- Every run loads `msnc:trim` first. With the Reversible line below the Trim line, Trim's rules won: "Fewest files possible", "New file … No why → don't add it" and "Code first. Then at most three short lines". Naming the trigger alone changed nothing. Moving the line above the Trim line is what got the log written.
+- `decided-and-logged` reads only `last_message`. With "log … and the reply", replies described the log in prose ("I logged this in `docs/decisions.md`. To undo, delete the two lines.") and the judge voted FAIL in all 9 runs; some logged the `Intl.NumberFormat` choice instead of the name. With "quote it in the reply", all 3 replies quoted the line. The judge passed "undo: move it or rename it" and failed "undo: delete the 2 lines" and "delete the function".
+- Naming the pick and its undo in the template ("named X in Y", "undo: rename/move") fixed the content, but without "name/file" in the trigger 2 of 3 runs logged nothing. With both, every reply quoted a line like `2026-09-23 · named formatCents in src/format.js · sits next to formatDate, the existing formatting helper · undo: rename/move`, and the judge voted PASS 9 of 9.
+- To make room: "Output to filter" became "Filtering", "result, or why none ran" lost its comma, and "Subagents: full findings with `file:line`" became "Subagents: full findings, `file:line`". Trade-off: the trigger no longer names library picks, and the template fits a name or file choice.
+- Regression, `multi-module-feature-starts-with-grill`: 3/3 (1.00). (The previous attempt's wording: 2/3, then 3/3 on a rerun.)
+- Regression, `small-fix-goes-straight-to-edit` with `--judge-model sonnet`: 2/3 (0.83), then 3/3 (1.00) on a rerun. The failing run, like one in the previous attempt, said "I haven't run the code" without saying why, after a first edit that dropped a space.
+- `context/tuner.md` went from 783 to 799 characters (cap 800). Wall clock 13–18 s per run; $0.35–0.37 per 3-run eval, $0.45 for the grill regression, $0.27 and $0.32 for the small-fix runs.

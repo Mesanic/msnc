@@ -125,9 +125,17 @@ test('the planner sizes the task the same way and opens its plan with the size',
 });
 
 // Spec "Decide to Decide" (ticket 13): decide and log reversible choices; ask only about irreversible ones.
+// Ticket 19: below the Trim line, runs loaded Trim and its "fewest files" won: the name was picked but never logged.
+// Above it, next to sizing, the log got written. The judge sees only the reply, and replies paraphrased the log
+// or logged the library instead of the name: the template names the pick and its undo, and the reply quotes it.
+// With a generic undo, the judge failed "undo: delete the 2 lines" and passed "undo: move it or rename it".
+// Without "name/file" in the trigger, 2 of 3 runs logged nothing.
 test('Tuner decides reversible choices and logs them, and asks one question with a recommendation otherwise', () => {
   const tuner = read('context/tuner.md');
-  assert.match(tuner, /^Reversible → decide, say it in one line, log to `docs\/decisions\.md`: date · decision · why · undo\./m);
+  assert.match(tuner, /^Reversible name\/file picks → append `date · named X in Y · why · undo: rename\/move` to `docs\/decisions\.md`; quote it in reply\./m);
+  const lines = tuner.split('\n');
+  assert.ok(lines.findIndex((l) => l.startsWith('Reversible')) < lines.findIndex((l) => l.includes('`msnc:trim`')),
+    'deciding comes before the Trim line, like sizing');
   assert.match(tuner, /Irreversible\/destructive → one question \+ recommended answer\./);
   assert.match(read('context/clear.md'), /^- Destructive step → confirm first\.$/m, 'Clear keeps its override');
 });
