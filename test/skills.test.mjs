@@ -60,11 +60,11 @@ test('rephrase uses CONTEXT.md only when the repo has one', () => {
   assert.match(read('skills/rephrase/SKILL.md'), /when the repo has a `CONTEXT\.md`, use its ubiquitous language/);
 });
 
-test('verify adds sextant check only in a repo with a Scope index', () => {
+test('verify adds scope check only in a repo with a Scope index', () => {
   const body = read('skills/verify/SKILL.md');
-  assert.match(body, /Only when the repo has a Scope index \(`\.atlas\/` exists\)/);
-  assert.match(body, /sextant check/);
-  assert.match(body, /No `\.atlas\/` → report Scope as SKIPPED/);
+  assert.match(body, /Only when the repo has a Scope index \(`\.scope\/` exists\)/);
+  assert.match(body, /scope check/);
+  assert.match(body, /No `\.scope\/` → report Scope as SKIPPED/);
 });
 
 test('doctor runs its script and only reads; declutter moves to trash first and asks per item', () => {
@@ -99,16 +99,16 @@ test('implement runs one foreground msnc:implementer per ticket and uses the Sco
   const body = read('skills/implement/SKILL.md');
   assert.match(body, /ONE `msnc:implementer` subagent in the foreground/);
   assert.match(body, /\/msnc:scope init/);
-  assert.match(body, /sextant impact/);
-  assert.match(body, /sextant check/);
+  assert.match(body, /scope impact/);
+  assert.match(body, /scope check/);
 });
 
 test('implement builds a missing Scope index only in a repo that uses Scope, committed on its own', () => {
   const body = read('skills/implement/SKILL.md');
-  assert.match(body, /`\.gitignore` lists `\.atlas\/…` entries but `\.atlas\/` is missing → run `\/msnc:scope init`/);
+  assert.match(body, /`\.gitignore` lists `\.scope\/…` entries but `\.scope\/` is missing → run `\/msnc:scope init`/);
   assert.match(body, /Neither → leave Scope alone/);
   assert.match(body, /then commit its output alone as `chore: build Scope index`/);
-  assert.doesNotMatch(body, /^- Scope index:.*`\.atlas\/` missing → run/m);
+  assert.doesNotMatch(body, /^- Scope index:.*`\.scope\/` missing → run/m);
 });
 
 test('implement rescans before each ticket\'s commit and stages the index in it, so the tree is clean after every commit', () => {
@@ -116,7 +116,7 @@ test('implement rescans before each ticket\'s commit and stages the index in it,
   const rescan = body.indexOf('rescan (`/msnc:scope init` again)');
   const commit = body.indexOf('Commit this ticket alone');
   assert.ok(rescan > 0 && rescan < commit, 'rescan comes before the commit step');
-  assert.match(body, /stage the rescan's `\.atlas\/` and `\.map\/` changes/);
+  assert.match(body, /stage the rescan's `\.scope\/` changes/);
   assert.doesNotMatch(body, /rescan after the commit/i);
 });
 
@@ -229,7 +229,7 @@ test('each level text is the trim skill filtered to that level, as ponytail inje
       assert.equal(text.includes(`| **${l}** |`), l === level, `${level}: intensity row ${l}`);
       assert.equal(text.includes(`\n- ${l}: "`), l === level, `${level}: example ${l}`);
     }
-    assert.match(text, /Scope index → `sextant impact`; otherwise grep every caller/);
+    assert.match(text, /Scope index → `scope impact`; otherwise grep every caller/);
     assert.ok(text.includes(TRIM_WHY), `${level}: the why question`);
     assert.doesNotMatch(text, /^name:/m);
   }
@@ -240,12 +240,12 @@ test('scope is model-invoked with a short description and gives the CLI path, in
   const description = /^description: (.+)$/m.exec(fm)[1];
   assert.ok(description.length <= 200, `${description.length} characters`);
   const body = read('skills/scope/SKILL.md');
-  assert.ok(body.includes('node "${CLAUDE_SKILL_DIR}/scripts/sextant.mjs"'), 'CLI path');
+  assert.ok(body.includes('node "${CLAUDE_SKILL_DIR}/scripts/scope.mjs"'), 'CLI path');
   assert.match(body, /`\/msnc:scope init`/);
   assert.match(body, /\$ARGUMENTS/);
-  // Each command written out in full: a `$S` shorthand gets turned into a shell variable that hides `sextant.mjs impact` (ticket 23).
+  // Each command written out in full: a `$S` shorthand gets turned into a shell variable that hides `scope.mjs impact` (ticket 23).
   for (const cmd of ['map', 'query', 'locate', 'impact', 'slice', 'check', 'scan'])
-    assert.ok(body.includes(`node "\${CLAUDE_SKILL_DIR}/scripts/sextant.mjs" ${cmd}`), cmd);
+    assert.ok(body.includes(`node "\${CLAUDE_SKILL_DIR}/scripts/scope.mjs" ${cmd}`), cmd);
   assert.doesNotMatch(body, /\$S\b/, 'no $S shorthand');
   assert.match(body, /don't set a shell variable/i);
   assert.match(body, /no hooks? and no `CLAUDE\.md` block/i);

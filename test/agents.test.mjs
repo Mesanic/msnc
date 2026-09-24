@@ -26,7 +26,7 @@ test("explorer's tool config cannot write files", () => {
 
 test('explorer puts Scope reads before grep and whole files, ctx_* outside plan mode, and never scans', () => {
   const { body } = agent('explorer');
-  assert.ok(body.includes('node "${CLAUDE_PLUGIN_ROOT}/skills/scope/scripts/sextant.mjs"'), 'Scope CLI path');
+  assert.ok(body.includes('node "${CLAUDE_PLUGIN_ROOT}/skills/scope/scripts/scope.mjs"'), 'Scope CLI path');
   assert.match(body, /`query "<nouns>"`, `locate <name>` and `context <path>` before any grep/);
   assert.match(body, /`slice <id>` before reading a whole file/);
   assert.match(body, /Never `scan`/);
@@ -48,7 +48,7 @@ test('each agent is named after its file and sets neither model nor effort', () 
 test('planner loads Trim, scopes with impact --depth 2 when indexed, and lists the covering tests', () => {
   const { list, body } = agent('planner');
   assert.deepEqual(list('skills'), ['msnc:trim']);
-  assert.match(body, /`\.atlas\/`.*`impact <file\|symbol> --depth 2`/);
+  assert.match(body, /`\.scope\/`.*`impact <file\|symbol> --depth 2`/);
   assert.match(body, /plan mode.*Read, Grep and Glob/);
   assert.match(body, /covering tests/);
 });
@@ -57,7 +57,7 @@ test('implementer works one ticket test-first with Trim and tdd, checks after ev
   const { list, body } = agent('implementer');
   assert.deepEqual(list('skills'), ['msnc:trim', 'msnc:tdd']);
   assert.match(body, /the one ticket in your brief and nothing else/);
-  assert.match(body, /`\.atlas\/`.*`impact <file\|symbol>` before each edit/);
+  assert.match(body, /`\.scope\/`.*`impact <file\|symbol>` before each edit/);
   assert.match(body, /After every change, run the typecheck and the affected test file/);
   assert.match(body, /Never commit/);
   for (const item of ['Files changed', 'Which test covers each acceptance criterion', 'last result line of each check', 'Open questions'])

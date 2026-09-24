@@ -115,7 +115,7 @@ test('the credit rule goes red when a copied folder lacks LICENSE or UPSTREAM.md
 
 test('THIRD_PARTY_NOTICES.md has a section per upstream with its copyright line and pinned commit', () => {
   const notices = readFileSync(join(repoRoot, 'THIRD_PARTY_NOTICES.md'), 'utf8').replace(/\r\n/g, '\n');
-  assert.equal(vendor.length, 5);
+  assert.equal(vendor.length, 4);
   for (const { repo, commit } of vendor) {
     assert.match(commit, /^[0-9a-f]{40}$/, `${repo}: pin a full commit sha`);
     const section = notices.split(/^## /m).find((s) => s.startsWith(`${repo}\n`));

@@ -21,7 +21,7 @@
     "scope_gate": {
       "type": "boolean",
       "title": "Scope gate",
-      "description": "Refuse edits to files in the Scope index until sextant impact has run on them",
+      "description": "Refuse edits to files in the Scope index until scope impact has run on them",
       "default": true
     },
     "pace": {

@@ -55,8 +55,8 @@ function onPrompt(sid, prompt) {
   return `MSNC: Trim is ${trimLevel(readState(sid))} for this session. Subagents and /compact keep this level.`;
 }
 
-// --- Scope gate: refuse an edit to a file in the code map until `sextant impact` has run on it.
-// Ported from sextant scripts/pre-edit-hook.mjs (bashTargets and the lookup at lines 90-99); the
+// --- Scope gate: refuse an edit to a file in the code map until `scope impact` has run on it.
+// Ported from Scope's old pre-edit hook (bashTargets and the graph lookup); the
 // impact log's location comes from the engine itself so the CLI and the gate always agree.
 const SCOPE = join(fileURLToPath(new URL('..', import.meta.url)), 'skills', 'scope', 'scripts');
 const unquote = (s) => s.replace(/^["']|["']$/g, '');
@@ -86,7 +86,7 @@ async function scopeGate(e) {
   if (['false', '0'].includes(opt('SCOPE_GATE'))) return;
   const root = e.cwd || process.cwd();
   let graph;
-  try { graph = readFileSync(join(root, '.atlas', 'graph', 'nodes.jsonl'), 'utf8'); } catch { return; } // no index: nothing to gate
+  try { graph = readFileSync(join(root, '.scope', 'files', 'graph', 'nodes.jsonl'), 'utf8'); } catch { return; } // no index: nothing to gate
   const ti = e.tool_input || {};
   const raw = e.tool_name === 'Bash' ? bashTargets(ti.command) : [ti.file_path || ti.notebook_path].filter(Boolean);
   const targets = [...new Set(raw)]
@@ -105,7 +105,7 @@ async function scopeGate(e) {
   } catch { /* no log yet */ }
   const stale = targets.filter((t) => !analysed.has(t));
   if (!stale.length) return;
-  const cli = join(SCOPE, 'sextant.mjs').split(sep).join('/');
+  const cli = join(SCOPE, 'scope.mjs').split(sep).join('/');
   const reason = `Scope: ${stale.join(', ')} ${stale.length === 1 ? 'is' : 'are'} in the code map and no impact check has run${e.tool_name === 'Bash' ? ' (via Bash)' : ''}.\n`
     + 'Run this first, then repeat the edit:\n'
     + stale.map((t) => `  node "${cli}" impact ${t}\n`).join('')

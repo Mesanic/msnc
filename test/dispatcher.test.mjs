@@ -193,7 +193,7 @@ test('the shipped Trim texts load per level and keep Tuner + Clear + Trim under 
     const main = spawnSync(process.execPath, [SCRIPT], { input: JSON.stringify(start('compact')), env, encoding: 'utf8' }).stdout;
     const subOut = spawnSync(process.execPath, [SCRIPT], { input: JSON.stringify(sub()), env, encoding: 'utf8' }).stdout;
     assert.match(main, new RegExp(`TRIM ACTIVE — level: ${level}\\n`), level);
-    assert.match(main, /Scope index → `sextant impact`/, level);
+    assert.match(main, /Scope index → `scope impact`/, level);
     assert.match(subContext({ out: subOut }), new RegExp(`TRIM ACTIVE — level: ${level}\\n`), level);
     for (const out of [main, subOut]) assert.ok(out.length < 10000, `${level}: ${out.length} characters`);
   }

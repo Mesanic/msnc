@@ -102,18 +102,19 @@ const AUTHORS = {
   'ayghri/i-have-adhd': 'Ayoub Ghriss',
   'mattpocock/skills': 'Matt Pocock',
   'affaan-m/ECC': 'Affaan Mustafa',
-  'Mesanic/sextant': 'Mesanic',
 };
 
 test('README "Built on" credits every pinned upstream with author, repo link and license on one line', () => {
   const vendor = JSON.parse(read('vendor.json'));
-  assert.deepEqual(vendor.map((v) => v.repo).sort(), Object.keys(AUTHORS).sort(), 'five upstreams');
+  assert.deepEqual(vendor.map((v) => v.repo).sort(), Object.keys(AUTHORS).sort(), 'four upstreams');
   const lines = section('Built on').split('\n');
   for (const { repo, license } of vendor) {
     const line = lines.find((l) => l.includes(`](https://github.com/${repo})`)) ?? '';
     assert.ok(line.includes(AUTHORS[repo]), `${repo}: author`);
     assert.match(line, new RegExp(`\\b${license}\\b`), `${repo}: license`);
   }
+  // MSNC is Scope's only source now; the archived repo it began as is named, not pinned.
+  assert.ok(lines.includes('Scope began as [Mesanic/sextant](https://github.com/Mesanic/sextant) (archived).'), 'Scope origin line');
   const companion = lines.find((l) => l.includes('](https://github.com/mksglu/context-mode)')) ?? '';
   assert.match(companion, /\bELv2\b/, 'context-mode companion and its license');
 });

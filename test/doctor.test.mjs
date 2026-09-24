@@ -123,8 +123,15 @@ test('layout check flags vendored atlas/scalpel/sextant skill folders, sextant p
     'Old Scope layout: CLAUDE.md has a <!-- sextant:begin --> block',
     'Old Scope layout: CLAUDE.md has a <!-- atlas:begin --> block',
   ]);
-  const clean = fixture({ '.atlas/graph/nodes.jsonl': '', '.claude/settings.json': { hooks: {} } });
+  const clean = fixture({ '.scope/files/graph/nodes.jsonl': '', '.claude/settings.json': { hooks: {} } });
   assert.deepEqual(doctor({ home: fixture(), cwd: clean, root: msnc() }).filter((l) => l.startsWith('Old Scope layout:')), ['Old Scope layout: none']);
+});
+
+test('layout check flags an old .atlas/ or .map/ index folder', () => {
+  const layout = (files) => doctor({ home: fixture(), cwd: fixture(files), root: msnc() }).filter((l) => l.startsWith('Old Scope layout:'));
+  assert.deepEqual(layout({ '.atlas/graph/nodes.jsonl': '', '.map/index/meta.json': '{}' }),
+    ['Old Scope layout: .atlas/, .map/ index folders (move them into .scope/)']);
+  assert.deepEqual(layout({ '.map/index/meta.json': '{}' }), ['Old Scope layout: .map/ index folders (move them into .scope/)']);
 });
 
 // Recipe use. A recipe is a typed-only skill (disable-model-invocation: true) in the project's or the personal

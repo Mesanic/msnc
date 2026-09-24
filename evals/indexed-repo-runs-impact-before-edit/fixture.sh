@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# A committed git repo with a Scope index (built by this plugin's own sextant copy): users.js is in the
+# A committed git repo with a Scope index (built by this plugin's own Scope copy): users.js is in the
 # code map and signup.js calls into it, so an edit to users.js must run impact first.
 set -euo pipefail
 PLUGIN="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
@@ -27,6 +27,6 @@ git config user.name "Eval"
 git config user.email "eval@example.com"
 git add -A
 git commit -qm "chore: accounts"
-node "$PLUGIN/skills/scope/scripts/sextant.mjs" scan > /dev/null
+node "$PLUGIN/skills/scope/scripts/scope.mjs" scan > /dev/null
 git add -A
 git commit -qm "chore: build Scope index"

@@ -14,6 +14,7 @@ Issues and specs for this repo live as markdown files in `.scratch/`.
 
 - `.scratch/msnc-v1/`: build MSNC v1 (agent tickets, work them with `/implement msnc-v1`)
 - `.scratch/msnc-rollout/`: publish and migrate (human-in-the-loop tickets, not for `/implement`)
+- `.scratch/scope-rename/`: rename Scope's three old names to Scope (01 is for `/msnc:implement`; 02 and 03 are human-in-the-loop). Decisions in `docs/decisions.md`
 
 ## When a skill says "publish to the issue tracker"
 

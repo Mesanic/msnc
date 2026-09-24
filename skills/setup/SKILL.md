@@ -29,7 +29,7 @@ Read whatever exists; don't assume:
 - `git remote -v` and `.git/config` — is this a GitHub or GitLab repo, or has it no remote?
 - `docs/agents/issue-tracker.md` — does this skill's prior output already exist?
 - `.scratch/` — sign that a local-markdown issue tracker convention is already in use
-- `.atlas/` — the repo already has a Scope index
+- `.scope/` — the repo already has a Scope index
 - Other plugins that overlap MSNC (`mattpocock-skills`, `ecc`, `ponytail`) on → mention `/msnc:doctor`, which lists duplicates and conflicting project settings
 
 ### 2. Present findings and ask
@@ -42,7 +42,7 @@ Lead each section with the recommended answer so the user can accept it in a wor
 
 - `clear` (default on) — the focus reply shape in the main session and in subagents. The exact message "normal mode" drops it for one session.
 - `trim_default` (default off) — Trim's level at session start. off = Trim loads when code work starts; lite, full or ultra = on from the first message.
-- `scope_gate` (default on) — refuse edits to files in the Scope index until `sextant impact` has run on them.
+- `scope_gate` (default on) — refuse edits to files in the Scope index until `scope impact` has run on them.
 - `pace` (default 3) — `/msnc:implement` offers a stop after this many tickets, writing a handoff if you take it. 0 = never offer one.
 
 The user changes these in `/config` (the MSNC rows). This skill never writes them.
@@ -65,7 +65,7 @@ Default posture: **local markdown** — MSNC's skills use it when no tracker is 
 
 Record the choice in `docs/agents/issue-tracker.md`.
 
-**Section D — Scope index.** Skip when `.atlas/` exists or the repo has no code. Otherwise offer `/msnc:scope init` for the current repo: it builds the code map that impact checks and searches use, writes only index data (`.atlas/`, `.map/` and their `.gitignore` lines), and adds no hooks and no `CLAUDE.md` block. Recommended: **yes** for a code repo. Run it only after the yes.
+**Section D — Scope index.** Skip when `.scope/` exists or the repo has no code. Otherwise offer `/msnc:scope init` for the current repo: it builds the code map that impact checks and searches use, writes only index data (`.scope/` and its `.gitignore` lines), and adds no hooks and no `CLAUDE.md` block. Recommended: **yes** for a code repo. Run it only after the yes.
 
 **Section E — Subagent model.** Explain how the model is chosen: MSNC's agents pin no `model` or `effort`, so every subagent uses `CLAUDE_CODE_SUBAGENT_MODEL` when it is set, and otherwise Claude Code's own default for subagents; effort follows the session. Show the current value.
 

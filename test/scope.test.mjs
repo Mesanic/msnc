@@ -1,4 +1,4 @@
-// Scope: the sextant engine in skills/scope, run on a fixture repo, and the dispatcher's edit gate.
+// Scope: the engine in skills/scope, run on a fixture repo, and the dispatcher's edit gate.
 // One fixture: two TypeScript files the symbol graph knows, a CSS and an HTML file only the file graph knows.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -8,7 +8,7 @@ import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const CLI = fileURLToPath(new URL('../skills/scope/scripts/sextant.mjs', import.meta.url));
+const CLI = fileURLToPath(new URL('../skills/scope/scripts/scope.mjs', import.meta.url));
 const FILES = {
   'src/util.ts': 'export function greet(n) { return "hi " + n; }\n',
   'src/format.ts': 'import { greet } from "./util";\nexport function shout(n) { return greet(n).toUpperCase(); }\n',
@@ -34,17 +34,31 @@ const before = readdirSync(repo).sort();
 // What `/msnc:scope init` runs (skills/scope/SKILL.md): a plain scan, no flags.
 const init = node([CLI, 'scan'], repo);
 
-test('/msnc:scope init writes only .atlas/, .map/ and .gitignore entries: no hooks, no CLAUDE.md block', () => {
+test('/msnc:scope init writes only .scope/ (files/, symbols/, MAP.md) and .gitignore entries: no hooks, no CLAUDE.md block', () => {
   assert.equal(init.status, 0, init.stderr);
-  assert.deepEqual(readdirSync(repo).sort(), [...before, '.atlas', '.map'].sort());
+  assert.deepEqual(readdirSync(repo).sort(), [...before, '.scope'].sort());
+  assert.deepEqual(readdirSync(join(repo, '.scope')).sort(), ['MAP.md', 'files', 'symbols']);
   assert.equal(readFileSync(join(repo, 'CLAUDE.md'), 'utf8'), FILES['CLAUDE.md']);
   const gitignore = readFileSync(join(repo, '.gitignore'), 'utf8');
   assert.ok(gitignore.startsWith(FILES['.gitignore']), 'existing lines kept');
-  for (const line of gitignore.slice(FILES['.gitignore'].length).split('\n').filter(Boolean))
-    assert.match(line, /^\.(atlas|map)\//, 'only index entries appended');
+  assert.deepEqual(gitignore.slice(FILES['.gitignore'].length).split('\n').filter(Boolean).sort(),
+    ['.scope/files/overlays/', '.scope/files/view/', '.scope/symbols/index/', '.scope/symbols/view-data.html'], 'only index and view entries appended');
 });
 
-test("sextant's merge.test.mjs passes on the fixture: symbols join the file graph", () => {
+test('scope --help offers no hook or CLAUDE.md options: MSNC\'s own hook is the gate', () => {
+  const r = node([CLI, '--help'], repo);
+  assert.equal(r.status, 0);
+  assert.match(r.stdout, /scope scan {17}refresh both graphs\n/);
+  assert.doesNotMatch(r.stdout, /--no-hook|--no-claude-md|gate/);
+});
+
+test('the symbol engine init prints no hook snippet with a <scope> placeholder to paste', () => {
+  const r = node([fileURLToPath(new URL('../skills/scope/engine/symbols/scripts/symbols.mjs', import.meta.url)), 'init'], fixture());
+  assert.equal(r.status, 0, r.stderr);
+  assert.doesNotMatch(r.stdout + r.stderr, /<scope>|pre-commit/);
+});
+
+test("Scope's merge.test.mjs passes on the fixture: symbols join the file graph", () => {
   const r = node([fileURLToPath(new URL('../skills/scope/scripts/merge.test.mjs', import.meta.url)), repo]);
   assert.equal(r.status, 0, r.stderr);
   assert.match(r.stdout, /^ok {2}tiers joined: file\(src\/format\.ts\)/m);
@@ -63,7 +77,7 @@ test("a plugin repo's own skills are indexed; skills vendored under .claude/ are
   assert.equal(node([CLI, 'scan'], root).status, 0);
   assert.match(node([CLI, 'locate', 'ownFn'], root).stdout, /skills\/own\/own\.ts/);
   assert.doesNotMatch(node([CLI, 'locate', 'vendFn'], root).stdout, /vend\.ts/);
-  const nodes = readFileSync(join(root, '.atlas/graph/nodes.jsonl'), 'utf8');
+  const nodes = readFileSync(join(root, '.scope/files/graph/nodes.jsonl'), 'utf8');
   assert.match(nodes, /skills\/own\/own\.ts/);
   assert.doesNotMatch(nodes, /\.claude\/skills\/vend/);
 });
@@ -95,7 +109,7 @@ test('editing a mapped .ts file without impact is refused with the exact command
   for (const tool of ['Write', 'MultiEdit']) assert.ok(gate(tool, { file_path: join(repo, 'src/util.ts') }), tool);
 });
 
-test('`sextant impact styles.css` clears the gate for that file', () => {
+test('`scope impact styles.css` clears the gate for that file', () => {
   assert.ok(gate(...edit('src/styles.css')), 'refused before impact');
   const r = node([CLI, 'impact', 'src/styles.css'], repo);
   assert.equal(r.status, 0, r.stderr);
@@ -104,19 +118,19 @@ test('`sextant impact styles.css` clears the gate for that file', () => {
 });
 
 // Sandboxed Bash gets its own TMPDIR; the hook runs outside the sandbox with the host's.
-// .atlas/overlays/ is gitignored, so a fresh clone of a repo with a tracked .atlas/graph lacks it.
+// .scope/files/overlays/ is gitignored, so a fresh clone of a repo with a tracked .scope/files/graph lacks it.
 test('impact run with a different temp dir than the gate (sandboxed Bash) still clears it', () => {
   const tmpEnv = (d) => ({ ...baseEnv, TMPDIR: d, TMP: d, TEMP: d });
   const [writerTmp, readerTmp] = [mkdtempSync(join(tmpdir(), 'msnc-bash-tmp-')), mkdtempSync(join(tmpdir(), 'msnc-hook-tmp-'))];
-  rmSync(join(repo, '.atlas', 'overlays'), { recursive: true, force: true });
+  rmSync(join(repo, '.scope', 'files', 'overlays'), { recursive: true, force: true });
   assert.ok(gate(...edit('src/format.ts'), { env: tmpEnv(readerTmp) }), 'refused before impact');
   const r = spawnSync(process.execPath, [CLI, 'impact', 'src/format.ts'], { cwd: repo, env: tmpEnv(writerTmp), encoding: 'utf8' });
   assert.equal(r.status, 0, r.stderr);
   assert.equal(gate(...edit('src/format.ts'), { env: tmpEnv(readerTmp) }), null);
   assert.ok(gate(...edit('src/util.ts'), { env: tmpEnv(readerTmp) }), 'other files stay gated');
   // The log now lives in the repo: only the scan's .gitignore rule keeps it out of commits.
-  assert.ok(readdirSync(join(repo, '.atlas', 'overlays')).length, 'log written under .atlas/overlays/');
-  assert.match(readFileSync(join(repo, '.gitignore'), 'utf8'), /^\.atlas\/overlays\/$/m);
+  assert.ok(readdirSync(join(repo, '.scope', 'files', 'overlays')).length, 'log written under .scope/files/overlays/');
+  assert.match(readFileSync(join(repo, '.gitignore'), 'utf8'), /^\.scope\/files\/overlays\/$/m);
 });
 
 test('scope_gate off lets every edit through', () => {
@@ -124,7 +138,7 @@ test('scope_gate off lets every edit through', () => {
   assert.ok(gate(...edit('src/util.ts'), { env: { CLAUDE_PLUGIN_OPTION_SCOPE_GATE: 'true' } }));
 });
 
-test('no .atlas/ → every edit passes', () => {
+test('no .scope/ → every edit passes', () => {
   const bare = mkdtempSync(join(tmpdir(), 'msnc-bare-'));
   writeFileSync(join(bare, 'a.ts'), 'x\n');
   assert.equal(gate('Edit', { file_path: join(bare, 'a.ts') }, { cwd: bare }), null);

@@ -10,7 +10,7 @@
 - Skill renamed `ponytail` → `trim`; heading `# Ponytail` → `# Trim`; description trigger word "ponytail" → "trim".
 - Command `/ponytail lite|full|ultra` → `/msnc:trim lite|full|ultra`. Levels lite, full, ultra kept.
 - Phrase "stop ponytail" → "stop trim" (Persistence and Boundaries).
-- Caller check: "grep every caller of the function you're about to touch" → "find every caller of the function you're about to touch: repo has a Scope index → `sextant impact`; otherwise grep every caller."
+- Caller check: "grep every caller of the function you're about to touch" → "find every caller of the function you're about to touch: repo has a Scope index → `scope impact`; otherwise grep every caller."
 - Marker comment `ponytail:` → `trim:` (example `# trim: global lock, ...`).
 - Boundaries: "(pair with Caveman for terse prose)" → "(Clear owns reply shape)".
 - Why rule (MSNC ticket 14): a Rules bullet after "No unrequested abstractions" asks why every new file, dependency or abstraction has to exist, states the why in one line with the change, and drops it when there is none. The level texts carry it.
