@@ -69,6 +69,15 @@ test('subagent start injects the same set as hookSpecificOutput JSON', () => {
   assert.match(ctx, /TRIM-LITE$/);
 });
 
+// The Tuner's size line and decisions log are for the main session: an implementer re-planning its
+// own ticket, or writing docs/decisions.md that /msnc:implement also appends, conflicts with its brief.
+const SUB_NOTE = "You're a subagent: skip the Tuner's size line and don't write docs/decisions.md; report sizes and decisions to your caller.";
+test('subagent start tells the subagent to skip sizing and the decisions log, Clear or not', () => {
+  assert.ok(subContext(run(sub())).startsWith(`TUNER-TEXT\n\n${SUB_NOTE}\n\n`));
+  assert.equal(subContext(run(sub(), { env: { CLAUDE_PLUGIN_OPTION_CLEAR: 'false' } })), `TUNER-TEXT\n\n${SUB_NOTE}`);
+  assert.doesNotMatch(run(start()).out, /subagent/, 'the main session keeps the full Tuner');
+});
+
 const say = (prompt, session_id = 's1') => ({ hook_event_name: 'UserPromptSubmit', session_id, prompt });
 
 test('/msnc:trim full confirms in one line and reaches later compacts and subagents', () => {
@@ -107,7 +116,7 @@ test('"normal mode" drops Clear and Trim for this session, main and subagents', 
   const { out, data } = run(say('normal mode'), { env });
   assert.match(out, /^MSNC: normal mode for this session\.[^\n]*$/);
   assert.equal(run(start('compact'), { env, data }).out, 'TUNER-TEXT');
-  assert.equal(subContext(run(sub(), { env, data })), 'TUNER-TEXT');
+  assert.equal(subContext(run(sub(), { env, data })), `TUNER-TEXT\n\n${SUB_NOTE}`);
   // An explicit Trim switch afterwards still wins; Clear stays off.
   run(say('/msnc:trim lite'), { env, data });
   assert.equal(run(start('compact'), { env, data }).out, 'TUNER-TEXT\n\nTRIM-LITE');
@@ -214,7 +223,7 @@ test('hooks.json sends exactly the ticket-03, Scope gate and recipe-note events 
 
 test('with clear off, subagent output contains no Clear', () => {
   const ctx = subContext(run(sub(), { env: { CLAUDE_PLUGIN_OPTION_CLEAR: 'false' } }));
-  assert.equal(ctx, 'TUNER-TEXT');
+  assert.equal(ctx, `TUNER-TEXT\n\n${SUB_NOTE}`);
 });
 
 // Recipe notes: after a Skill call, project notes (<cwd>/.claude/msnc/notes/) and personal notes

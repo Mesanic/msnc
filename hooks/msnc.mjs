@@ -26,14 +26,16 @@ const trimLevel = (s) => {
   return LEVELS.includes(level) ? level : 'off';
 };
 
-// Tuner always; Clear unless opted out or in normal mode; Trim at its level. Per-level Trim text is
-// ticket 04's skills/trim/levels/<level>.md; a missing file injects nothing.
+// Tuner always (subagents: minus sizing and the decisions log, which their caller owns); Clear unless
+// opted out or in normal mode; Trim at its level. Per-level Trim text is ticket 04's
+// skills/trim/levels/<level>.md; a missing file injects nothing.
 function context(sid, subagent) {
   const s = sid ? readState(sid) : {};
   const clear = !['false', '0'].includes(opt('CLEAR')) && !s.normal;
   const level = trimLevel(s);
   return [
     text('context/tuner.md'),
+    subagent && "You're a subagent: skip the Tuner's size line and don't write docs/decisions.md; report sizes and decisions to your caller.",
     clear && subagent && 'Your final report counts as a requested report: keep it complete, in the Clear shape below.',
     clear && text('context/clear.md'),
     level !== 'off' && text(`skills/trim/levels/${level}.md`),

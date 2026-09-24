@@ -19,7 +19,7 @@ Only two short texts load in every session (Clear and Tuner). Everything else is
 | Module | What you get | Loads |
 |---|---|---|
 | Clear | Replies lead with the result or the action, numbered steps, one next action. Main session and subagents | Always (opt out below) |
-| Tuner | A ~200-token list that tells Claude which skill the moment needs | Always |
+| Tuner | A ~200-token list that tells Claude which skill the moment needs. Subagents skip its size line and decisions log and report both to their caller | Always |
 | Trim | The smallest change that works | When code work starts; `/msnc:trim full` forces it for the session, subagents included |
 | Quiet | Raw tool output stays out of the chat | Only with the context-mode companion installed |
 | Relay | Grill, spec, tickets, then one ticket per subagent | When typed; `msnc:grill` and `msnc:tdd` also on demand |
@@ -76,7 +76,7 @@ Model-invoked (only a short description stays loaded): `msnc:trim`, `msnc:grill`
 
 ## Which typed skill in each phase
 
-Tuner sizes each multi-step task first (worst of: files, unknowns, irreversible steps, modules crossed), so process appears only where it pays for itself.
+Before any edit, Tuner states the task's size in one line (the worst of: files, unknowns, irreversible steps, modules crossed; several signals at once → large), so process appears only where it pays for itself.
 
 ```mermaid
 flowchart LR
@@ -107,7 +107,7 @@ Change these in `/config` (the MSNC rows need Claude Code 2.1.269+). The hook re
 - **Recipes.** `/msnc:record` drafts a typed-only skill from the current session: why, when to use it, steps and a done-check. It saves to `.claude/skills/<name>/` (shared through git) or, on request, `~/.claude/skills/<name>/`, and writes nothing before a yes. `/msnc:refine` reads recent corrections, failed checks and rejected approaches and proposes one fix at a time, as a diff.
 - **Recipe notes.** Put notes for any skill, MSNC's included, in `.claude/msnc/notes/<skill>.md` (project) or `~/.claude/msnc/notes/<skill>.md` (personal). A namespaced skill like `msnc:implement` maps to `notes/msnc/implement.md`. The hook adds them whenever that skill loads; where they differ from the skill, the notes win.
 - **Just-enough sizing.** Small: just do it. Medium: tickets, then implement. Large: grill, spec, tickets, then implement. The planner agent sizes the same way.
-- **Decide to Decide.** Reversible choices are made, stated in one line and logged in `docs/decisions.md` (date, decision, why, undo). Irreversible or destructive ones get one question with a recommended answer.
+- **Decide to Decide.** Reversible name and file picks are made without asking, appended to `docs/decisions.md` as `date · named X in Y · why · undo`, and that line is quoted in the reply. `/msnc:grill` logs each answer it settles the same way. Irreversible or destructive choices get one question with a recommended answer.
 - **A why in every delegation.** Tickets carry a Why line tied to a user story; every implementer brief and commit message carries the why; Trim asks the why behind every new file, dependency or abstraction.
 - **Pacing.** `/msnc:implement` offers a stopping point every `pace` tickets. Failures are reported as cause, fix and the recipe change that prevents a repeat, never as blame.
 

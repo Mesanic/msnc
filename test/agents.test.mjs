@@ -144,6 +144,7 @@ test('Tuner decides reversible choices and logs them, and asks one question with
 test('Clear starts steps on line 1 and counts a lead-in ending in ":" as preamble, within 1,748 bytes', () => {
   const clear = read('context/clear.md');
   assert.match(clear, /^1\. First line = [^\n]*No preamble \([^\n]*a lead-in ending in ":"\)/m);
+  assert.match(clear, /^1\. [^\n]*No preamble \("Great question", [^\n]*"I'll…"/m, 'the classic openers stay named');
   assert.match(clear, /^3\. [^\n]*→ numbered list from line 1,/m);
   assert.ok(Buffer.byteLength(clear) <= 1748, `${Buffer.byteLength(clear)} bytes`);
 });

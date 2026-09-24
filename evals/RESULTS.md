@@ -196,3 +196,27 @@ Each `llm` rubric now asks only about what a `last_message` judge can see. Every
 - Each new regex was run offline against the 12 replies kept from the first runs (all pass) and against hand-made bad variants (no frontmatter, no Why, no When to use, no numbered steps, a bare heading in a step, no save path, "Saved it to …", no question). Each variant failed the grader it targets.
 - `reversible-name-is-decided-and-logged` (ticket 19) was judged by haiku, the same judge the suite documents, and its final 3 runs scored 1.00 (9 of 9 PASS votes). It doesn't need a rerun under a different judge. If it splits again, the same fix applies: move what the judge can't see into free graders.
 - Wall clock 14–16 s per small-fix eval, 18–25 s per record eval; $0.32 per small-fix eval, $0.30–0.34 per record eval.
+
+## Review fixes (tickets 17–21)
+
+**Date:** 2026-09-23 · **Claude Code:** 2.1.280 · **Model under test:** `claude-opus-5-5[1m]` · **Judge:** haiku · commands as in the ticket 17 and ticket 21 sections, without `--keep-temp`.
+
+| Change | Why |
+|---|---|
+| SubagentStart adds "You're a subagent: skip the Tuner's size line and don't write docs/decisions.md; report sizes and decisions to your caller." (`hooks/msnc.mjs`), Clear on or off | The Tuner reaches subagents: its size line could make an implementer re-plan its own ticket, and its log line contradicted `agents/implementer.md` and duplicated what `/msnc:implement` appends. The Tuner stays at 799/800 characters. |
+| `context/clear.md` rule 1 names "Great question" and "I'll…" again, next to `a lead-in ending in ":"` | Ticket 17 had dropped them for bytes. Freed elsewhere (rule 6, the override sentence, the "normal mode" line): still 1,746 bytes, no rule dropped. |
+| `not-saved`: "I saved/wrote/created…" fails only when the object is it, the recipe, skill or draft (then to/in/at/under or end of sentence), or a `SKILL.md` path | It failed "I created the v1.2.0 tag and drafted a recipe below" and "I've written a draft:". |
+| `asks-to-save`: the "yes" may sit up to two lines under the save question | It needed "save…?…yes" on one line. |
+| `heading-step`: the `## [x.y.z] - …` heading may sit on the step's line or on its indented, blank or fence lines below it | A fenced heading under the step failed. A heading only in a Done-check section or above the steps still fails. |
+| `no-plan-file`: counts only Writes to `.scratch/`, `issues/`, `tickets/`, `plans/`, `specs/`, or a `.md` named plan, spec, ticket(s), issue(s) or PRD (`input_match` on the Write's `file_path`) | Every Write failed the case, including a test file or `docs/decisions.md`; the rubric only banned writing a plan, tickets or spec first. |
+
+| Case | Result | Rate |
+|---|---|---|
+| record-drafts-without-writing | pass | 3/3 (1.00), judge PASS 9/9 |
+| small-fix-goes-straight-to-edit | pass | 3/3 (1.00), judge PASS 9/9; 1, 1 and 2 Edits, 0 Writes |
+| clear-shapes-first-line | pass | WITH 3/3 (1.00), W/OUT 0.00, Δ +1.00 |
+
+- Offline checks before the runs: the three record regexes pass all 36 stored replies in `evals/results/*` (every record run so far) and give the intended verdict on 28 hand-made replies (good ones like the two above; bad ones like "I saved the recipe to …", "I wrote `.claude/skills/cut-release/SKILL.md`", "Save it there?" with no options, a heading only in the Done-check). `no-plan-file`'s `input_match` gives the intended verdict on 16 paths in relative, POSIX and Windows form (48 checks); `greet.spec.js`, `docs/decisions.md` and `docs/explanation.md` don't count as plans.
+- WITH replies for clear-shapes-first-line opened with "1. Rename the local branch:" (twice) and "1. Switch to the branch and rename it locally:". Without the plugin, all 3 opened with "I can't run shell commands in this session, so here are…".
+- No stored Write inputs exist for small-fix (no run so far wrote a file), so `no-plan-file` was checked on hand-made paths only. It assumes the harness matches `input_match` against the tool input as JSON, as `no-trim`'s `"skill"\s*:` pattern already does.
+- Wall clock 20 s record, 13 s small-fix, 18 s Clear; $0.32, $0.32 and $0.36.

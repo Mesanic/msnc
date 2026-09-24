@@ -1,6 +1,6 @@
 ---
 type: regex
 target: last_message
-pattern: '^\s*\d+\.[^\n]*## \[[^\]\n]+\] - \S'
+pattern: '^[ \t]*\d+\.([^\n]*\n(?=[ \t]|```|~~~|## \[|\n))*[^\n]*## \[[^\]\n]+\] - \S'
 flags: m
 ---
