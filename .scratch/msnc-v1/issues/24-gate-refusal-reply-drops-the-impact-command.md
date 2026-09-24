@@ -12,11 +12,13 @@
 
 **Blocked by:** None — can start immediately
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] `indexed-repo-gates-edit-without-impact` scores 1.00 over 3 runs, with no grader changed.
-- [ ] `indexed-repo-runs-impact-before-edit` doesn't regress (once ticket 25 is done, the gate should never need to refuse there after impact has run).
+- [x] `indexed-repo-gates-edit-without-impact` scores 1.00 over 3 runs, with no grader changed.
+- [x] `indexed-repo-runs-impact-before-edit` doesn't regress (once ticket 25 is done, the gate should never need to refuse there after impact has run).
 
 ## Comments
 
 - 2026-09-23 · Rerun after ticket 22 (Node reachable): 2/3 (0.92) again. This time every run could run impact and did, but the gate kept refusing because of ticket 25. The failing run (`/tmp/claude-eval-z4l4yZ`) explained the log mismatch and said "I ran the impact check it asks for", without the command or the file, so `names-impact` failed. The passing runs (`-KZCr6F`, `-sjf75Y`) named `impact src/users.js`. The ask is the same, and now covers "the command ran and the gate still refused" too. With Bash granted and ticket 25 fixed, this case would clear the gate and fail `unchanged`, so judge it from a run without a shell grant (native Windows, or `--allow-tools Edit Write`).
+- 2026-09-23 · Implemented: `skills/scope/SKILL.md:41` now says that if you can't run the refusal's command, or it ran and the gate still refuses, you stop and quote that command, file included, in the reply (example uses `src/router.ts`, not the fixture's file). A test in `test/skills.test.mjs` pins it. `indexed-repo-gates-edit-without-impact` scored 3/3 (1.00) on native Windows with `--allow-tools Edit Write`. `indexed-repo-runs-impact-before-edit` under WSL2: `impact-before-edit` 2/3, then 3/3 on a `--keep-temp` rerun (5/6; was 6/6). The one miss edited before running impact and left no trace, so it's undecided whether that's noise. All 3 kept runs hit the gate after impact (ticket 25) and quoted `node "…/sextant.mjs" impact src/users.js` in full. Details: `evals/RESULTS.md`, "Rerun: … (ticket 24)".
+- 2026-09-23 · Verification rerun: gate case 3/3 on native Windows (no shell); `impact-before-edit` 3/3 under WSL2 (8/9 across three samples since the change). `lower-cased` still fails there until ticket 25.

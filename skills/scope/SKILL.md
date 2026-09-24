@@ -38,6 +38,6 @@ node "${CLAUDE_SKILL_DIR}/scripts/sextant.mjs" scan                        # 7. 
 
 ## The gate
 
-MSNC's hook refuses an edit (Edit, Write, MultiEdit, NotebookEdit, and Bash `sed -i`, `tee`, `cp`, `mv`, `rm` and similar) to a file in the map until `impact` has run on it in the last 2 hours. The refusal prints the exact command; run it, resolve the cross-check, then repeat the edit. New files and files outside the map are never gated. `>` redirects are not caught. The `scope_gate` option turns the gate off.
+MSNC's hook refuses an edit (Edit, Write, MultiEdit, NotebookEdit, and Bash `sed -i`, `tee`, `cp`, `mv`, `rm` and similar) to a file in the map until `impact` has run on it in the last 2 hours. The refusal prints the exact command; run it, resolve the cross-check, then repeat the edit. If you can't run it, or it ran and the gate still refuses, stop and quote the command the refusal printed, file included, in your reply, e.g. `node "…/sextant.mjs" impact src/router.ts`, so the user can run it. New files and files outside the map are never gated. `>` redirects are not caught. The `scope_gate` option turns the gate off.
 
 Nothing here runs tests or builds: `impact` names the covering tests, you run them.

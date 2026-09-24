@@ -238,6 +238,15 @@ test('scope is model-invoked with a short description and gives the CLI path, in
   assert.match(body, /CSS|HTML/);
 });
 
+test('scope: when the gate refusal cannot be cleared, the reply quotes the printed impact command with the file (ticket 24)', () => {
+  const gate = read('skills/scope/SKILL.md').split('## The gate')[1];
+  // Both dead ends: the command can't run, or it ran and the gate still refuses.
+  assert.match(gate, /can't run/i);
+  assert.match(gate, /still refuses/i);
+  assert.match(gate, /quote the command the refusal printed/i);
+  assert.ok(gate.includes('`node "…/sextant.mjs" impact src/router.ts`'), 'worked example with the file after impact');
+});
+
 // Record: spec "Record" and "ProcessDriven credit".
 const CREDIT = 'principles inspired by [ProcessDriven](https://processdriven.co) by Layla Pomper';
 

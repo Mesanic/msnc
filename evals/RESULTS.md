@@ -34,7 +34,7 @@ Runtime of the runs above: 239 s wall clock, $5.77 at list price. Pilots and pro
 | non-code-question-skips-trim | Non-code question never loads Trim | pass | 3/3 |
 | plan-mode-reads-without-ctx | Plan mode makes no `ctx_*` calls (nearest form, see below) | pass | 3/3 |
 | indexed-repo-runs-impact-before-edit | Indexed repo runs impact before an edit | **fail** (WSL2 rerun, ticket 22 section) | 0/3 (0.67) |
-| indexed-repo-gates-edit-without-impact | Nearest shell-free form: the gate refuses the edit | pass | 3/3 |
+| indexed-repo-gates-edit-without-impact | Nearest shell-free form: the gate refuses the edit | pass (ticket 24 rerun) | 3/3 (1.00) |
 | implement-commits-carry-each-why | `/msnc:implement`: two commits, in order | **fail** (WSL2 rerun, ticket 22 section) | 2/3 (0.67) |
 | clear-shapes-first-line | Clear on vs off changes the first line | **fail** | WITH 2/3 (0.78), W/OUT 0.11, Δ +0.67 |
 | subagent-receives-clear | A subagent receives Clear | pass | 3/3 |
@@ -320,3 +320,18 @@ mv ~/.docker.aside ~/.docker
 - No variable form anywhere: all 12 sextant calls across the 3 traces (`impact createUser`, the gate's `impact src/users.js`, `impact test/users.test.js`, `status`) wrote the path out in full. No `S=`, `$S` or `eval`. Before the change it showed up in 1 run in 6 on the graded call, and in later calls too.
 - `lower-cased` failed as in the ticket 22 rerun: the gate refused every Edit, since sandboxed impact logs are invisible to it (ticket 25). No run called `map`, so the `S="tools/sextant/…"` lines in `.atlas/MAP.md`'s how-to section (written by `engine/atlas/scripts/lib/scan.mjs:694-701`) weren't shown to the model here.
 - `skills/scope/SKILL.md` went from 3,111 to 3,688 bytes. 40 s wall clock, $0.63.
+
+## Rerun: indexed-repo-gates-edit-without-impact and indexed-repo-runs-impact-before-edit (ticket 24)
+
+**Date:** 2026-09-23 · **Model under test:** `claude-opus-5-5[1m]` · graders unchanged. One wording change, no iterations: `skills/scope/SKILL.md:41` gained "If you can't run it, or it ran and the gate still refuses, stop and quote the command the refusal printed, file included, in your reply, e.g. `node "…/sextant.mjs" impact src/router.ts`, so the user can run it." The example uses `src/router.ts` (already in the core loop), not the fixture's `src/users.js`, so the eval can't pass by copying the example.
+
+| Case | Machine | Results folder | Result | Rate | Failing graders |
+|---|---|---|---|---|---|
+| indexed-repo-gates-edit-without-impact | native Windows, Claude Code 2.1.280, `--allow-tools Edit Write` (no shell grant) | `2026-09-24T03-46-34-162Z` | pass | 3/3 (1.00) | none |
+| indexed-repo-runs-impact-before-edit | WSL2, Claude Code 2.1.281, `--allow-tools Edit Write Bash` (`~/.docker` moved aside) | `2026-09-24T03-47-59-957Z` | **fail** | 0/3 (0.44) | `lower-cased` ×3 (ticket 25); `impact-before-edit` ×1 |
+| indexed-repo-runs-impact-before-edit | same, plus `--keep-temp` | `2026-09-24T03-48-54-980Z` | **fail** | 0/3 (0.67) | `lower-cased` ×3 (ticket 25) |
+
+- **gates-edit-without-impact**: `gate-refused`, `names-impact` and `unchanged` passed in all 3 runs (8–10 turns, 40 s, $0.68). The eval deleted its sandboxes, so the reply text wasn't kept.
+- **runs-impact-before-edit, `impact-before-edit`**: 2/3 then 3/3, so 5/6. The failing run (first eval, run 1) made its first Edit before running impact ("Bash@8 does NOT precede Edit@6"). It ran without `--keep-temp`, so there's no trace to show why. Before this change the grader passed 6/6 (the ticket 22 and 23 reruns). The new sentence only covers what happens after a refusal, not the order of impact and Edit. **Undecided** whether this is noise or a regression. More runs would settle it.
+- **"Ran and still refused" path** (the ticket's second comment): all 3 kept runs (`/tmp/claude-eval-KGneXJ`, `-km5PqJ`, `-lgJYHE`) ran impact, were refused anyway (ticket 25), and ended with the full command `node "/mnt/c/…/skills/scope/scripts/sextant.mjs" impact src/users.js` in the reply.
+- `skills/scope/SKILL.md` went from 3,688 to 3,901 bytes.
