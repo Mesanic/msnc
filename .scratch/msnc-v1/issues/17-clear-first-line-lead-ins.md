@@ -12,7 +12,11 @@
 
 **Blocked by:** None — can start immediately
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] `claude plugin eval . --case clear-shapes-first-line --ablation with-without` scores WITH 1.00 over 3 runs, with no grader changed.
-- [ ] `context/clear.md` is no longer than it is now (1,748 bytes), and `npm test` passes.
+- [x] `claude plugin eval . --case clear-shapes-first-line --ablation with-without` scores WITH 1.00 over 3 runs, with no grader changed.
+- [x] `context/clear.md` is no longer than it is now (1,748 bytes), and `npm test` passes.
+
+## Comments
+
+- 2026-09-23 · Rule 1 names `a lead-in ending in ":"` as preamble, and rule 3 reads "2+ steps for the reader → numbered list from line 1" · naming the colon lead-in alone scored WITH 2/3 (the miss opened "Run these …, replacing `old-name` and `new-name`:"); anchoring the list to line 1 scored 3/3, W/OUT 0.11 · to fit 1,748 bytes (now 1,746), rule 1 dropped its "Great question" and "I'll…" examples (the `no-preamble` regex still catches "I'll"). `test/agents.test.mjs` pins both phrases and the byte limit. One 3-run sample; rerun the case if it flakes.

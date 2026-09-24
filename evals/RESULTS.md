@@ -85,3 +85,16 @@ Runtime of the runs above: 239 s wall clock, $5.77 at list price. Pilots and pro
 | `if` filters on Bash hooks | not verified | needs a shell grant (ticket 16) |
 
 Probes were throwaway single-run cases, not part of the suite.
+
+## Rerun: clear-shapes-first-line (ticket 17)
+
+**Date:** 2026-09-23 · **Claude Code:** 2.1.280 · **Model under test:** `claude-opus-5-5[1m]` · **Judge:** haiku · same command as above, graders unchanged.
+
+| Clear wording | Result | Rate |
+|---|---|---|
+| Rule 1 names `a lead-in ending in ":"` as preamble (drops the "Great question" and "I'll…" examples) | **fail** | WITH 2/3 (0.78), W/OUT 0.11, Δ +0.67 |
+| Plus rule 3: "2+ steps for the reader → numbered list from line 1" | pass | WITH 3/3 (1.00), W/OUT 0.11, Δ +0.89 |
+
+- The first wording's failing run opened with "Run these from inside the repo, replacing `old-name` and `new-name`:". The judge failed it FAIL FAIL FAIL.
+- With rule 3 anchored to line 1, all 3 WITH runs opened with "1. Rename the local branch:" (or "…the branch locally:") plus the command. No-plugin runs opened with "Here are the steps…", "Sure. Here's the full sequence…" and "I can't run shell commands in this session…".
+- `context/clear.md` went from 1,748 to 1,746 bytes. Both runs: 16 s wall clock, $0.35–0.36 each.

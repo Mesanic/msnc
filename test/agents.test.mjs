@@ -121,6 +121,14 @@ test('Tuner decides reversible choices and logs them, and asks one question with
   assert.match(read('context/clear.md'), /^- Destructive step → confirm first\.$/m, 'Clear keeps its override');
 });
 
+// Ticket 17: a how-to reply's first line is step 1 itself, not a colon line introducing the steps.
+test('Clear starts steps on line 1 and counts a lead-in ending in ":" as preamble, within 1,748 bytes', () => {
+  const clear = read('context/clear.md');
+  assert.match(clear, /^1\. First line = [^\n]*No preamble \([^\n]*a lead-in ending in ":"\)/m);
+  assert.match(clear, /^3\. [^\n]*→ numbered list from line 1,/m);
+  assert.ok(Buffer.byteLength(clear) <= 1748, `${Buffer.byteLength(clear)} bytes`);
+});
+
 test('Tuner sends plan-mode sweeps to msnc:explorer', () => {
   assert.match(read('context/tuner.md'), /In plan mode ctx calls need approval: use Read\/Grep\/Glob or the `msnc:explorer` agent/);
 });
