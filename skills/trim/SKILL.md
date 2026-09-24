@@ -1,7 +1,8 @@
 ---
 name: trim
 description: >
-  Forces the laziest solution that actually works, simplest, shortest, most
+  Load before the first edit of any code change, even a one-line fix. Forces
+  the laziest solution that actually works, simplest, shortest, most
   minimal. Channels a senior dev who has seen everything: question whether the
   task needs to exist at all (YAGNI), reach for the standard library before
   custom code, native platform features before dependencies, one line before

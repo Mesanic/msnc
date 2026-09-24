@@ -11,7 +11,11 @@
 
 **Blocked by:** None — can start immediately
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] `claude plugin eval . --case trim-loads-before-first-edit --runs 10 --scaffold --allow-tools Edit Write` scores 1.00, with no grader changed.
-- [ ] `non-code-question-skips-trim` still scores 1.00.
+- [x] `claude plugin eval . --case trim-loads-before-first-edit --runs 10 --scaffold --allow-tools Edit Write` scores 1.00, with no grader changed.
+- [x] `non-code-question-skips-trim` still scores 1.00.
+
+## Comments
+
+- 2026-09-23 · Trim's description now opens with "Load before the first edit of any code change, even a one-line fix." (recorded in `skills/trim/UPSTREAM.md` and `vendor.json`, pinned in `test/skills.test.mjs`); the Tuner is unchanged (799/800 characters, line order from tickets 18 and 19 kept) · before the change, with the current Tuner, `trim-loads-before-first-edit` scored 1.00, 1.00 and 0.93 over three 10-run evals (29/30). The failing run took 3 turns (Read, Edit, reply) with no Skill call, like the original 1 in 10. After the change: 1.00, 1.00 and 1.00 (30/30), graders unchanged. `non-code-question-skips-trim` 1.00 before and after · regressions: `multi-module-feature-starts-with-grill` 1.00, `reversible-name-is-decided-and-logged` 1.00 · a 1-in-30 miss can't be ruled out by 30 clean runs; rerun if it flakes. Details in `evals/RESULTS.md`.

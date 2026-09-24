@@ -166,6 +166,15 @@ test('trim triggers on code work', () => {
   assert.match(frontmatter('trim'), /coding task: writing, adding, refactoring, fixing, reviewing, or designing/);
 });
 
+// Ticket 20: about 1 run in 10 (then 1 in 30) fixed a one-line bug with no Skill call. Upstream's description opens
+// with what Trim does and names its trigger only in its fourth sentence; it now opens with when to load it.
+test('trim description opens with loading before the first edit, one-line fixes included, as a local change', () => {
+  assert.match(frontmatter('trim'), /^description: >\n  Load before the first edit of any code change, even a one-line fix\. Forces/m);
+  assert.match(read('skills/trim/UPSTREAM.md'), /^- Trigger \(MSNC ticket 20\): .*"Load before the first edit of any code change, even a one-line fix\."/m);
+  const changes = JSON.parse(read('vendor.json')).find((u) => u.repo === 'DietrichGebert/ponytail').changes;
+  assert.ok(changes.some((c) => c.startsWith('trim: ') && c.includes('"Load before the first edit')), 'vendor.json change');
+});
+
 // Spec "A why in every delegation" (ticket 14): Trim asks for the why; a local change, so UPSTREAM.md lists it.
 const TRIM_WHY = '- New file, dependency or abstraction? Ask why it has to exist and state the why in one line with the change. No why → don\'t add it.';
 

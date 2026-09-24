@@ -136,3 +136,18 @@ Probes were throwaway single-run cases, not part of the suite.
 - Regression, `multi-module-feature-starts-with-grill`: 3/3 (1.00). (The previous attempt's wording: 2/3, then 3/3 on a rerun.)
 - Regression, `small-fix-goes-straight-to-edit` with `--judge-model sonnet`: 2/3 (0.83), then 3/3 (1.00) on a rerun. The failing run, like one in the previous attempt, said "I haven't run the code" without saying why, after a first edit that dropped a space.
 - `context/tuner.md` went from 783 to 799 characters (cap 800). Wall clock 13–18 s per run; $0.35–0.37 per 3-run eval, $0.45 for the grill regression, $0.27 and $0.32 for the small-fix runs.
+
+## Rerun: trim-loads-before-first-edit (ticket 20)
+
+**Date:** 2026-09-23 · **Claude Code:** 2.1.280 · **Model under test:** `claude-opus-5-5[1m]` · `--case trim-loads-before-first-edit --runs 10 --ablation none --scaffold --allow-tools Edit Write --no-publish --trust-plugin -j 4`, graders unchanged.
+
+| Wording | Result | Rate |
+|---|---|---|
+| Before the change (Tuner after ticket 19, upstream description) | **fail** | 1.00, 1.00, then 0.93: 29/30 over three 10-run evals |
+| Trim's description opens with "Load before the first edit of any code change, even a one-line fix." | pass | 1.00, 1.00, 1.00: 30/30 over three 10-run evals |
+
+- The failing run took 3 turns (Read `src/cart.js`, Edit, reply) and never called Skill; the fix itself passed `qty-counted`. Passing runs took 5–6 turns and called `Skill:msnc:trim` as tool 0 or 1. Runs had no `--keep-temp`, so there are no traces.
+- Upstream's description opens with what Trim does and names its trigger ("Use on ANY coding task: … fixing …") only in its fourth sentence. The Tuner's Trim line ("Code/review/design → `msnc:trim` first, once a session.") comes after "Small: do it.", and at 799 of 800 characters it had no room for "even a one-line fix" without cutting a rule. The description has no cap, so the trigger went there. Frontmatter only, so `skills/trim/levels/*.md` don't change.
+- `non-code-question-skips-trim` (`--ablation none --scaffold --allow-tools Edit Write --no-publish --trust-plugin -j 4`): 3/3 (1.00) before and after.
+- Regression, `multi-module-feature-starts-with-grill` (`-j 3`): 3/3 (1.00). Regression, `reversible-name-is-decided-and-logged` (`-j 3`): 3/3 (1.00).
+- 30 clean runs don't rule out a 1-in-30 miss (a 1-in-30 rate gives 30/30 about 36% of the time). Rerun if it flakes. Wall clock 28–31 s per 10-run eval, $0.98–1.01 each; $0.18 per non-code eval, $0.37 grill, $0.38 reversible.
