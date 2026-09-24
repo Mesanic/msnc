@@ -37,7 +37,18 @@ It prints one line per finding. Put the lines at the top of the report, and give
 - `Duplicate skills: plugin <id> has …` another enabled plugin ships a skill MSNC ships (by MSNC name or by the upstream name MSNC copied). Turn that plugin off with `/plugin`, or keep it and accept two skills answering the same prompt.
 - `Duplicate skills: <folder> has …` personal (`~/.claude/skills`) or project skills MSNC now ships. `/msnc:declutter` moves them to trash.
 - `Project settings: <file> turns on <id>` that project re-enables a plugin that duplicates MSNC. Remove the entry unless that project needs the plugin. `turns off <id>` is an override to review: it only matters while the plugin is on for the user, so it can go once the user-level entry is off. `turns off msnc@…` means MSNC is off in that project.
-- `Old Scope layout:` vendored `.claude/skills/atlas`, `.claude/skills/scalpel` or `.claude/skills/sextant` folders, sextant project hooks, the `<!-- sextant:begin -->` or `<!-- atlas:begin -->` block in `CLAUDE.md`, or `.atlas/` and `.map/` index folders. Remove the folders, hooks and blocks; move the index data with `git mv .atlas .scope/files`, `git mv .map .scope/symbols` and `git mv .scope/files/MAP.md .scope/MAP.md`, then run `/msnc:scope init`.
+- `Old Scope layout:` vendored `.claude/skills/atlas`, `.claude/skills/scalpel` or `.claude/skills/sextant` folders, sextant project hooks, the `<!-- sextant:begin -->` or `<!-- atlas:begin -->` block in `CLAUDE.md`, or `.atlas/` and `.map/` index folders. Remove the folders, hooks and blocks. Move the index data from the repo root:
+  ```bash
+  mkdir -p .scope
+  git mv .atlas .scope/files
+  mv .map .scope/symbols        # .map/ usually holds no tracked files, so git mv fails
+  git mv .scope/files/MAP.md .scope/MAP.md
+  perl -pi -e 's#\.atlas/\*\*#.scope/**#' .scope/files/config.json   # else scan indexes .scope/ itself
+  perl -pi -e 's#<!-- atlas:auto:#<!-- scope:auto:#' .scope/MAP.md    # else scan appends duplicate sections
+  perl -ni -e 'print unless m#^(\.atlas/(overlays|view)|\.map/index)/$#' .gitignore
+  printf '%s\n' .scope/files/overlays/ .scope/files/view/ .scope/symbols/index/ .scope/symbols/view-data.html >> .gitignore
+  ```
+  Then run `/msnc:scope init` and `git add .gitignore .scope`, which also tracks `.scope/symbols/config.json` and `.scope/symbols/ledger/`. If git tracked anything under `.map/`, also run `git rm -r -q --cached .map` so the old paths are staged as removed.
 - `Recipes unused 30+ days:` recipes (typed-only skills, `disable-model-invocation: true`, in the project's or the personal `.claude/skills`) with no use in any project's transcripts for 30 days and no change to their `SKILL.md` in that time. A use is the typed command or a Skill call. Unused recipes are clutter: `/msnc:declutter` moves them to trash, or keep one that's seasonal.
 - `Most-corrected recipes:` the top 3 recipes by corrections, rejected tool calls and failed checks that followed them in the same session, over the last 30 days. Each is a refine candidate: run `/msnc:refine <name>`.
 

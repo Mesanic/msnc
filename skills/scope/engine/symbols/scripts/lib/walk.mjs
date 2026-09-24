@@ -6,7 +6,6 @@ import { cmpStr, toPosix } from './util.mjs';
 
 export const IGNORE_DIRS = Object.freeze([
   '.git',
-  '.scope',
   '__pycache__',
   'dist',
   'node_modules',

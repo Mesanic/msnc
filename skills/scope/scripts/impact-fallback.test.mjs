@@ -1,5 +1,5 @@
 // Files only the file graph knows (CSS, HTML): `impact` answers from the file graph and
-// records the impact entry, so the pre-edit gate can clear. And `scan --no-claude-md`
+// records the impact entry, so the pre-edit gate can clear. And `scan`
 // leaves CLAUDE.md alone. The impact log (.scope/files/overlays/) drops stale entries and stays
 // out of git before any scan adds its rule.
 //   node --test scripts/impact-fallback.test.mjs
@@ -34,9 +34,9 @@ const logged = (root) => {
 };
 
 const root = fixture();
-const scan = scope(root, 'scan', '--no-hook', '--no-claude-md');
+const scan = scope(root, 'scan');
 
-test('scan --no-claude-md writes no CLAUDE.md routing block', () => {
+test('scan writes no CLAUDE.md and no .claude/ hooks', () => {
   assert.equal(scan.status, 0, scan.stderr);
   assert.ok(fs.existsSync(path.join(root, '.scope', 'files', 'graph', 'nodes.jsonl')));
   assert.ok(fs.existsSync(path.join(root, '.scope', 'symbols', 'index')));

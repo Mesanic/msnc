@@ -12,18 +12,15 @@ import {
 import { LEDGER_SCHEMA_VERSION, NOTES_FILE } from './ledger.mjs';
 import { toPosix } from './util.mjs';
 
-export const GITIGNORE_LINE = '.scope/symbols/index/';
-
-export const HOOK_SNIPPET = Object.freeze([
-  '# Scope pre-commit hook — paste into .git/hooks/pre-commit (or your hook manager)',
-  'node "<scope>/scripts/scope.mjs" check || exit 1',
-]);
+// The index and the `view` output are derived; the ledger is not, so it stays tracked.
+export const GITIGNORE_LINES = Object.freeze(['.scope/symbols/index/', '.scope/symbols/view-data.html']);
 
 /**
  * Initialize the .scope/symbols/ skeleton (idempotent):
  *   .scope/symbols/index/  — store dir (+ placeholder meta.json if absent)
  *   .scope/symbols/ledger/ — notes dir (+ empty notes.jsonl if absent)
- *   .gitignore             — gains `.scope/symbols/index/`; `.scope/symbols/ledger/` stays tracked
+ *   .gitignore             — gains `.scope/symbols/index/` and `.scope/symbols/view-data.html`;
+ *                            `.scope/symbols/ledger/` stays tracked
  *
  * Never clobbers existing meta.json / notes.jsonl / .gitignore content.
  */
@@ -69,20 +66,18 @@ export async function initProject(rootAbs) {
   let gitignoreStatus = 'present';
   let wholesaleIgnore = false;
   if (gitignore === null) {
-    await writeFile(gitignorePath, `${GITIGNORE_LINE}\n`);
+    await writeFile(gitignorePath, `${GITIGNORE_LINES.join('\n')}\n`);
     gitignoreStatus = 'created';
   } else {
     const lines = gitignore.split('\n').map((l) => l.trim());
     wholesaleIgnore = lines.some((l) => ['.scope', SYMBOLS_DIRNAME].includes(l.replace(/\/$/, '')));
-    const alreadyIgnored = lines.some(
-      (l) => l === GITIGNORE_LINE || l === GITIGNORE_LINE.replace(/\/$/, ''),
-    );
+    const missing = GITIGNORE_LINES.filter((g) => !lines.includes(g) && !lines.includes(g.replace(/\/$/, '')));
     // wholesaleIgnore means the repo ignores `.scope/symbols/` entirely -- appending the narrower
-    // `.scope/symbols/index/` under it changes nothing except leaving .gitignore dirty after a scan.
-    if (!alreadyIgnored && !wholesaleIgnore) {
+    // lines under it changes nothing except leaving .gitignore dirty after a scan.
+    if (missing.length && !wholesaleIgnore) {
       let out = gitignore;
       if (out.length > 0 && !out.endsWith('\n')) out += '\n';
-      out += `${GITIGNORE_LINE}\n`;
+      out += `${missing.join('\n')}\n`;
       await writeFile(gitignorePath, out);
       gitignoreStatus = 'appended';
     }

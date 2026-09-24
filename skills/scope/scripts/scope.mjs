@@ -26,7 +26,7 @@ const HELP = `scope — one instrument for reading and changing a codebase
     symbol graph  functions, calls, signatures, tests, notes
 
 scope's own commands (these need both graphs)
-  scope scan                 refresh both graphs; installs the impact-first gate
+  scope scan                 refresh both graphs
   scope impact <name|id>     dependents, cross-checked for blind spots
   scope impact <path>        same, at file altitude (whole-file dependents)
   scope view [--out f]       ONE interactive graph: module -> file -> symbol
@@ -54,8 +54,6 @@ write back / verify
 
 options
   --root <dir>   project root (default: cwd)
-  --no-hook      scan: do not install the impact-first PreToolUse hook
-  --no-claude-md scan: do not write the CLAUDE.md routing block
   --depth <n>    impact / neighbors
   --out <file>   view: where to write the HTML
 
@@ -161,154 +159,11 @@ function readFileImporters(root, targetFile) {
 
 // --- commands ---------------------------------------------------------------
 
-// --- CLAUDE.md routing block -------------------------------------------------
-// Written once, when both stores exist, because the routing it describes is only
-// correct then: with one engine installed, `scope impact` cannot answer at all.
-//
-// Unlike the files engine's equivalent this does NOT rewrite an existing block. That engine
-// writes its block from `init`, which runs about once per repo; this runs on every `scan`, and
-// silently reverting a routing rule someone deliberately tuned would be worse than
-// carrying a stale one. Delete the block to regenerate it.
-const CLAUDE_BEGIN = '<!-- scope:begin -->';
-const CLAUDE_END = '<!-- scope:end -->';
-
-const CLAUDE_BLOCK = [
-  CLAUDE_BEGIN,
-  '## Scope — impact before you edit',
-  '',
-  'This repo is indexed by Scope, one tool that keeps two graphs of the code in step:',
-  'a file graph (modules, imports, git state, issues) and a symbol graph (functions, calls,',
-  'signatures, tests). One CLI covers both:',
-  '',
-  '```bash',
-  'S="<scope>/scripts/scope.mjs"   # <scope> = the msnc:scope skill folder',
-  '```',
-  '',
-  '| Job | Command |',
-  '|---|---|',
-  '| Orient at session start | `node $S map`, then `node $S query "nouns of the task"` |',
-  '| Before ANY edit to a file the graph knows | `node $S impact <symbol\\\|path>` |',
-  '| Read a definition | `node $S locate <name>` then `node $S slice <id>` |',
-  '| After an edit | `node $S check`, then `node $S scan` |',
-  '| See or show how the project fits together | `node $S view` |',
-  '',
-  '**Impact first, every time** — not "when it looks risky". The edits that break something are',
-  'exactly the ones that did not look risky. A PreToolUse hook enforces it: an edit to a file that',
-  'has a node in the graph is refused until `scope impact` has been run on it. New files, files',
-  'outside the graph, and repos with no index are never gated. Bypass: `SCOPE_HOOK=off`.',
-  '',
-  '`impact` is the one that matters, because the two graphs fail in opposite directions. Symbol',
-  'analysis cannot resolve a call made through a variable and reports the dependent as simply',
-  'absent; the file graph sees that importer but not the line. `scope impact` runs both and',
-  'hands you the difference as a short triage list instead of a confident "no dependents found".',
-  'Pass a symbol for exact line spans, a file path for whole-file dependents.',
-  '',
-  'Refreshing one graph and not the other degrades `impact` silently, with nothing on screen to',
-  'say so — which is why `node $S scan` is the only scan command; run it after multi-file edits.',
-  '',
-  '`node $S` with no arguments lists every command.',
-  '',
-  'Scope wrote this block. Edit it freely — it is only regenerated if you delete it entirely.',
-  CLAUDE_END,
-].join('\n');
-
-// Returns 'created' | 'appended' | null (already present, or unchanged).
-function ensureClaudeBlock(root) {
-  const p = path.join(root, 'CLAUDE.md');
-  const existed = fs.existsSync(p);
-  const cm = existed ? fs.readFileSync(p, 'utf8').replace(/\r\n/g, '\n') : '';
-  if (cm.includes(CLAUDE_BEGIN)) return null;
-  const next = cm.trimEnd() + (cm.trim() ? '\n\n' : '') + CLAUDE_BLOCK + '\n';
-  fs.writeFileSync(p, next);
-  return existed && cm.trim() ? 'appended' : 'created';
-}
-
-// The CLAUDE.md block routes; this enforces. Installed on scan for the same reason the block
-// is: a rule that each project has to wire up by hand is a rule that holds in the project
-// someone remembered. Written only when absent -- and re-added if deleted, which is the point.
-// Opt out with SCOPE_NO_HOOK=1 or `scope scan --no-hook`.
-// Returns 'created' | 'added' | null (already wired, or settings.json unreadable).
-function hookPath(root, file) {
-  // Relative when the skill lives inside the repo, which is the normal case. This lands in
-  // settings.json -- the SHARED project settings, not settings.local.json -- so an absolute
-  // path here would commit one machine's home directory and break for everyone else. Hooks
-  // run with cwd at the project root, so the relative form resolves. Absolute only when the
-  // skill genuinely sits outside the repo, where nothing relative could work.
-  // Forward slashes: node accepts them on Windows and they need no escaping in JSON.
-  const abs = path.join(here, file);
-  const rel = path.relative(root, abs).split(path.sep).join('/');
-  return rel.startsWith('..') ? abs.split(path.sep).join('/') : rel;
-}
-
-function ensureHooks(root) {
-  const p = path.join(root, '.claude', 'settings.json');
-  let settings = {};
-  const existed = fs.existsSync(p);
-  if (existed) {
-    try { settings = JSON.parse(fs.readFileSync(p, 'utf8')); } catch { return null; }
-    if (!settings || typeof settings !== 'object') return null;
-  }
-  const hooks = settings.hooks || (settings.hooks = {});
-  const added = [];
-
-  // The gate. Bash is in the matcher because it is the widest hole: an in-place edit or a
-  // `>` redirect is as permanent as the Edit tool, and harnesses reach for the shell
-  // constantly. The hook parses the command and falls open when it cannot tell.
-  const pre = hooks.PreToolUse || (hooks.PreToolUse = []);
-  if (!Array.isArray(pre)) return null;
-  const wired = JSON.stringify(pre);
-  if (!wired.includes('pre-edit-hook.mjs')) {
-    pre.push({
-      matcher: 'Edit|Write|MultiEdit|NotebookEdit|Bash',
-      hooks: [{ type: 'command', command: `node "${hookPath(root, 'pre-edit-hook.mjs')}"`, timeout: 10 }],
-    });
-    added.push('PreToolUse gate (edits, including via Bash)');
-  } else if (!wired.includes('|Bash')) {
-    // An install predating Bash coverage: widen it rather than leaving the hole open, since
-    // the whole point of the gate is that it does not depend on anyone remembering.
-    for (const entry of pre) {
-      if (JSON.stringify(entry).includes('pre-edit-hook.mjs') && !String(entry.matcher).includes('Bash')) {
-        entry.matcher = `${entry.matcher}|Bash`;
-        added.push('PreToolUse gate widened to cover Bash');
-      }
-    }
-  }
-
-  // The nudge. Fires once per session, on a repo-wide grep for a bare identifier, and never
-  // on the scoped greps the cross-check itself prescribes. Separate hook, separate entry, so
-  // it can be removed without touching the gate that actually protects anything.
-  if (!wired.includes('grep-nudge-hook.mjs')) {
-    pre.push({
-      matcher: 'Grep',
-      hooks: [{ type: 'command', command: `node "${hookPath(root, 'grep-nudge-hook.mjs')}"`, timeout: 10 }],
-    });
-    added.push('Grep nudge (once per session)');
-  }
-
-  // The announcement. Soft, but it is what puts Scope in context before the first Grep --
-  // the gate cannot help there, because reads are not gated.
-  const start = hooks.SessionStart || (hooks.SessionStart = []);
-  if (Array.isArray(start) && !JSON.stringify(start).includes('session-hook.mjs')) {
-    start.push({
-      hooks: [{ type: 'command', command: `node "${hookPath(root, 'session-hook.mjs')}"`, timeout: 10 }],
-    });
-    added.push('SessionStart announcement');
-  }
-
-  if (!added.length) return null;
-  fs.mkdirSync(path.dirname(p), { recursive: true });
-  fs.writeFileSync(p, JSON.stringify(settings, null, 2) + '\n');
-  return { how: existed ? 'updated' : 'created', added };
-}
-
 function cmdScan(root, { files, symbols }) {
-  // msnc: MSNC's dispatcher is the gate and its Tuner the routing, so this copy never
-  // writes project hooks or a CLAUDE.md block, whatever flags scan is run with.
-  process.env.SCOPE_NO_HOOK = process.env.SCOPE_NO_CLAUDE_MD = '1';
+  // No project hooks and no CLAUDE.md block: MSNC's dispatcher is the gate and its Tuner the routing.
   if (!files && !symbols) die('no engine found — this install is incomplete. See `scope status`');
-  // Both inits are documented idempotent and additive, but the files engine's also appends to
-  // CLAUDE.md and .gitignore — so only run it when the store is genuinely absent,
-  // and say so rather than editing the repo silently.
+  // Both inits are documented idempotent and additive, but both append to .gitignore — so
+  // only run one when its store is genuinely absent, and say so rather than editing the repo silently.
   if (symbols && !fs.existsSync(path.join(root, '.scope', 'symbols', 'index'))) {
     console.log('symbol graph  init (first run — creating .scope/symbols/)');
     run(symbols, ['init'], root);
@@ -335,17 +190,6 @@ function cmdScan(root, { files, symbols }) {
   };
   if (symbols) summarize('symbol graph ', run(symbols, ['scan'], root, { merge: true }));
   if (files) summarize('file graph   ', run(files, ['scan'], root, { merge: true }));
-  // Only with both engines present: the block routes impact and view through scope, and
-  // neither works with one store. Skipped when something else already does the routing
-  // (a harness plugin, a hand-written CLAUDE.md): two routing texts disagree eventually.
-  if (files && symbols && !process.env.SCOPE_NO_CLAUDE_MD && !process.argv.includes('--no-claude-md')) {
-    const wrote = ensureClaudeBlock(root);
-    if (wrote) console.log(`CLAUDE.md ${wrote} Scope routing block (edit freely; delete it to regenerate)`);
-  }
-  if (!process.env.SCOPE_NO_HOOK && !process.argv.includes('--no-hook')) {
-    const hooked = ensureHooks(root);
-    if (hooked) console.log(`.claude/settings.json ${hooked.how}: ${hooked.added.join(', ')} (SCOPE_HOOK=off to bypass)`);
-  }
 }
 
 // One picture, both tiers. The file graph's viewer is the full-featured one -- node-type

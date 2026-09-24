@@ -24,7 +24,7 @@ import {
   makeSymbolNoteRecord,
   sourceKeyForNode,
 } from './lib/ledger.mjs';
-import { HOOK_SNIPPET, initProject } from './lib/init.mjs';
+import { initProject } from './lib/init.mjs';
 import { collectStats, formatStats } from './lib/stats.mjs';
 import { MAX_SOURCE_FILE_BYTES } from './lib/walk.mjs';
 import { VIEWER_MAX_TOTAL_BYTES, ViewOutputError, generateViewFile } from './lib/view.mjs';
@@ -421,11 +421,10 @@ function printInitResult(res) {
   printOut(`init ${res.symbolsDirPosix}`);
   printOut(`index: ${res.metaWritten ? 'created (placeholder meta; first scan replaces it)' : 'existing'}`);
   printOut(`ledger notes.jsonl: v${res.ledgerSchemaVersion} ${res.notesCreated ? 'created' : 'existing'} (tracked in git, never gitignored)`);
-  printOut(`gitignore: ${res.gitignoreStatus} (.scope/symbols/index/ ignored; .scope/symbols/ledger/ stays tracked)`);
+  printOut(`gitignore: ${res.gitignoreStatus} (.scope/symbols/index/ and view-data.html ignored; .scope/symbols/ledger/ stays tracked)`);
   if (res.wholesaleIgnore) {
     console.error('warning: .gitignore ignores .scope/symbols/ entirely — un-ignore .scope/symbols/ledger/ or notes will be lost');
   }
-  printOut(HOOK_SNIPPET.join('\n'));
 }
 
 async function runInit(argv) {

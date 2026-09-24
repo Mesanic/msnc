@@ -42,7 +42,20 @@ test('/msnc:scope init writes only .scope/ (files/, symbols/, MAP.md) and .gitig
   const gitignore = readFileSync(join(repo, '.gitignore'), 'utf8');
   assert.ok(gitignore.startsWith(FILES['.gitignore']), 'existing lines kept');
   assert.deepEqual(gitignore.slice(FILES['.gitignore'].length).split('\n').filter(Boolean).sort(),
-    ['.scope/files/overlays/', '.scope/files/view/', '.scope/symbols/index/'], 'only index entries appended');
+    ['.scope/files/overlays/', '.scope/files/view/', '.scope/symbols/index/', '.scope/symbols/view-data.html'], 'only index and view entries appended');
+});
+
+test('scope --help offers no hook or CLAUDE.md options: MSNC\'s own hook is the gate', () => {
+  const r = node([CLI, '--help'], repo);
+  assert.equal(r.status, 0);
+  assert.match(r.stdout, /scope scan {17}refresh both graphs\n/);
+  assert.doesNotMatch(r.stdout, /--no-hook|--no-claude-md|gate/);
+});
+
+test('the symbol engine init prints no hook snippet with a <scope> placeholder to paste', () => {
+  const r = node([fileURLToPath(new URL('../skills/scope/engine/symbols/scripts/symbols.mjs', import.meta.url)), 'init'], fixture());
+  assert.equal(r.status, 0, r.stderr);
+  assert.doesNotMatch(r.stdout + r.stderr, /<scope>|pre-commit/);
 });
 
 test("Scope's merge.test.mjs passes on the fixture: symbols join the file graph", () => {
