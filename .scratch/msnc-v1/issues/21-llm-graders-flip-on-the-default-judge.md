@@ -18,7 +18,11 @@ Then re-run both cases 3 times and record the results.
 
 **Blocked by:** None — can start immediately
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Both cases score 1.00 over 3 runs with the judge the suite documents, with no criterion removed.
-- [ ] Any judge override is written down next to the run command in `evals/RESULTS.md`.
+- [x] Both cases score 1.00 over 3 runs with the judge the suite documents, with no criterion removed.
+- [x] Any judge override is written down next to the run command in `evals/RESULTS.md`.
+
+## Comments
+
+- 2026-09-23 · Option 1: both `llm` rubrics now judge only the final message; process and structure checks moved to free graders (small-fix: `fixed`, `no-planning-skills`, `no-planner`, `no-plan-file`, `no-proposal`; record: `frontmatter`, `why-line`, `when-line`, `numbered-steps`, `heading-step`, `no-bare-heading`, `save-path`, `asks-to-save`, `not-saved`). Every old criterion maps to a grader (table in `evals/RESULTS.md`). The suite stays on the default haiku judge, no `--judge-model` · `small-fix-goes-straight-to-edit` 1.00, 1.00 (judge PASS 18/18) · `record-drafts-without-writing`: 0.93, 0.93, 0.93 while the judge still read the whole draft (it failed drafts that added notes or changed the steps); after narrowing it to the draft and its done-check, 1.00, 0.97, 0.97, 1.00 (two regex bugs, fixed one at a time; the judge voted PASS in every run), then 1.00, 1.00 with the final graders · not checked: the order "draft, then question" (the question can sit above the draft now). Details in `evals/RESULTS.md`.

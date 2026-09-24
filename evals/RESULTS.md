@@ -151,3 +151,48 @@ Probes were throwaway single-run cases, not part of the suite.
 - `non-code-question-skips-trim` (`--ablation none --scaffold --allow-tools Edit Write --no-publish --trust-plugin -j 4`): 3/3 (1.00) before and after.
 - Regression, `multi-module-feature-starts-with-grill` (`-j 3`): 3/3 (1.00). Regression, `reversible-name-is-decided-and-logged` (`-j 3`): 3/3 (1.00).
 - 30 clean runs don't rule out a 1-in-30 miss (a 1-in-30 rate gives 30/30 about 36% of the time). Rerun if it flakes. Wall clock 28–31 s per 10-run eval, $0.98–1.01 each; $0.18 per non-code eval, $0.37 grill, $0.38 reversible.
+
+## Rerun: small-fix-goes-straight-to-edit and record-drafts-without-writing (ticket 21)
+
+**Date:** 2026-09-23 · **Claude Code:** 2.1.280 · **Model under test:** `claude-opus-5-5[1m]` · **Judge:** haiku (the default, no `--judge-model`). The suite stays on the default judge; no override is needed to run it.
+
+```sh
+claude plugin eval . --case small-fix-goes-straight-to-edit --ablation none --scaffold --allow-tools Edit Write --no-publish --trust-plugin -j 3
+claude plugin eval . --case record-drafts-without-writing --ablation none --no-publish --trust-plugin -j 3
+```
+
+Each `llm` rubric now asks only about what a `last_message` judge can see. Every other part moved to a free grader. No criterion was dropped:
+
+| Case | Criterion (old rubric) | Now checked by |
+|---|---|---|
+| small-fix | fixed the typo in `src/greet.js` / FAIL if unchanged | `fixed` (regex on the file: `Hello, ${name}!`), plus `edited` (1–3 Edits) |
+| small-fix | no tickets first | `no-tickets` (no `.scratch/**`), `no-planning-skills` |
+| small-fix | no plan or spec first | `no-plan-file` (no Write), `no-planner` (no `msnc:planner` agent), `no-planning-skills` |
+| small-fix | no grill; FAIL if it runs `/msnc:tickets`, `/msnc:implement`, `/msnc:grill` or `/msnc:spec` | `no-planning-skills` (no Skill call to any of the four) |
+| small-fix | FAIL if it proposes one of those commands | `no-proposal` (regex, not in the reply) and `straight-to-edit` (no plan, tickets, spec or grill proposed) |
+| small-fix | shows a check's result or says why none ran; no question instead of the fix; a size note is fine | `straight-to-edit` (llm) |
+| record | `disable-model-invocation: true` | `frontmatter` |
+| record | a Why line, a When to use line | `why-line`, `when-line` |
+| record | numbered steps, including `## [x.y.z] - YYYY-MM-DD` | `numbered-steps`, `heading-step` (a numbered step holds the bracketed heading) |
+| record | FAIL if the steps keep the rejected heading | `no-bare-heading` (no numbered step with a bare `1.4.0 - 2026-…` or `<version> - <…>`) |
+| record | asks to confirm before saving to `.claude/skills/<name>/SKILL.md` | `asks-to-save` (a line with "save", "?" and "yes"), `save-path` |
+| record | FAIL if it says the recipe was saved | `not-saved` (regex), plus `no-write` and `no-skill-file` (unchanged) |
+| record | a draft recipe for cutting a release, with a done-check that can be run or observed | `draft` (llm) |
+
+| Case | Graders | Result | Rate |
+|---|---|---|---|
+| small-fix-goes-straight-to-edit | before (ticket 9 graders, haiku) | **fail** | 0/3 (0.50) |
+| small-fix-goes-straight-to-edit | split rubric | pass | 3/3 (1.00), then 3/3 (1.00) |
+| record-drafts-without-writing | before (ticket 9 graders, haiku) | **fail** | 2/3 (0.83) |
+| record-drafts-without-writing | split rubric (1) | **fail** | 2/3 (0.93) |
+| record-drafts-without-writing | (1) plus "don't judge whether the steps would work" (2) | **fail** | 2/3 (0.93), then 2/3 (0.93) |
+| record-drafts-without-writing | judge asked only about the draft and its done-check; closing question, "not saved" and the bare heading as regexes (3) | **fail** (regex bug) | 3/3 (1.00), 2/3 (0.97) |
+| record-drafts-without-writing | (3) with `not-saved` fixed | **fail** (regex bug) | 2/3 (0.97), 3/3 (1.00) |
+| record-drafts-without-writing | (3) with `not-saved` and `asks-to-save` fixed | pass | 3/3 (1.00), then 3/3 (1.00) |
+
+- small-fix: every run called Edit once, wrote nothing, made no Skill call to tickets, implement, grill or spec, and the judge voted PASS 18 of 18. Replies read like "`greet` in `src/greet.js:1` now returns `Hello, ${name}!` … I haven't run it because I don't have a shell here."
+- record, (1) and (2): the judge voted FAIL FAIL FAIL on 3 of 9 drafts that had every part. Each of them added a note outside the draft or changed the session's steps: "Before you answer: by default, `npm version` refuses to run when tracked files have uncommitted changes…", "I changed that in the draft: steps 3–5 put the changelog and the version bump into one commit…", or staged the changelog before `npm version`. The harness stores only the votes, not the judge's reasoning. Asked by hand through `claude -p --model haiku` with no rubric, haiku failed the first of those drafts over that same `npm version` point; with the rubric included, the by-hand probe passed it, so it doesn't reproduce the harness's judge exactly. Saying "don't judge whether the steps would work" didn't help. Narrowing the judge to the draft and its done-check did: PASS in all 18 of the last 18 runs (6 evals × 3).
+- record, (3): the two failures were grader bugs, not bad replies. `not-saved` matched "The tag is created as annotated" (now it needs "I saved/wrote…", "recipe/skill/draft/file … is/was saved", or a line starting "Saved"/"Wrote"). `asks-to-save` required the question on the reply's last line, and one reply asked "Save to `.claude/skills/cut-release/SKILL.md`? (yes / personal / edit / no)" above the draft. It now matches that question anywhere. Trade-off: the old "then asks" order isn't checked; the question must now mention saving and offer yes.
+- Each new regex was run offline against the 12 replies kept from the first runs (all pass) and against hand-made bad variants (no frontmatter, no Why, no When to use, no numbered steps, a bare heading in a step, no save path, "Saved it to …", no question). Each variant failed the grader it targets.
+- `reversible-name-is-decided-and-logged` (ticket 19) was judged by haiku, the same judge the suite documents, and its final 3 runs scored 1.00 (9 of 9 PASS votes). It doesn't need a rerun under a different judge. If it splits again, the same fix applies: move what the judge can't see into free graders.
+- Wall clock 14–16 s per small-fix eval, 18–25 s per record eval; $0.32 per small-fix eval, $0.30–0.34 per record eval.
