@@ -91,6 +91,7 @@
       "Repo root copied to skills/scope as the scope skill; SKILL.md rewritten for MSNC (model-invoked, CLI via ${CLAUDE_SKILL_DIR}, /msnc:scope init)",
       "sextant.mjs: scan never writes project hooks or a CLAUDE.md block (MSNC dispatcher is the gate, Tuner the routing)",
       "Edit gate rebuilt in hooks/msnc.mjs from scripts/pre-edit-hook.mjs",
+      "Skill-folder skip rule exempts a plugin repo's own skills; MAP.md howto names the msnc:scope skill folder instead of tools/sextant",
       "Not copied: grep-nudge-hook.mjs (dropped), pre-edit-hook.mjs, session-hook.mjs, README.md, .gitignore, .gitattributes",
       "Details in skills/scope/UPSTREAM.md"
     ]

@@ -102,13 +102,14 @@ function projectSettings(home, names) {
   return out.length ? out : ['Project settings: no conflicts'];
 }
 
-// Pre-MSNC Scope in this repo: vendored skill folders, sextant's project hooks, its CLAUDE.md routing block.
+// Pre-MSNC Scope in this repo: vendored skill folders, sextant's project hooks, the sextant and atlas CLAUDE.md routing blocks.
 function oldScope(cwd) {
   const vendored = ['atlas', 'scalpel', 'sextant'].map((d) => `.claude/skills/${d}`).filter((d) => existsSync(join(cwd, d)));
+  const claudeMd = read(join(cwd, 'CLAUDE.md'));
   const out = [
     vendored.length && vendored.join(', '),
     ...layers(cwd).filter(([, s]) => JSON.stringify(s.hooks ?? {}).includes('sextant')).map(([f]) => `.claude/${f} runs sextant hooks`),
-    read(join(cwd, 'CLAUDE.md')).includes('<!-- sextant:begin -->') && 'CLAUDE.md has a <!-- sextant:begin --> block',
+    ...['sextant', 'atlas'].filter((t) => claudeMd.includes(`<!-- ${t}:begin -->`)).map((t) => `CLAUDE.md has a <!-- ${t}:begin --> block`),
   ].filter(Boolean);
   return (out.length ? out : ['none']).map((l) => `Old Scope layout: ${l}`);
 }

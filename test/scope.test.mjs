@@ -50,6 +50,24 @@ test("sextant's merge.test.mjs passes on the fixture: symbols join the file grap
   assert.match(r.stdout, /^ok {2}tiers joined: file\(src\/format\.ts\)/m);
 });
 
+test("a plugin repo's own skills are indexed; skills vendored under .claude/ are not", () => {
+  const root = mkdtempSync(join(tmpdir(), 'msnc-scope-plugin-'));
+  for (const [p, text] of Object.entries({
+    '.claude-plugin/plugin.json': '{"name":"p"}',
+    'skills/own/SKILL.md': 'x', 'skills/own/own.ts': 'export function ownFn() { return 1; }\n',
+    '.claude/skills/vend/SKILL.md': 'x', '.claude/skills/vend/vend.ts': 'export function vendFn() { return 2; }\n',
+  })) {
+    mkdirSync(dirname(join(root, p)), { recursive: true });
+    writeFileSync(join(root, p), text);
+  }
+  assert.equal(node([CLI, 'scan'], root).status, 0);
+  assert.match(node([CLI, 'locate', 'ownFn'], root).stdout, /skills\/own\/own\.ts/);
+  assert.doesNotMatch(node([CLI, 'locate', 'vendFn'], root).stdout, /vend\.ts/);
+  const nodes = readFileSync(join(root, '.atlas/graph/nodes.jsonl'), 'utf8');
+  assert.match(nodes, /skills\/own\/own\.ts/);
+  assert.doesNotMatch(nodes, /\.claude\/skills\/vend/);
+});
+
 // --- the edit gate: PreToolUse event on stdin → deny JSON on stdout, or nothing ---
 const DISPATCHER = fileURLToPath(new URL('../hooks/msnc.mjs', import.meta.url));
 const baseEnv = Object.fromEntries(Object.entries(process.env).filter(([k]) => !k.startsWith('CLAUDE_PLUGIN_')));
