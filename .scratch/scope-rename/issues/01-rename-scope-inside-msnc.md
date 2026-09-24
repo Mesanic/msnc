@@ -15,10 +15,16 @@ No version bump: MSNC stays 0.1.0.
 
 **Blocked by:** None — can start immediately.
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] `npm test` and `npm run check` pass at the end of the PR.
-- [ ] Outside doctor's legacy checks, `evals/RESULTS.md` history and `.scratch/`, a case-insensitive search for sextant, atlas and scalpel finds nothing in MSNC.
-- [ ] A scan of a fresh fixture repo creates only `.scope/` (with `files/`, `symbols/`, `MAP.md`) and the new `.gitignore` lines; `scope.mjs impact` clears the edit gate for a mapped file.
-- [ ] doctor reports an old `.atlas/` or `.map/` folder as an old Scope layout.
-- [ ] The three commits are in the order above, and the first is moves only.
+- [x] `npm test` and `npm run check` pass at the end of the PR.
+- [x] Outside doctor's legacy checks, `evals/RESULTS.md` history and `.scratch/`, a case-insensitive search for sextant, atlas and scalpel finds nothing in MSNC.
+- [x] A scan of a fresh fixture repo creates only `.scope/` (with `files/`, `symbols/`, `MAP.md`) and the new `.gitignore` lines; `scope.mjs impact` clears the edit gate for a mapped file.
+- [x] doctor reports an old `.atlas/` or `.map/` folder as an old Scope layout.
+- [x] The three commits are in the order above, and the first is moves only.
+
+## Comments
+
+- 2026-09-24 · Three commits: `0e56afd` pure `git mv` (71 renames), `3a860a1` content edits (76 files), then the bookkeeping commit. `npm test` 116 pass, `npm run check` 62 files clean. Old names remain only in doctor's legacy detection and the README "began as" line (plus its test).
+- Decisions (also in `docs/decisions.md`): engine env vars `SCOPE_FILES`/`SCOPE_SYMBOLS`; `scope.mjs` finds engines only in the bundled `engine/`; identifiers such as `atlasDir`→`filesDir`, `mergeIntoAtlas`→`mergeIntoFileGraph`; in-memory provenance `files`/`symbols`; tool ID `scope-symbols@0.0.1`; viewer `view/scope.html`; the dead files-engine CLAUDE.md block deleted; the removed sextant notices section became a `## tree-sitter` pointer.
+- Open: `scope.mjs`'s `ensureClaudeBlock`, `ensureHooks` and `CLAUDE_BLOCK` can never run under MSNC (scan always sets `SCOPE_NO_HOOK` and `SCOPE_NO_CLAUDE_MD`), so `--no-hook` and `--no-claude-md` do nothing. Renamed, not deleted; a follow-up can remove them.

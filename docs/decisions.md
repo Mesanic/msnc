@@ -27,3 +27,4 @@
 - 2026-09-24 · the symbols engine skips its `.gitignore` line when the repo already ignores all of `.scope/` · same rule the files engine applies · undo: check `.scope/symbols` only
 - 2026-09-24 · deleted the files engine's never-printed CLAUDE.md block, and fixed two self-manifest summaries that claimed init writes a CLAUDE.md block and a hook · simpler than renaming dead text; the summaries were wrong · undo: `git revert`
 - 2026-09-24 · the symbols engine's messages say `scope <cmd>`, and `symbols.mjs init` for commands only the engine has · `map` was that CLI's old name · undo: rename them
+- 2026-09-24 · the removed sextant notices section became a `## tree-sitter` pointer to `skills/scope/THIRD-PARTY-NOTICES.md` · the root notices still lead to the bundled grammars' notices · undo: delete that section

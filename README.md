@@ -144,8 +144,9 @@ MSNC copies from these projects. Each copied folder keeps the upstream `LICENSE`
 | [i-have-adhd](https://github.com/ayghri/i-have-adhd) | Ayoub Ghriss (ayghri) | MIT | Clear |
 | [skills](https://github.com/mattpocock/skills) | Matt Pocock | MIT | grill, spec, tickets, tdd, codebase-design, rephrase, handoff, setup |
 | [ECC](https://github.com/affaan-m/ECC) | Affaan Mustafa (affaan-m) | MIT | verify, doctor, declutter, aside; the sizing idea (orch-pipeline) |
-| [sextant](https://github.com/Mesanic/sextant) | Mesanic | MIT | Scope (engine and edit gate); bundles web-tree-sitter and seven grammars, notices in `skills/scope/THIRD-PARTY-NOTICES.md` |
 | [context-mode](https://github.com/mksglu/context-mode) | mksglu | ELv2 | Quiet, as an optional companion. Not bundled |
+
+Scope began as [Mesanic/sextant](https://github.com/Mesanic/sextant) (archived).
 
 Record, recipe notes, just-enough sizing, Decide to Decide, the why rule and pacing follow principles inspired by [ProcessDriven](https://processdriven.co) by Layla Pomper. ProcessDriven® is a registered trademark. MSNC is not affiliated with or endorsed by ProcessDriven or Layla Pomper, and copies none of its templates or course material.
 

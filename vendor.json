@@ -77,23 +77,5 @@
       "declutter: MSNC duplicates and project plugin overrides added as scan channels; trash-first and ask-per-item rules kept",
       "Details in each folder's UPSTREAM.md"
     ]
-  },
-  {
-    "repo": "Mesanic/sextant",
-    "ref": "main",
-    "commit": "bf4ceb7e18bb406671b0bc2fc8e460b0f43a9671",
-    "license": "MIT",
-    "paths": {
-      "skills/scope": "."
-    },
-    "changes": [
-      "Pin includes MSNC's three upstream commits: impact answers CSS/HTML from the file graph (bc8b321), scan --no-claude-md (9f16c18), and the impact log in .atlas/overlays/ so sandboxed Bash and the gate agree (bf4ceb7)",
-      "Repo root copied to skills/scope as the scope skill; SKILL.md rewritten for MSNC (model-invoked, CLI via ${CLAUDE_SKILL_DIR}, /msnc:scope init)",
-      "sextant.mjs: scan never writes project hooks or a CLAUDE.md block (MSNC dispatcher is the gate, Tuner the routing)",
-      "Edit gate rebuilt in hooks/msnc.mjs from scripts/pre-edit-hook.mjs",
-      "Skill-folder skip rule exempts a plugin repo's own skills; MAP.md howto names the msnc:scope skill folder instead of tools/sextant",
-      "Not copied: grep-nudge-hook.mjs (dropped), pre-edit-hook.mjs, session-hook.mjs, README.md, .gitignore, .gitattributes",
-      "Details in skills/scope/UPSTREAM.md"
-    ]
   }
 ]
