@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>atlas</title>
+<title>scope</title>
 <style>
 :root {
   --bg: #0e1116; --panel: #161b22; --panel2: #1c232c; --line: #2a323d;
@@ -171,7 +171,7 @@ code { background: var(--panel2); padding: 1px 5px; border-radius: 4px; font-siz
 </head>
 <body>
 <header>
-  <div class="brand">atlas <small id="repo-name"></small></div>
+  <div class="brand">scope <small id="repo-name"></small></div>
   <div class="tabs" role="tablist">
     <button id="tab-graph" role="tab" aria-selected="true">Knowledge graph</button>
     <button id="tab-flow" role="tab" aria-selected="false">Flow</button>
@@ -220,13 +220,13 @@ code { background: var(--panel2); padding: 1px 5px; border-radius: 4px; font-siz
   <div id="detail"></div>
 </main>
 
-<script id="atlas-data" type="application/json">/*__ATLAS_DATA__*/</script>
+<script id="scope-data" type="application/json">/*__SCOPE_DATA__*/</script>
 <script>
 "use strict";
-const DATA = JSON.parse(document.getElementById('atlas-data').textContent);
+const DATA = JSON.parse(document.getElementById('scope-data').textContent);
 
 // Four tables used to overlap: file was the same blue as "structural", symbol the same green
-// as "scalpel", module the same purple as "ambiguous". Colour alone also cannot carry nine
+// as "symbols", module the same purple as "ambiguous". Colour alone also cannot carry nine
 // categories for a deuteranope, so each table now owns a band -- node types are the only
 // saturated one -- and the four types that matter structurally carry a SHAPE as well, which
 // survives any colour vision. Hues are Okabe-Ito derived, lifted for a dark ground.
@@ -240,7 +240,7 @@ const TYPE_SHAPE = {
 };
 const TYPE_LABEL = {
   entry: 'entrypoint', file: 'file', mod: 'module', sym: 'symbol',
-  concept: 'concept', adr: 'decision', skill: 'atlas itself', note: 'note', issue: 'issue',
+  concept: 'concept', adr: 'decision', skill: 'Scope itself', note: 'note', issue: 'issue',
 };
 // Two organizing principles share this graph. STRUCTURAL edges describe how the code
 // actually hangs together; EDITORIAL edges describe what people said about it. On one
@@ -256,10 +256,10 @@ const EKIND_LABEL = { structural: 'structural (imports, calls, tests)', editoria
 // Provenance is drawn on the node itself as fill-vs-outline, not as a hue, so the facet
 // swatches mirror that shape instead of inventing three more colours that collide with the
 // node types. SRC_SHAPE is the legend's half of the same encoding.
-const SRC_COLOR = { both: '#c9d4e0', atlas: '#93a3b5', scalpel: '#93a3b5' };
-const SRC_SHAPE = { both: '', atlas: 'ring', scalpel: 'dashring' };
-const SRC_HINT = { both: 'solid', atlas: 'outlined', scalpel: 'dashed outline' };
-const SRC_LABEL = { both: 'both tools', atlas: 'atlas only', scalpel: 'scalpel only' };
+const SRC_COLOR = { both: '#c9d4e0', files: '#93a3b5', symbols: '#93a3b5' };
+const SRC_SHAPE = { both: '', files: 'ring', symbols: 'dashring' };
+const SRC_HINT = { both: 'solid', files: 'outlined', symbols: 'dashed outline' };
+const SRC_LABEL = { both: 'both engines', files: 'file graph only', symbols: 'symbol graph only' };
 const CHK_COLOR = { drift: '#e08a2e', dangling: '#e0455f', orphan: '#9aa7b4', ambiguous: '#b06fd0' };
 const CHK_LABEL = { drift: 'drifted', dangling: 'dangling ref', orphan: 'orphaned note', ambiguous: 'ambiguous note' };
 const GIT_COLOR = {
@@ -376,7 +376,7 @@ const gpush = new Float64Array(G * 2);
 
 // The flow sub-graph deliberately excludes symbols so the layered view stays file-shaped.
 // Impact must not. `calls` is 889 of 2258 edges on the reference graph and every one is
-// symbol-to-symbol, so "what breaks if I change this function" -- the question sextant
+// symbol-to-symbol, so "what breaks if I change this function" -- the question Scope
 // exists to answer -- returned nothing for 795 of 1141 nodes. impIn/impOut span both tiers
 // and let containment carry the blast upward: change a symbol and its file has changed, so
 // that file's importers are inside the radius too.
@@ -511,7 +511,7 @@ function recomputeVisible() {
     if (ok && hasCheck) ok = state.checks.has(n.chk || '(clean)');
     // "Only one tool sees it": the disagreement between the two graphs, which is the
     // reason a merged graph is worth building at all.
-    if (ok && state.disagree) ok = n.src === 'atlas' || n.src === 'scalpel';
+    if (ok && state.disagree) ok = n.src === 'files' || n.src === 'symbols';
     if (ok && state.work) ok = isWorkNode(i);
     visible[i] = ok ? 1 : 0;
     if (ok) shown++;
@@ -1357,7 +1357,7 @@ function draw() {
         fill = HOP_COLOR(hopOf[i]);
       }
       // Provenance, on the node instead of buried in a facet: solid = both tools saw it,
-      // outlined = only one, and the outline is dashed when that one was scalpel. Shape and
+      // outlined = only one, and the outline is dashed when that one was the symbols engine. Shape and
       // fill, not a fourth colour table nobody can hold in their head.
       const src = n.src;
       nodePath(shape, x, y, r);
@@ -1365,7 +1365,7 @@ function draw() {
         ctx.fillStyle = fill; ctx.globalAlpha = a * 0.22; ctx.fill();
         ctx.globalAlpha = a;
         ctx.strokeStyle = fill; ctx.lineWidth = Math.max(1.2, r * 0.28) / 1;
-        ctx.setLineDash(src === 'scalpel' ? [3 / zoom, 2.4 / zoom] : []);
+        ctx.setLineDash(src === 'symbols' ? [3 / zoom, 2.4 / zoom] : []);
         ctx.stroke(); ctx.setLineDash([]);
       } else {
         ctx.fillStyle = fill; ctx.fill();
@@ -1514,7 +1514,7 @@ function drawFlowPill(i, x, y, a) {
   ctx.globalAlpha = a;
   ctx.strokeStyle = hot || base;
   ctx.lineWidth = (i === state.selected ? 2.2 : n.src && n.src !== 'both' ? 1 : 1.4) / zoom;
-  ctx.setLineDash(n.src === 'scalpel' ? [3 / zoom, 2.4 / zoom] : []);
+  ctx.setLineDash(n.src === 'symbols' ? [3 / zoom, 2.4 / zoom] : []);
   ctx.stroke();
   ctx.setLineDash([]);
   ctx.font = '11px ui-sans-serif, system-ui';
@@ -1890,7 +1890,7 @@ function renderDetail() {
   }
 
   parts.push('<h4>Ask the agent</h4>');
-  parts.push(`<code id="cmd">atlas context ${escapeHtml(n.k)}</code>`);
+  parts.push(`<code id="cmd">scope context ${escapeHtml(n.k)}</code>`);
   parts.push(`<button class="btn" style="margin-top:6px" id="copycmd">Copy command</button>`);
 
   el.innerHTML = parts.join('');
@@ -1993,8 +1993,8 @@ function buildControls() {
     };
   });
 
-  // Provenance and check-state facets only exist on a merged graph (sextant folds another
-  // store in and stamps `src`/`chk`). A plain atlas graph has neither, so both sections
+  // Provenance and check-state facets only exist on a merged graph (Scope folds another
+  // store in and stamps `src`/`chk`). An unmerged file graph has neither, so both sections
   // stay hidden rather than showing an empty box.
   const sc = {};
   for (const n of nodes) if (n.src) sc[n.src] = (sc[n.src] || 0) + 1;
@@ -2004,7 +2004,7 @@ function buildControls() {
     const srcEl = document.getElementById('sources');
     srcEl.innerHTML = skeys.map((k) => `
       <label class="row"><input type="checkbox" data-src="${k}" checked>
-        <i class="${SRC_SHAPE[k]}" style="color:${SRC_COLOR[k]};width:11px;height:11px;flex:none;border-radius:50%;${SRC_SHAPE[k] ? 'background:none;border:1.5px ' + (k === 'scalpel' ? 'dashed' : 'solid') + ' currentColor' : 'background:currentColor'}"></i>
+        <i class="${SRC_SHAPE[k]}" style="color:${SRC_COLOR[k]};width:11px;height:11px;flex:none;border-radius:50%;${SRC_SHAPE[k] ? 'background:none;border:1.5px ' + (k === 'symbols' ? 'dashed' : 'solid') + ' currentColor' : 'background:currentColor'}"></i>
         ${SRC_LABEL[k]} <span style="color:var(--fg3)">· ${SRC_HINT[k]}</span><span class="n">${sc[k]}</span></label>`).join('');
     srcEl.querySelectorAll('input').forEach((cb) => {
       cb.onchange = () => {
@@ -2058,7 +2058,7 @@ function buildControls() {
     <label class="row"><input type="checkbox" data-git="${g}" checked>
       <span class="sw" style="background:${GIT_COLOR[g] || 'var(--ok)'}"></span>
       ${GIT_LABEL[g]}<span class="n">${gc[g]}</span></label>`).join('')
-    : '<div style="color:var(--fg3);font-size:11.5px">no git overlay — run atlas git-overlay</div>';
+    : '<div style="color:var(--fg3);font-size:11.5px">no git overlay — run scope git-overlay</div>';
   gitEl.querySelectorAll('input').forEach((cb) => {
     cb.onchange = () => {
       if (cb.checked) state.gitFilter.add(cb.dataset.git); else state.gitFilter.delete(cb.dataset.git);
@@ -2091,8 +2091,8 @@ function buildControls() {
     ['tri', TYPE_COLOR.entry, 'triangle — entrypoint', 'entry'],
     ['', '#9aa7b4', 'size — √degree; the biggest dot is the hub', null],
     ['', SRC_COLOR.both, 'filled — both tools saw it', null],
-    ['ring', TYPE_COLOR.file, 'outlined — only atlas saw it', null],
-    ['dashring', TYPE_COLOR.sym, 'dashed outline — only scalpel saw it', null],
+    ['ring', TYPE_COLOR.file, 'outlined — only the file graph saw it', null],
+    ['dashring', TYPE_COLOR.sym, 'dashed outline — only the symbol graph saw it', null],
     ['ring', '#f0a830', 'ring — committed, not pushed', null],
     ['ring2', '#e07b39', 'double ring — modified locally', null],
     ['ring', '#4a90d9', 'ring — staged', null],

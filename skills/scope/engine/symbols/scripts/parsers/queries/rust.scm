@@ -1,4 +1,4 @@
-; scalpel extraction query for Rust.
+; Scope symbol extraction query for Rust.
 ;
 ; Capture conventions consumed by lib/extract.mjs:
 ;   *.def  - the full definition node (span source)

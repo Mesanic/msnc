@@ -2,17 +2,17 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { atlasDir, fail, loadConfig, readJsonIfExists, writeFileAtomic } from './store.mjs';
+import { filesDir, fail, loadConfig, readJsonIfExists, writeFileAtomic } from './store.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const TEMPLATE = path.join(HERE, '..', 'viewer-template.html');
-const SLOT = '/*__ATLAS_DATA__*/';
+const SLOT = '/*__SCOPE_DATA__*/';
 
-// `outFile` lets a caller render a graph that is not exactly this store's own -- sextant
-// passes a graph with scalpel's symbol tier folded in, and must not clobber the view
-// `sextant view` writes. Omitted, behaviour is unchanged.
+// `outFile` lets a caller render a graph that is not exactly this store's own -- Scope
+// passes a graph with the symbol graph's symbol tier folded in, and must not clobber the view
+// `scope view` writes. Omitted, behaviour is unchanged.
 export function graphHtml(ctx, graph, outFile) {
-  const dir = atlasDir(ctx.root);
+  const dir = filesDir(ctx.root);
   const config = loadConfig(dir);
   if (!fs.existsSync(TEMPLATE)) fail(`viewer template missing at ${TEMPLATE}`);
   const template = fs.readFileSync(TEMPLATE, 'utf8');
@@ -28,8 +28,8 @@ export function graphHtml(ctx, graph, outFile) {
       repo: issues ? issues.repo : null,
       generated: new Date().toISOString(),
     },
-    // src/chk/note are only present when a caller folded another store in (sextant does);
-    // emitted only when set so a plain `sextant view` payload is unchanged.
+    // src/chk/note are only present when a caller folded another store in (Scope does);
+    // emitted only when set so a plain `scope view` payload is unchanged.
     nodes: alive.map((n) => {
       const out = {
         id: n.id, t: n.t, k: n.k, s: n.s || '', g: n.g || [],
@@ -49,7 +49,7 @@ export function graphHtml(ctx, graph, outFile) {
   // summary would end the block early. Escaping "<" as < keeps it valid JSON and inert HTML.
   const json = JSON.stringify(payload).replace(/</g, '\\u003c');
   const html = template.replace(SLOT, json);
-  const target = outFile || path.join(dir, 'view', 'atlas.html');
+  const target = outFile || path.join(dir, 'view', 'scope.html');
   writeFileAtomic(target, html);
 
   return {

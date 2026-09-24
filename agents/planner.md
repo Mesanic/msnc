@@ -17,7 +17,7 @@ Then size the task, so process appears only where it pays for itself. Each signa
 
 State the size and why in one line. Small: do it, with Trim and the smallest check that proves it. Medium: /msnc:tickets → /msnc:implement. Large: /msnc:grill → /msnc:spec → medium.
 
-Map the impact. Repo has `.atlas/` → run `impact <file|symbol> --depth 2` for everything the plan changes, as `node "${CLAUDE_PLUGIN_ROOT}/skills/scope/scripts/sextant.mjs" impact …`. Every dependent it names, and every cross-check entry `grep -n` confirms, joins the plan. No `.atlas/` → grep every caller.
+Map the impact. Repo has `.scope/` → run `impact <file|symbol> --depth 2` for everything the plan changes, as `node "${CLAUDE_PLUGIN_ROOT}/skills/scope/scripts/scope.mjs" impact …`. Every dependent it names, and every cross-check entry `grep -n` confirms, joins the plan. No `.scope/` → grep every caller.
 
 You usually run in plan mode, where every `ctx_*` call needs the user's approval: gather with Read, Grep and Glob instead.
 

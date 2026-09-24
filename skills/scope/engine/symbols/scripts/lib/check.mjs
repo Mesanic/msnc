@@ -29,7 +29,7 @@ import {
 export { CHECK_BUDGET_TOKENS, CHECK_HINT_RESERVE_TOKENS, CHECK_TRUNCATION_SUFFIX };
 
 /**
- * `map check` — post-edit verification (M3).
+ * `scope check` — post-edit verification (M3).
  *
  * Pipeline:
  *   1. snapshot the PRE-resync state (meta + segments) — this is the baseline
@@ -56,9 +56,9 @@ const STRENGTH = { exact: 2, heuristic: 1 };
 
 /**
  * Volatile derived check state: a compact machine-readable summary of the
- * latest `map check` report, persisted to `.map/index/check-latest.json`.
- * It is the Change-Lens data source for `map view`; it lives inside
- * `.map/index/` (gitignored via `map init`) and is regenerated on every run —
+ * latest `scope check` report, persisted to `.scope/symbols/index/check-latest.json`.
+ * It is the Change-Lens data source for `scope view`; it lives inside
+ * `.scope/symbols/index/` (gitignored by `init`) and is regenerated on every run —
  * never golden-snapshotted, never hand-edited.
  */
 export const CHECK_LATEST_FILE = 'check-latest.json';

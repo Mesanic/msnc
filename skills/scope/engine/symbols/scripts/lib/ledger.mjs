@@ -4,7 +4,7 @@ import { ledgerDirFor } from './store.mjs';
 import { atomicWriteFile, canonicalizeText, cmpStr, readJsonlLines, sha256Hex } from './util.mjs';
 
 /**
- * Notes ledger: append-only JSONL at <root>/.map/ledger/notes.jsonl.
+ * Notes ledger: append-only JSONL at <root>/.scope/symbols/ledger/notes.jsonl.
  *
  * Records are keyed by a content-derived "symbol-source hash" so they survive
  * moves: key = sha256(`${sigHash}|${dedentedBody}`)[:16]. When a symbol's node
@@ -284,7 +284,7 @@ export async function readNotes(rootAbs) {
   } catch (err) {
     if (err instanceof SyntaxError) {
       throw new LedgerCorruptError(
-        `${NOTES_FILE} is not valid JSONL (${err.message}); run \`map init\` to recreate an empty ledger`,
+        `${NOTES_FILE} is not valid JSONL (${err.message}); run \`symbols.mjs init\` to recreate an empty ledger`,
       );
     }
     throw err;

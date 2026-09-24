@@ -21,7 +21,7 @@ export function resolveKey(store, rawKey, { allowRange = true } = {}) {
   if (NODE_ID_RE.test(key)) {
     const node = store.nodesById.get(key);
     if (!node) {
-      throw new UsageError(`no indexed symbol has id "${key}" (index may be stale; run \`sextant scan --full\`)`);
+      throw new UsageError(`no indexed symbol has id "${key}" (index may be stale; run \`scope scan --full\`)`);
     }
     return { kind: 'node', node };
   }
@@ -57,5 +57,5 @@ export function resolveKey(store, rawKey, { allowRange = true } = {}) {
       .join('\n');
     throw new UsageError(`"${key}" is ambiguous (${defs.length}):\n${list}\ndisambiguate with a node id`);
   }
-  throw new UsageError(`no indexed symbol named "${key}" (try \`map locate ${key}\` first)`);
+  throw new UsageError(`no indexed symbol named "${key}" (try \`scope locate ${key}\` first)`);
 }

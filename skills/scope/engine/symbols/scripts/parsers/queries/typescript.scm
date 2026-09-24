@@ -1,4 +1,4 @@
-; scalpel extraction query for TypeScript and TSX.
+; Scope symbol extraction query for TypeScript and TSX.
 ;
 ; The tsx registry entry shares this file: the tree-sitter-typescript grammar is a
 ; superset of JSX/TSX syntax, so keeping a single query source avoids drift between

@@ -1,6 +1,6 @@
-# The atlas viewer
+# The Scope viewer
 
-`atlas graph-html` writes `.atlas/view/atlas.html` — one self-contained page, no network requests,
+`scope view` writes `.scope/files/view/scope.html` — one self-contained page, no network requests,
 opens from the filesystem. Read this when changing the viewer or explaining it to someone.
 
 The store and CLI are optimized for the agent; the viewer is optimized for the human. Those are
@@ -19,7 +19,7 @@ possible. The viewer answers "show me how this project fits together, and where 
 
 ## How the page is built
 
-`lib/html.mjs` reads `scripts/viewer-template.html`, replaces the `/*__ATLAS_DATA__*/` slot with a
+`lib/html.mjs` reads `scripts/viewer-template.html`, replaces the `/*__SCOPE_DATA__*/` slot with a
 JSON payload, and writes the result. The payload is `{meta, nodes, edges, git, issues}` — the
 committed graph plus both overlays, so the page is a complete snapshot at generation time.
 
@@ -77,7 +77,7 @@ Clicking a node opens the detail panel: summary, git state, staleness, flow posi
 dependent and dependency counts, blast radius, issue state with blockers, connections grouped by
 edge type (each clickable to navigate), a **file X-ray** — the file drawn as its own line range
 with one tick per symbol, so how the file is packed is visible and not just what is in it — a
-one-hop **ego graph**, and a ready-to-paste `atlas context <key>` command.
+one-hop **ego graph**, and a ready-to-paste `scope context <key>` command.
 That last one is the handoff: the user finds something interesting, copies the command, and the
 agent picks it up with full context.
 
@@ -121,7 +121,7 @@ get here", which is usually the real question behind "what does this file do".
 hop per frame-step, and draws a labelled ring per hop — "1 hop · 43" — sized to enclose everything
 that far out. Nodes are coloured by hop distance rather than a flat tint, because one hop is what
 you break today and nine hops is trivia, and a single amber wash threw that distinction away.
-This is "what breaks if I change this", the visual twin of the IMPACT line in `atlas context`.
+This is "what breaks if I change this", the visual twin of the IMPACT line in `scope context`.
 Note the direction: upstream means dependents, not dependencies.
 
 The impact graph is **not** the flow graph. Flow deliberately excludes symbols so the layered view
@@ -142,9 +142,9 @@ empty flow view, and that is honest: there is no flow to show.
 
 | Encoding | Meaning |
 |---|---|
-| Fill colour | Node type — entry vermillion, file sky blue, module orchid, symbol bluish green, concept amber, decision indigo, atlas-itself teal. Okabe-Ito derived, and each of the four tables (node type, edge kind, provenance, check state) owns its own band so none of them collide |
+| Fill colour | Node type — entry vermillion, file sky blue, module orchid, symbol bluish green, concept amber, decision indigo, Scope-itself teal. Okabe-Ito derived, and each of the four tables (node type, edge kind, provenance, check state) owns its own band so none of them collide |
 | Node shape | Also node type — module square, file circle, symbol diamond, entrypoint triangle, issue hexagon. Nine categories is past what any palette survives and well past what a deuteranope can separate, so shape carries what colour cannot |
-| Solid vs outlined | Provenance — solid means both tools saw it, a thin outline means atlas only, a dashed outline means scalpel only |
+| Solid vs outlined | Provenance — solid means both engines saw it, a thin outline means the file graph only, a dashed outline means the symbol graph only |
 | Tinted blob | A module and everything it holds |
 | Hexagon | Issue. Green open, grey closed |
 | Green glow | Frontier issue — open, unblocked, unassigned; ready to pick up |
@@ -193,7 +193,7 @@ Measured on a synthetic 5040-node, 9715-edge graph: 20fps while the simulation i
 is a static canvas that redraws only on interaction. The flow layout is O(V+E) and computed once.
 
 Node count is the practical limit, not edge count. If a repo produces a graph too dense to read,
-the fix is `atlas prune`, a tighter `ignore` list in `config.json`, or the viewer's filters — not
+the fix is `scope prune`, a tighter `ignore` list in `config.json`, or the viewer's filters — not
 a faster renderer.
 
 ## Extending it

@@ -1,6 +1,6 @@
 ---
 name: verify
-description: "The full pre-PR gate: build, types, lint, tests, security, diff, plus sextant check in a repo with a Scope index."
+description: "The full pre-PR gate: build, types, lint, tests, security, diff, plus scope check in a repo with a Scope index."
 disable-model-invocation: true
 license: MIT
 metadata:
@@ -90,12 +90,12 @@ Review each changed file for:
 - Potential edge cases
 
 ### Phase 7: Scope Check
-Only when the repo has a Scope index (`.atlas/` exists):
+Only when the repo has a Scope index (`.scope/` exists):
 ```bash
-sextant check
+scope check
 ```
 
-It exits 1 when anything dangles: a call, import or note pointing at something that no longer exists. Fix until it exits 0. No `.atlas/` → report Scope as SKIPPED.
+It exits 1 when anything dangles: a call, import or note pointing at something that no longer exists. Fix until it exits 0. No `.scope/` → report Scope as SKIPPED.
 
 ## Output Format
 

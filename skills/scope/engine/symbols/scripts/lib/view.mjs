@@ -2,7 +2,7 @@ import { readFile, stat } from 'node:fs/promises';
 import path from 'node:path';
 import {
   EDGES_SEGMENT,
-  MAP_DIRNAME,
+  SYMBOLS_DIRNAME,
   NODES_SEGMENT,
   IndexVersionError,
   SCHEMA_VERSION,
@@ -17,7 +17,7 @@ import { CHECK_LATEST_V, readCheckLatest } from './check.mjs';
 import { latestByKey, readNotes } from './ledger.mjs';
 
 /**
- * `map view` (M5) — emit ONE self-contained offline HTML viewer.
+ * `scope view` (M5) — emit ONE self-contained offline HTML viewer.
  *
  * Hard bounds & honesty rules:
  *   - total file size ≤ VIEWER_MAX_TOTAL_BYTES (embedded data included);
@@ -34,13 +34,13 @@ import { latestByKey, readNotes } from './ledger.mjs';
 export const VIEWER_MAX_TOTAL_BYTES = 1_500_000;
 /** Headroom between the embedded-data budget and the hard total-file cap. */
 export const VIEW_DATA_SAFETY_MARGIN = 4_096;
-/** Generated artifact filename under `<root>/.map/` (design doc §4). */
+/** Generated artifact filename under `<root>/.scope/symbols/` (design doc §4). */
 export const VIEW_OUTPUT_FILE = 'view-data.html';
 /** Payload schema version of the embedded data island. */
 export const VIEW_PAYLOAD_V = 1;
 
 const TEMPLATE_URL = new URL('./view.template.html', import.meta.url);
-const DATA_TOKEN = '__SCALPEL_PAYLOAD__';
+const DATA_TOKEN = '__SCOPE_SYMBOLS_PAYLOAD__';
 
 /**
  * Network-reference detectors applied to the generated HTML. Exported so the
@@ -247,7 +247,7 @@ async function readSegmentForView(absPath, label) {
     return await readSegment(absPath);
   } catch (err) {
     if (err instanceof SyntaxError) {
-      throw new StoreCorruptError(`${label} segment is corrupt (${err.message}); run \`sextant scan --full\` to rebuild`);
+      throw new StoreCorruptError(`${label} segment is corrupt (${err.message}); run \`scope scan --full\` to rebuild`);
     }
     throw err;
   }
@@ -362,7 +362,7 @@ function assemblePayload({ meta, root, lens, notes, selection }) {
 /**
  * Build the full embedded payload (pure data, no HTML). Reads the index and
  * the optional check summary; NEVER rescans or writes to the index — the
- * viewer is a passive read model (`sextant scan` / `map check` own mutations).
+ * viewer is a passive read model (`scope scan` / `scope check` own mutations).
  *
  * The greedy cut bounds node+edge arrays; header/lens/notes overhead around
  * them is mopped up by an iterate-and-shrink loop so the hard total-file cap
@@ -375,11 +375,11 @@ export async function buildViewPayload(rootAbs, deps = {}) {
   const metaState = deps.readMetaImpl ? await deps.readMetaImpl(dir) : await readMeta(dir);
   if (metaState.status === 'older') {
     throw new IncompleteIndexError(
-      `index schemaVersion is older than supported ${SCHEMA_VERSION}; run \`sextant scan\` to rebuild`,
+      `index schemaVersion is older than supported ${SCHEMA_VERSION}; run \`scope scan\` to rebuild`,
     );
   }
   if (metaState.status !== 'ok' || !metaState.meta?.complete) {
-    throw new IncompleteIndexError(`no complete scalpel index at ${toPosix(dir)}; run \`sextant scan\` first`);
+    throw new IncompleteIndexError(`no complete symbol index at ${toPosix(dir)}; run \`scope scan\` first`);
   }
   const meta = metaState.meta;
 
@@ -451,7 +451,7 @@ export class ViewOutputError extends Error {
 }
 
 /**
- * Generate the viewer file. Default destination: `<root>/.map/view-data.html`.
+ * Generate the viewer file. Default destination: `<root>/.scope/symbols/view-data.html`.
  * Never touches the index; returns the absolute output path + honest counts.
  */
 export async function generateViewFile({ root, out } = {}) {
@@ -466,7 +466,7 @@ export async function generateViewFile({ root, out } = {}) {
       if (err?.code !== 'ENOENT') throw err;
     }
   } else {
-    outAbs = path.join(rootAbs, MAP_DIRNAME, VIEW_OUTPUT_FILE);
+    outAbs = path.join(rootAbs, SYMBOLS_DIRNAME, VIEW_OUTPUT_FILE);
   }
   const { html, totalBytes, stats } = await buildViewHtml(rootAbs);
   await atomicWriteFile(outAbs, html);

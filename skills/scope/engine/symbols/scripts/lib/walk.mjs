@@ -6,8 +6,7 @@ import { cmpStr, toPosix } from './util.mjs';
 
 export const IGNORE_DIRS = Object.freeze([
   '.git',
-  '.map',
-  '.scalpel',
+  '.scope',
   '__pycache__',
   'dist',
   'node_modules',
@@ -23,7 +22,7 @@ export const BINARY_SNIFF_BYTES = 8192;
 /**
  * Hard size cap for tracked source files. Anything larger is skipped BEFORE
  * reading/parsing and counted honestly (`skippedOversize` in scan output,
- * meta.stats and `map stats`). Rationale: a multi-megabyte source file is
+ * meta.stats and `scope stats`). Rationale: a multi-megabyte source file is
  * almost always generated/vendored data; parsing it wrecks scan latency for
  * near-zero map value, and downstream budgets (locate/slice caps) cannot save
  * a graph whose spans are megabytes wide. The skip is never silent.
@@ -76,7 +75,7 @@ export function extensionSet() {
 }
 
 /**
- * Per-project ignore list, read from `<root>/.map/config.json`:
+ * Per-project ignore list, read from `<root>/.scope/symbols/config.json`:
  *
  *   { "ignoreDirs": ["runs", "apps/legacy"] }
  *
@@ -89,7 +88,7 @@ export function extensionSet() {
  */
 export function readIgnoreDirs(rootDir) {
   try {
-    const raw = readFileSync(path.join(rootDir, '.map', 'config.json'), 'utf8');
+    const raw = readFileSync(path.join(rootDir, '.scope', 'symbols', 'config.json'), 'utf8');
     const cfg = JSON.parse(raw);
     if (!Array.isArray(cfg.ignoreDirs)) return [];
     return cfg.ignoreDirs.filter((d) => typeof d === 'string' && d.trim()).map((d) => toPosix(d.trim()).replace(/\/+$/, ''));
@@ -112,8 +111,7 @@ export async function walkSourceFiles(rootDir, ignoreDirs = readIgnoreDirs(rootD
       if (err && (err.code === 'ENOENT' || err.code === 'EACCES' || err.code === 'EPERM')) return;
       throw err;
     }
-    // A directory holding a SKILL.md is an installed agent skill -- scalpel, atlas, sextant or
-    // any other. Its source is tooling that happens to live in the repo: nothing here calls it,
+    // A directory holding a SKILL.md is an installed agent skill -- Scope or any other. Its source is tooling that happens to live in the repo: nothing here calls it,
     // nobody edits it from this project, and its symbols would outnumber the repo's own. The
     // marker file is the test, so it covers skills wherever they are vendored and ones written
     // later. The ROOT is exempt -- a repo whose product IS a skill still indexes itself -- and so

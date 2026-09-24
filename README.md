@@ -23,7 +23,7 @@ Only two short texts load in every session (Clear and Tuner). Everything else is
 | Trim | The smallest change that works | When code work starts; `/msnc:trim full` forces it for the session, subagents included |
 | Quiet | Raw tool output stays out of the chat | Only with the context-mode companion installed |
 | Relay | Grill, spec, tickets, then one ticket per subagent | When typed; `msnc:grill` and `msnc:tdd` also on demand |
-| Scope | A code map and a what-breaks check before every edit | In repos with a Scope index (`.atlas/`) |
+| Scope | A code map and a what-breaks check before every edit | In repos with a Scope index (`.scope/`) |
 | Proof | Nothing counts as done until a check proves it | Tuner rule; `/msnc:verify` for the full gate |
 | Calibrate | Setup, health check, token audit, cleanup | When typed |
 | Record | Turns a task that went well into a recipe; turns later corrections into recipe fixes | When typed |
@@ -43,7 +43,7 @@ Only two short texts load in every session (Clear and Tuner). Everything else is
 | Build | `/msnc:implement` | One fresh `msnc:implementer` subagent per ticket; verified and committed before the next |
 | | `/msnc:tdd` | Red → green, one test at a time |
 | | `/msnc:trim [lite\|full\|ultra\|off]` | Set Trim for this session; bare `/msnc:trim` reports the level. "stop trim" turns it off |
-| Check | `/msnc:verify` | Full pre-PR gate: build, types, lint, tests, security, diff, plus `sextant check` with a Scope index |
+| Check | `/msnc:verify` | Full pre-PR gate: build, types, lint, tests, security, diff, plus `scope check` with a Scope index |
 | | `/msnc:trim-review` | Review a diff for over-engineering |
 | | `/msnc:trim-audit` | Same, for the whole repo |
 | | `/msnc:trim-debt` | List every `trim:` shortcut comment left for later |
@@ -64,7 +64,7 @@ flowchart TD
   S["Session or subagent starts"] --> H["MSNC hook injects Tuner + Clear<br/>(+ Trim if it is on for this session)"]
   H --> T{"What does the moment need?"}
   T -->|"code, review, design"| TR["msnc:trim"]
-  T -->|"repo has .atlas/"| SC["msnc:scope: query before grep,<br/>impact before edits"]
+  T -->|"repo has .scope/"| SC["msnc:scope: query before grep,<br/>impact before edits"]
   T -->|"big output, context-mode installed"| Q["ctx_* tools (not in plan mode)"]
   T -->|"plan to stress-test"| G["msnc:grill"]
   T -->|"test-first / module design"| D["msnc:tdd / msnc:codebase-design"]
@@ -97,7 +97,7 @@ Change these in `/config` (the MSNC rows need Claude Code 2.1.269+). The hook re
 |---|---|---|
 | `clear` | on | Clear reply shape in the main session and in subagents |
 | `trim_default` | `off` | Trim level at session start: `off` (loads on demand), `lite`, `full` or `ultra`. A text field; any other value counts as `off` |
-| `scope_gate` | on | Refuse edits to files in the Scope index until `sextant impact` has run on them |
+| `scope_gate` | on | Refuse edits to files in the Scope index until `scope impact` has run on them |
 | `pace` | 3 | `/msnc:implement` offers a stop (with a handoff) after this many tickets; 0 = never. `pace <n>` in its arguments overrides it for one run |
 
 **Opting out of Clear:** set `clear` off in `/config`; it stops in the main session and in subagents. For one session only, send the exact message "normal mode": it drops Clear and Trim until the session ends. There is no undo for Clear in that session; `/msnc:trim <level>` turns Trim back on.

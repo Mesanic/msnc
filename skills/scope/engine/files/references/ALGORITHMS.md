@@ -1,4 +1,4 @@
-# Atlas algorithms
+# File graph algorithms
 
 Retrieval ranking, language extraction and its limits, flow analysis. Read this when tuning search
 or diagnosing a mis-parse.
@@ -86,7 +86,7 @@ docstring, the first Markdown paragraph after headings and frontmatter) is the s
 to the budget minus room for `— N loc`. Structural bits — `loc`, `used by`, `imports`, then
 `exports` — are appended only while they fit, exports last because anchors and the index already
 carry the names. A file with no header gets only the structural line; the fix is a header, or
-`atlas note set-summary`.
+`scope note file set-summary`.
 
 ## Import resolution
 
@@ -113,7 +113,7 @@ insight (`externalDeps: true` in config enables them if you disagree).
 ## What the scanner will not do
 
 **Cross-file call graphs.** Matching `name(` across files produces mostly noise: same-named
-methods on different classes, shadowed locals, strings, comments. Atlas would rather have a graph
+methods on different classes, shadowed locals, strings, comments. The file graph would rather have a graph
 you can trust than one that is complete and wrong. `expand` produces intra-file `calls` edges as a
 heuristic sketch, and agents add real ones with `note edge` when they verify them.
 
@@ -138,7 +138,7 @@ second catches real roots the conventions miss.
 is what it imports — what it relies on. The output always labels these in words rather than
 relying on the reader sharing a convention.
 
-**The explanatory chain** shown by `atlas context` is a bounded DFS on the reverse graph that
+**The explanatory chain** shown by `scope context` is a bounded DFS on the reverse graph that
 prefers paths rooted at a declared entrypoint over longer paths that are not. A test file importing
 a module is technically an upstream root, but "reached from `src/index.ts`" explains how the
 program works and "reached from `login.test.ts`" does not.
@@ -153,6 +153,6 @@ A node is stale when the file's current content hash differs from `h`, the hash 
 summary was written. Scan-authored summaries are regenerated with the file, so they are never
 stale — only agent-written insight can go out of date, which is exactly what the flag is for.
 
-`atlas verify` recomputes hashes and reports drift. `atlas note set-summary` re-pins `h` and clears
-the flag. `atlas prune` removes nodes whose file is gone. The intended rhythm is verify after a
+`scope verify` recomputes hashes and reports drift. `scope note file set-summary` re-pins `h` and clears
+the flag. `scope prune` removes nodes whose file is gone. The intended rhythm is verify after a
 refactor, re-bless what you can vouch for, and prune when files disappear.

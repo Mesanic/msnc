@@ -1,14 +1,14 @@
 #!/usr/bin/env node
-// sextant — runs atlas and scalpel as one instrument.
+// scope — runs the files and symbols engines as one instrument.
 //
 // It owns exactly two things neither tool can do alone:
 //   scan    keep both stores in step (forgetting one silently degrades `impact`)
 //   impact  cross-check symbol-level dependents against file-level importers
 //
-// Everything else is better done by calling atlas/scalpel directly — see SKILL.md.
-// Scalpel is driven only through its CLI. Atlas has no complete machine-readable
-// output (`context` truncates its importer list), so its graph store is read
-// directly; that is the one coupling point, and readAtlasImporters() fails loudly
+// Everything else is forwarded to the engine that owns it — see SKILL.md.
+// The symbols engine is driven only through its CLI. The files engine has no complete
+// machine-readable output (`context` truncates its importer list), so its graph store is
+// read directly; that is the one coupling point, and readFileImporters() fails loudly
 // rather than returning an empty set, because an empty set here reads as "nothing
 // else to check" — the most dangerous possible wrong answer.
 
@@ -16,41 +16,41 @@ import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { mergeIntoAtlas } from './merge.mjs';
+import { mergeIntoFileGraph } from './merge.mjs';
 import { recordImpact } from './impact-log.mjs';
 
-const HELP = `sextant — one instrument for reading and changing a codebase
+const HELP = `scope — one instrument for reading and changing a codebase
 
   it drives two graphs of your repo and reconciles them:
     file graph    modules, files, imports, git state, GitHub issues
     symbol graph  functions, calls, signatures, tests, notes
 
-sextant's own commands (these need both graphs)
-  sextant scan               refresh both graphs; installs the impact-first gate
-  sextant impact <name|id>   dependents, cross-checked for blind spots
-  sextant impact <path>      same, at file altitude (whole-file dependents)
-  sextant view [--out f]     ONE interactive graph: module -> file -> symbol
-  sextant status             what is installed, what is indexed
-  sextant map                the repo's orientation card
+scope's own commands (these need both graphs)
+  scope scan                 refresh both graphs; installs the impact-first gate
+  scope impact <name|id>     dependents, cross-checked for blind spots
+  scope impact <path>        same, at file altitude (whole-file dependents)
+  scope view [--out f]       ONE interactive graph: module -> file -> symbol
+  scope status               what is installed, what is indexed
+  scope map                  the repo's orientation card
 
 read (routed to whichever graph owns the answer)
-  sextant query "terms"      ranked retrieval across the file graph
-  sextant context <path|id>  one card: upstream, downstream, tests, docs, issues, git
-  sextant locate <name>      exact file, line span and signature for a symbol
-  sextant slice <id>         the definition itself, token-budgeted
-  sextant brief <id>         compact orientation card for a symbol
-  sextant neighbors <id>     adjacency by edge type   [--depth 1-3] [--dir in|out|both]
-  sextant path <a> <b>       how two nodes connect
-  sextant expand <path>      symbol nodes with line anchors, for ranged reads
-  sextant issues             GitHub issues, blockers and frontier
+  scope query "terms"        ranked retrieval across the file graph
+  scope context <path|id>    one card: upstream, downstream, tests, docs, issues, git
+  scope locate <name>        exact file, line span and signature for a symbol
+  scope slice <id>           the definition itself, token-budgeted
+  scope brief <id>           compact orientation card for a symbol
+  scope neighbors <id>       adjacency by edge type   [--depth 1-3] [--dir in|out|both]
+  scope path <a> <b>         how two nodes connect
+  scope expand <path>        symbol nodes with line anchors, for ranged reads
+  scope issues               GitHub issues, blockers and frontier
 
 write back / verify
-  sextant check              exits 1 if anything dangles after an edit
-  sextant note symbol <...>  anchored symbol note (survives moves)
-  sextant note file <...>    file summary or edge in the file graph
-  sextant verify             find summaries that drifted and files that vanished
-  sextant prune              drop dead nodes, orphan edges, duplicates
-  sextant stats              size and counts for both graphs
+  scope check                exits 1 if anything dangles after an edit
+  scope note symbol <...>    anchored symbol note (survives moves)
+  scope note file <...>      file summary or edge in the file graph
+  scope verify               find summaries that drifted and files that vanished
+  scope prune                drop dead nodes, orphan edges, duplicates
+  scope stats                size and counts for both graphs
 
 options
   --root <dir>   project root (default: cwd)
@@ -60,18 +60,18 @@ options
   --out <file>   view: where to write the HTML
 
 everything ships inside this folder (engine/). Overrides, if you keep the engines
-elsewhere: $SEXTANT_ATLAS and $SEXTANT_SCALPEL, absolute paths to their CLIs.`;
+elsewhere: $SCOPE_FILES and $SCOPE_SYMBOLS, absolute paths to their CLIs.`;
 
 // fileURLToPath, not url.pathname: pathname is percent-encoded, so any space in the
 // install path (e.g. "AI Projects") silently breaks tool discovery.
 const here = path.dirname(fileURLToPath(import.meta.url));
 
 function die(msg, code = 2) {
-  console.error(`sextant: ${msg}`);
+  console.error(`scope: ${msg}`);
   process.exit(code);
 }
 
-function findTool(envVar, bundledRel, siblingRel, vendoredRel, root) {
+function findTool(envVar, bundledRel) {
   // An explicit env var is an override, not a hint: if it is set and wrong, say so
   // rather than quietly using a different install than the one that was asked for.
   const pinned = process.env[envVar];
@@ -79,39 +79,20 @@ function findTool(envVar, bundledRel, siblingRel, vendoredRel, root) {
     if (fs.existsSync(pinned)) return pinned;
     die(`$${envVar} points at ${pinned}, which does not exist`);
   }
-  // Bundled first: a sextant folder is meant to be copied into a repo whole, and an
-  // engine sitting next to it in some older layout must not silently win over the one
-  // that shipped with this copy.
-  for (const t of [
-    path.resolve(here, '..', 'engine', bundledRel),
-    path.resolve(here, '..', '..', siblingRel),
-    path.resolve(root, vendoredRel),
-  ]) {
-    if (fs.existsSync(t)) return t;
-  }
-  return null;
+  // The engines ship inside this skill; there is no other place to look.
+  const t = path.resolve(here, '..', 'engine', bundledRel);
+  return fs.existsSync(t) ? t : null;
 }
 
-function tools(root) {
-  const atlas = findTool(
-    'SEXTANT_ATLAS',
-    'atlas/scripts/atlas.mjs',
-    'atlas/scripts/atlas.mjs',
-    '.claude/skills/atlas/scripts/atlas.mjs',
-    root,
-  );
-  const scalpel = findTool(
-    'SEXTANT_SCALPEL',
-    'scalpel/scripts/map.mjs',
-    'scalpel/scripts/map.mjs',
-    'skills/scalpel/scripts/map.mjs',
-    root,
-  );
-  return { atlas, scalpel };
+function tools() {
+  return {
+    files: findTool('SCOPE_FILES', 'files/scripts/files.mjs'),
+    symbols: findTool('SCOPE_SYMBOLS', 'symbols/scripts/symbols.mjs'),
+  };
 }
 
 // spawnSync, not execFileSync: the two tools disagree about which stream is for
-// humans (scalpel writes its scan summary to stderr, atlas to stdout), and on
+// humans (symbols writes its scan summary to stderr, files to stdout), and on
 // failure both put the useful message on whichever they prefer. spawnSync hands
 // back both plus a status, with no exception to unpack.
 function run(script, args, root, { merge = false } = {}) {
@@ -130,17 +111,17 @@ function run(script, args, root, { merge = false } = {}) {
   return merge ? out + err : out;
 }
 
-// --- atlas store ------------------------------------------------------------
-// Returns the set of files importing `targetFile`, per atlas's file-level graph.
+// --- file graph store -------------------------------------------------------
+// Returns the set of files importing `targetFile`, per the file graph.
 // Dies on anything unexpected: a silent empty set would read as "no blind spots".
-const atlasStore = new Map();
-function readAtlasImporters(root, targetFile) {
-  const dir = path.join(root, '.atlas', 'graph');
+const fileStore = new Map();
+function readFileImporters(root, targetFile) {
+  const dir = path.join(root, '.scope', 'files', 'graph');
   const nodesPath = path.join(dir, 'nodes.jsonl');
   const edgesPath = path.join(dir, 'edges.jsonl');
   for (const p of [nodesPath, edgesPath]) {
     if (!fs.existsSync(p)) {
-      die(`file graph missing (${path.relative(root, p)}). Run: sextant scan`);
+      die(`file graph missing (${path.relative(root, p)}). Run: scope scan`);
     }
   }
   const parse = (p) =>
@@ -153,13 +134,13 @@ function readAtlasImporters(root, targetFile) {
         try {
           return JSON.parse(l);
         } catch {
-          return die(`file graph corrupt at ${path.basename(p)}:${i + 1}. Run: sextant scan`);
+          return die(`file graph corrupt at ${path.basename(p)}:${i + 1}. Run: scope scan`);
         }
       });
 
   // Cached: the file-graph fallback in impact calls this once per importer it walks.
-  if (!atlasStore.has(root)) atlasStore.set(root, [parse(nodesPath), parse(edgesPath)]);
-  const [nodes, edges] = atlasStore.get(root);
+  if (!fileStore.has(root)) fileStore.set(root, [parse(nodesPath), parse(edgesPath)]);
+  const [nodes, edges] = fileStore.get(root);
   if (!nodes.length || typeof nodes[0].id !== 'string' || !('k' in nodes[0])) {
     die('file graph node format not recognised — expected {id,t,k}. Reinstall this skill whole.');
   }
@@ -169,7 +150,7 @@ function readAtlasImporters(root, targetFile) {
 
   const byId = new Map(nodes.map((n) => [n.id, n.k]));
   const fileNode = nodes.find((n) => n.k === targetFile && n.t !== 'sym');
-  if (!fileNode) return null; // atlas does not know this file — reported, not silently empty
+  if (!fileNode) return null; // the file graph does not know this file — reported, not silently empty
   return new Set(
     edges
       .filter((e) => e[1] === 'imports' && e[2] === fileNode.id)
@@ -182,25 +163,25 @@ function readAtlasImporters(root, targetFile) {
 
 // --- CLAUDE.md routing block -------------------------------------------------
 // Written once, when both stores exist, because the routing it describes is only
-// correct then: with one tool installed, `sextant impact` cannot answer at all.
+// correct then: with one engine installed, `scope impact` cannot answer at all.
 //
-// Unlike atlas's equivalent this does NOT rewrite an existing block. Atlas writes its
-// block from `init`, which runs about once per repo; this runs on every `scan`, and
+// Unlike the files engine's equivalent this does NOT rewrite an existing block. That engine
+// writes its block from `init`, which runs about once per repo; this runs on every `scan`, and
 // silently reverting a routing rule someone deliberately tuned would be worse than
 // carrying a stale one. Delete the block to regenerate it.
-const CLAUDE_BEGIN = '<!-- sextant:begin -->';
-const CLAUDE_END = '<!-- sextant:end -->';
+const CLAUDE_BEGIN = '<!-- scope:begin -->';
+const CLAUDE_END = '<!-- scope:end -->';
 
 const CLAUDE_BLOCK = [
   CLAUDE_BEGIN,
-  '## sextant — impact before you edit',
+  '## Scope — impact before you edit',
   '',
-  'This repo is indexed by `sextant`, one tool that keeps two graphs of the code in step:',
+  'This repo is indexed by Scope, one tool that keeps two graphs of the code in step:',
   'a file graph (modules, imports, git state, issues) and a symbol graph (functions, calls,',
   'signatures, tests). One CLI covers both:',
   '',
   '```bash',
-  'S="tools/sextant/scripts/sextant.mjs"   # or .claude/skills/sextant/scripts/...',
+  'S="<scope>/scripts/scope.mjs"   # <scope> = the msnc:scope skill folder',
   '```',
   '',
   '| Job | Command |',
@@ -213,12 +194,12 @@ const CLAUDE_BLOCK = [
   '',
   '**Impact first, every time** — not "when it looks risky". The edits that break something are',
   'exactly the ones that did not look risky. A PreToolUse hook enforces it: an edit to a file that',
-  'has a node in the graph is refused until `sextant impact` has been run on it. New files, files',
-  'outside the graph, and repos with no index are never gated. Bypass: `SEXTANT_HOOK=off`.',
+  'has a node in the graph is refused until `scope impact` has been run on it. New files, files',
+  'outside the graph, and repos with no index are never gated. Bypass: `SCOPE_HOOK=off`.',
   '',
   '`impact` is the one that matters, because the two graphs fail in opposite directions. Symbol',
   'analysis cannot resolve a call made through a variable and reports the dependent as simply',
-  'absent; the file graph sees that importer but not the line. `sextant impact` runs both and',
+  'absent; the file graph sees that importer but not the line. `scope impact` runs both and',
   'hands you the difference as a short triage list instead of a confident "no dependents found".',
   'Pass a symbol for exact line spans, a file path for whole-file dependents.',
   '',
@@ -227,7 +208,7 @@ const CLAUDE_BLOCK = [
   '',
   '`node $S` with no arguments lists every command.',
   '',
-  'sextant wrote this block. Edit it freely — it is only regenerated if you delete it entirely.',
+  'Scope wrote this block. Edit it freely — it is only regenerated if you delete it entirely.',
   CLAUDE_END,
 ].join('\n');
 
@@ -245,7 +226,7 @@ function ensureClaudeBlock(root) {
 // The CLAUDE.md block routes; this enforces. Installed on scan for the same reason the block
 // is: a rule that each project has to wire up by hand is a rule that holds in the project
 // someone remembered. Written only when absent -- and re-added if deleted, which is the point.
-// Opt out with SEXTANT_NO_HOOK=1 or `sextant scan --no-hook`.
+// Opt out with SCOPE_NO_HOOK=1 or `scope scan --no-hook`.
 // Returns 'created' | 'added' | null (already wired, or settings.json unreadable).
 function hookPath(root, file) {
   // Relative when the skill lives inside the repo, which is the normal case. This lands in
@@ -304,7 +285,7 @@ function ensureHooks(root) {
     added.push('Grep nudge (once per session)');
   }
 
-  // The announcement. Soft, but it is what puts sextant in context before the first Grep --
+  // The announcement. Soft, but it is what puts Scope in context before the first Grep --
   // the gate cannot help there, because reads are not gated.
   const start = hooks.SessionStart || (hooks.SessionStart = []);
   if (Array.isArray(start) && !JSON.stringify(start).includes('session-hook.mjs')) {
@@ -320,26 +301,26 @@ function ensureHooks(root) {
   return { how: existed ? 'updated' : 'created', added };
 }
 
-function cmdScan(root, { atlas, scalpel }) {
+function cmdScan(root, { files, symbols }) {
   // msnc: MSNC's dispatcher is the gate and its Tuner the routing, so this copy never
   // writes project hooks or a CLAUDE.md block, whatever flags scan is run with.
-  process.env.SEXTANT_NO_HOOK = process.env.SEXTANT_NO_CLAUDE_MD = '1';
-  if (!atlas && !scalpel) die('no engine found — this install is incomplete. See `sextant status`');
-  // Both inits are documented idempotent and additive, but atlas's also appends to
+  process.env.SCOPE_NO_HOOK = process.env.SCOPE_NO_CLAUDE_MD = '1';
+  if (!files && !symbols) die('no engine found — this install is incomplete. See `scope status`');
+  // Both inits are documented idempotent and additive, but the files engine's also appends to
   // CLAUDE.md and .gitignore — so only run it when the store is genuinely absent,
   // and say so rather than editing the repo silently.
-  if (scalpel && !fs.existsSync(path.join(root, '.map', 'index'))) {
-    console.log('symbol graph  init (first run — creating .map/)');
-    run(scalpel, ['init'], root);
+  if (symbols && !fs.existsSync(path.join(root, '.scope', 'symbols', 'index'))) {
+    console.log('symbol graph  init (first run — creating .scope/symbols/)');
+    run(symbols, ['init'], root);
   }
-  if (atlas && !fs.existsSync(path.join(root, '.atlas', 'graph'))) {
-    console.log('file graph    init (first run — creates .atlas/, appends to .gitignore)');
-    run(atlas, ['init'], root);
+  if (files && !fs.existsSync(path.join(root, '.scope', 'files', 'graph'))) {
+    console.log('file graph    init (first run — creates .scope/files/, appends to .gitignore)');
+    run(files, ['init'], root);
   }
   // Both tools put warnings on the same stream as their summary, and either may emit one
   // FIRST -- so taking the first line reports "warn: ..." and nothing else, which reads as
   // a scan that did not run. Report the summary, then the notes; but cap them, because
-  // scalpel emits one line per oversize file and the summary already carries the count.
+  // the symbols engine emits one line per oversize file and the summary already carries the count.
   const NOTE = /^(warn|note|warning):/i;
   const NOTE_CAP = 3;
   const summarize = (label, out) => {
@@ -352,36 +333,36 @@ function cmdScan(root, { atlas, scalpel }) {
       console.log(`${pad} +${notes.length - NOTE_CAP} more (run that tool's scan directly for the full list)`);
     }
   };
-  if (scalpel) summarize('symbol graph ', run(scalpel, ['scan'], root, { merge: true }));
-  if (atlas) summarize('file graph   ', run(atlas, ['scan'], root, { merge: true }));
-  // Only with both tools present: the block routes impact and view through sextant, and
+  if (symbols) summarize('symbol graph ', run(symbols, ['scan'], root, { merge: true }));
+  if (files) summarize('file graph   ', run(files, ['scan'], root, { merge: true }));
+  // Only with both engines present: the block routes impact and view through scope, and
   // neither works with one store. Skipped when something else already does the routing
   // (a harness plugin, a hand-written CLAUDE.md): two routing texts disagree eventually.
-  if (atlas && scalpel && !process.env.SEXTANT_NO_CLAUDE_MD && !process.argv.includes('--no-claude-md')) {
+  if (files && symbols && !process.env.SCOPE_NO_CLAUDE_MD && !process.argv.includes('--no-claude-md')) {
     const wrote = ensureClaudeBlock(root);
-    if (wrote) console.log(`CLAUDE.md ${wrote} sextant routing block (edit freely; delete it to regenerate)`);
+    if (wrote) console.log(`CLAUDE.md ${wrote} Scope routing block (edit freely; delete it to regenerate)`);
   }
-  if (!process.env.SEXTANT_NO_HOOK && !process.argv.includes('--no-hook')) {
+  if (!process.env.SCOPE_NO_HOOK && !process.argv.includes('--no-hook')) {
     const hooked = ensureHooks(root);
-    if (hooked) console.log(`.claude/settings.json ${hooked.how}: ${hooked.added.join(', ')} (SEXTANT_HOOK=off to bypass)`);
+    if (hooked) console.log(`.claude/settings.json ${hooked.how}: ${hooked.added.join(', ')} (SCOPE_HOOK=off to bypass)`);
   }
 }
 
-// One picture, both tiers. Atlas's viewer is the full-featured one -- node-type toggles,
-// git state, tag facets, impact mode, flow, search over summaries -- and it already
+// One picture, both tiers. The file graph's viewer is the full-featured one -- node-type
+// toggles, git state, tag facets, impact mode, flow, search over summaries -- and it already
 // reserves `sym`/`calls`/`y` for a symbol tier it cannot populate. So the merge runs in
-// that direction: scalpel's symbols go into atlas's graph and atlas's own renderer draws
-// it, unchanged. sextant owns the fold (merge.mjs) and nothing else.
-async function cmdView(root, { atlas, scalpel }, outArg) {
-  if (!atlas) die('file graph engine missing — it draws the viewer and every tier above the symbol');
-  if (!scalpel) die('symbol graph engine missing — without symbols there is no call tier to draw');
-  const scalpelDir = path.join(root, '.map', 'index');
-  const atlasDir = path.join(root, '.atlas');
-  if (!fs.existsSync(scalpelDir) || !fs.existsSync(path.join(atlasDir, 'graph'))) {
-    die('a store is missing. Run: sextant scan');
+// that direction: the symbol graph's symbols go into the file graph and its own renderer
+// draws it, unchanged. This CLI owns the fold (merge.mjs) and nothing else.
+async function cmdView(root, { files, symbols }, outArg) {
+  if (!files) die('file graph engine missing — it draws the viewer and every tier above the symbol');
+  if (!symbols) die('symbol graph engine missing — without symbols there is no call tier to draw');
+  const symbolsDir = path.join(root, '.scope', 'symbols', 'index');
+  const filesDir = path.join(root, '.scope', 'files');
+  if (!fs.existsSync(symbolsDir) || !fs.existsSync(path.join(filesDir, 'graph'))) {
+    die('a store is missing. Run: scope scan');
   }
 
-  const lib = path.resolve(path.dirname(atlas), 'lib');
+  const lib = path.resolve(path.dirname(files), 'lib');
   const load = async (f, name) => {
     const p = path.join(lib, f);
     if (!fs.existsSync(p)) die(`file graph engine ${f} not found at ${p} — incomplete install?`);
@@ -392,14 +373,14 @@ async function cmdView(root, { atlas, scalpel }, outArg) {
   const { loadGraph } = await load('store.mjs', 'loadGraph');
   const { graphHtml } = await load('html.mjs', 'graphHtml');
 
-  const graph = loadGraph(atlasDir);
+  const graph = loadGraph(filesDir);
   for (const w of graph.warnings) console.log(`warn: ${w}`);
   const before = graph.nodes.size;
-  const stats = mergeIntoAtlas({ atlasGraph: graph, scalpelDir, die });
+  const stats = mergeIntoFileGraph({ fileGraph: graph, symbolsDir, die });
 
   const out = outArg ? path.resolve(root, outArg) : null;
-  const r = graphHtml({ root, dir: atlasDir }, graph, out);
-  const where = r.file || path.join(atlasDir, 'view', 'atlas.html');
+  const r = graphHtml({ root, dir: filesDir }, graph, out);
+  const where = r.file || path.join(filesDir, 'view', 'scope.html');
 
   console.log(`view ${path.relative(root, where)} (${r.nodes} nodes, ${r.edges} edges, ${Math.round(r.bytes / 1024)} KB)`);
   console.log(`files  ${before} nodes — files, modules, decisions, and their overlays`);
@@ -410,70 +391,70 @@ async function cmdView(root, { atlas, scalpel }, outArg) {
   console.log(`edges  +${stats.edges['part-of']} part-of, +${stats.edges.calls} calls, +${stats.edges.implements} implements`);
   console.log(`cross  +${stats.importsAdded} imports and +${stats.testsAdded} test links the file graph did not have`);
   const pv = stats.provenance;
-  console.log(`seen by  both ${pv.both}, file graph only ${pv.atlas}, symbol graph only ${pv.scalpel}  (filter in the sidebar)`);
+  console.log(`seen by  both ${pv.both}, file graph only ${pv.files}, symbol graph only ${pv.symbols}  (filter in the sidebar)`);
   if (stats.check.ran) {
     const c = stats.check;
-    console.log(`check  ${c.drift} drifted, ${c.dangling} dangling, ${c.orphan} orphaned notes, ${c.ambiguous} ambiguous (from \`sextant check\`)`);
+    console.log(`check  ${c.drift} drifted, ${c.dangling} dangling, ${c.orphan} orphaned notes, ${c.ambiguous} ambiguous (from \`scope check\`)`);
   } else {
-    console.log('check  no lens — run `sextant check` to overlay drift and dangling refs');
+    console.log('check  no lens — run `scope check` to overlay drift and dangling refs');
   }
   console.log(`notes  ${stats.notesAttached} attached from the symbol ledger${stats.notesStale ? `, ${stats.notesStale} unbound (code changed since written)` : ''}`);
   if (stats.skippedNoFile) {
     console.log(`note   ${stats.skippedNoFile} symbols skipped — in files the file graph does not track (different ignore rules)`);
   }
-  console.log(`overlays git ${r.hasGit ? 'on' : 'off'}, issues ${r.hasIssues ? 'on' : "off (run: sextant issues)"}`);
+  console.log(`overlays git ${r.hasGit ? 'on' : 'off'}, issues ${r.hasIssues ? 'on' : "off (run: scope issues)"}`);
   console.log('');
   console.log('zoom is the tier control — modules zoomed out, then files, then symbols as you go in.');
 }
 
-function cmdStatus(root, { atlas, scalpel }) {
+function cmdStatus(root, { files, symbols }) {
   const mark = (b) => (b ? 'ok     ' : 'MISSING');
-  const aStore = fs.existsSync(path.join(root, '.atlas', 'graph', 'nodes.jsonl'));
-  const sStore = fs.existsSync(path.join(root, '.map', 'index'));
+  const fStore = fs.existsSync(path.join(root, '.scope', 'files', 'graph', 'nodes.jsonl'));
+  const sStore = fs.existsSync(path.join(root, '.scope', 'symbols', 'index'));
   console.log(`root           ${root}`);
-  console.log(`file engine    ${mark(!!atlas)} ${atlas || '(bundled copy missing — set $SEXTANT_ATLAS)'}`);
-  console.log(`symbol engine  ${mark(!!scalpel)} ${scalpel || '(bundled copy missing — set $SEXTANT_SCALPEL)'}`);
-  console.log(`file graph     ${mark(aStore)} .atlas/`);
-  console.log(`symbol graph   ${mark(sStore)} .map/`);
-  if (!aStore || !sStore) console.log('\nrun: sextant scan');
+  console.log(`file engine    ${mark(!!files)} ${files || '(bundled copy missing — set $SCOPE_FILES)'}`);
+  console.log(`symbol engine  ${mark(!!symbols)} ${symbols || '(bundled copy missing — set $SCOPE_SYMBOLS)'}`);
+  console.log(`file graph     ${mark(fStore)} .scope/files/`);
+  console.log(`symbol graph   ${mark(sStore)} .scope/symbols/`);
+  if (!fStore || !sStore) console.log('\nrun: scope scan');
 }
 
 // Resolve the target to {id, name, path}. Ambiguity is surfaced, never guessed.
 // Only `name` and `path` are used downstream, for the cross-check.
 // `onMiss` handles "no such symbol": impact passes one that falls back to the file graph.
-function resolveTarget(scalpel, root, key, onMiss = die) {
+function resolveTarget(symbols, root, key, onMiss = die) {
   // An id cannot be looked up with `locate` (that searches names, and an id's hex
   // suffix is not a name). `brief` takes an id and prints "brief <name> <id>" then
   // "def: <path>:<sl>-<el>", which is all the cross-check needs.
   if (/^[a-z]+:[0-9a-f]{6,}$/.test(key)) {
-    const brief = run(scalpel, ['brief', key], root, { merge: true });
+    const brief = run(symbols, ['brief', key], root, { merge: true });
     const name = /^brief\s+(\S+)\s/m.exec(brief)?.[1];
     const p = /^def:\s+(\S+?):\d+-\d+/m.exec(brief)?.[1];
-    if (!name || !p) return die(`unknown id ${key} — the index may be stale. Run: sextant scan`);
+    if (!name || !p) return die(`unknown id ${key} — the index may be stale. Run: scope scan`);
     return { id: key, name, path: p };
   }
 
-  const raw = run(scalpel, ['locate', key, '--json'], root).trim();
+  const raw = run(symbols, ['locate', key, '--json'], root).trim();
   if (!raw.startsWith('{')) {
-    // scalpel reports "no results for ..." as plain text on a zero exit.
-    return onMiss(`no symbol named "${key}" in the index. Try: sextant locate ${key}`);
+    // the symbols engine reports "no results for ..." as plain text on a zero exit.
+    return onMiss(`no symbol named "${key}" in the index. Try: scope locate ${key}`);
   }
   const hits = JSON.parse(raw).hits || [];
   // Modules match on path OR module name, so `impact kernel/router.py` resolves.
-  // A module node is scalpel's file altitude: import edges connect modules and
+  // A module node is the symbol graph's file altitude: import edges connect modules and
   // collectImpact walks import, so this is a file-level dependency walk with --depth.
   const exact = hits.filter((h) =>
     h.kind === 'module' ? h.path === key || h.name === key : h.name === key,
   );
   if (exact.length === 1) return exact[0];
   if (exact.length > 1) {
-    console.error(`sextant: "${key}" is ambiguous — pass one of these ids:`);
+    console.error(`scope: "${key}" is ambiguous — pass one of these ids:`);
     for (const h of exact) {
       console.error(`  ${h.id}  ${h.kind} ${h.path}:${h.span.sl}-${h.span.el}`);
     }
     process.exit(2);
   }
-  if (!hits.length) return onMiss(`no symbol named "${key}" — try: sextant locate ${key}`);
+  if (!hits.length) return onMiss(`no symbol named "${key}" — try: scope locate ${key}`);
   return onMiss(`no exact match for "${key}" — closest is ${hits[0].name} (${hits[0].id})`);
 }
 
@@ -488,7 +469,7 @@ function fileGraphImpact(root, file, depth) {
   const seen = new Set([file]);
   let frontier = [file];
   for (let hop = 1; hop <= max && frontier.length; hop++) {
-    const next = [...new Set(frontier.flatMap((f) => [...(readAtlasImporters(root, f) || [])]))]
+    const next = [...new Set(frontier.flatMap((f) => [...(readFileImporters(root, f) || [])]))]
       .filter((f) => !seen.has(f))
       .sort();
     if (!next.length) break;
@@ -502,29 +483,29 @@ function fileGraphImpact(root, file, depth) {
   console.log(`\nnot covered: references by name (<link>, <script>, class names). Check with: grep -rn "${path.basename(file)}" .`);
 }
 
-function cmdImpact(root, { atlas, scalpel }, key, depth) {
-  if (!scalpel) die('symbol graph engine missing — it provides the symbol-level answer');
+function cmdImpact(root, { files, symbols }, key, depth) {
+  if (!symbols) die('symbol graph engine missing — it provides the symbol-level answer');
   const file = path.relative(root, path.resolve(root, key)).split(path.sep).join('/');
-  const target = resolveTarget(scalpel, root, key, (msg) =>
-    (atlas && fs.existsSync(path.resolve(root, key)) && readAtlasImporters(root, file) !== null ? null : die(msg)));
+  const target = resolveTarget(symbols, root, key, (msg) =>
+    (files && fs.existsSync(path.resolve(root, key)) && readFileImporters(root, file) !== null ? null : die(msg)));
   if (!target) return fileGraphImpact(root, file, depth);
   // Record the file this answer covers, so the pre-edit hook can tell an edit that was
   // analysed from one that was not.
   recordImpact(root, target.path);
 
-  // 1. Scalpel's report, passed through verbatim — it is budgeted, carries
+  // 1. The symbol graph's report, passed through verbatim — it is budgeted, carries
   //    confidence labels and the test list, and must not be re-implemented here.
   const args = ['impact', target.id, '--up'];
   if (depth) args.push('--depth', depth);
-  const report = run(scalpel, args, root);
+  const report = run(symbols, args, root);
   process.stdout.write(report);
 
-  // 2. Cross-check. Every repo-relative path scalpel printed is a file it reached.
-  if (!atlas) {
+  // 2. Cross-check. Every repo-relative path the symbols engine printed is a file it reached.
+  if (!files) {
     console.log('\ncross-check: skipped (file graph engine missing — no blind-spot triage)');
     return;
   }
-  const importers = readAtlasImporters(root, target.path);
+  const importers = readFileImporters(root, target.path);
   if (importers === null) {
     console.log(`\ncross-check: skipped (the file graph has no node for ${target.path} — rescan?)`);
     return;
@@ -533,8 +514,8 @@ function cmdImpact(root, { atlas, scalpel }, key, depth) {
   const delta = [...importers].filter((f) => !covered.has(f) && f !== target.path).sort();
 
   console.log('');
-  // `covered` is scraped from scalpel's report, which is capped at 600 tokens. When it
-  // truncates, files scalpel DID reach are absent from the scrape and appear below as
+  // `covered` is scraped from the symbol report, which is capped at 600 tokens. When it
+  // truncates, files the symbols engine DID reach are absent from the scrape and appear below as
   // phantom blind spots. Say so rather than hand over a list that is quietly padded.
   if (report.includes(' more (narrow with --depth')) {
     console.log('note: the symbol report was truncated — this list may over-report.');
@@ -547,8 +528,8 @@ function cmdImpact(root, { atlas, scalpel }, key, depth) {
   console.log(`cross-check (${delta.length}) — the file graph sees these importing ${target.path},`);
   if (target.id.startsWith('mod:')) {
     // File altitude: both sides are import graphs, so the "imports some other name"
-    // case cannot arise. A delta entry means scalpel's resolver dropped an import
-    // atlas resolved — an alias, a re-export, or a dynamic import. All are real.
+    // case cannot arise. A delta entry means the symbol resolver dropped an import
+    // the file graph resolved — an alias, a re-export, or a dynamic import. All are real.
     console.log('but the symbol graph did not resolve that import. Each is a REAL dependent whose');
     console.log('import could not be resolved (alias, re-export, dynamic import).');
     for (const f of delta) console.log(`  ${f}`);
@@ -564,24 +545,24 @@ function cmdImpact(root, { atlas, scalpel }, key, depth) {
 }
 
 // --- passthrough ------------------------------------------------------------
-// sextant is the only CLI a user of this skill learns. Commands it does not own are
+// scope is the only CLI a user of this skill learns. Commands it does not own are
 // forwarded, unchanged, to whichever engine owns that answer -- so nothing is lost by
 // never calling the engines directly, and there is no second command surface to explain.
-// Flags and output are the engine's; only the name on the front is sextant's.
+// Flags and output are the engine's; only the name on the front is scope's.
 const ROUTE = {
   // file graph: modules, imports, git and issue overlays, orientation
-  query: 'atlas', context: 'atlas', neighbors: 'atlas', path: 'atlas',
-  expand: 'atlas', issues: 'atlas', verify: 'atlas', prune: 'atlas', index: 'atlas',
-  'git-overlay': 'atlas',
+  query: 'files', context: 'files', neighbors: 'files', path: 'files',
+  expand: 'files', issues: 'files', verify: 'files', prune: 'files', index: 'files',
+  'git-overlay': 'files',
   // symbol graph: spans, definitions, drift
-  locate: 'scalpel', slice: 'scalpel', brief: 'scalpel', check: 'scalpel',
+  locate: 'symbols', slice: 'symbols', brief: 'symbols', check: 'symbols',
 };
 
-const GRAPH_NAME = { atlas: 'file', scalpel: 'symbol' };
+const GRAPH_NAME = { files: 'file', symbols: 'symbol' };
 
 function cmdPassthrough(root, found, cmd, rest, which = ROUTE[cmd]) {
   const tool = found[which];
-  if (!tool) die(`the ${GRAPH_NAME[which]} graph engine is missing -- see \`sextant status\``);
+  if (!tool) die(`the ${GRAPH_NAME[which]} graph engine is missing -- see \`scope status\``);
   process.stdout.write(run(tool, [cmd, ...rest], root, { merge: true }));
 }
 
@@ -591,25 +572,25 @@ function cmdPassthrough(root, found, cmd, rest, which = ROUTE[cmd]) {
 // is named -- the same symbol/file split `impact` already uses.
 function cmdNote(root, found, rest) {
   const at = rest[0];
-  if (at === 'symbol') return cmdPassthrough(root, found, 'note', rest.slice(1), 'scalpel');
-  if (at === 'file') return cmdPassthrough(root, found, 'note', rest.slice(1), 'atlas');
+  if (at === 'symbol') return cmdPassthrough(root, found, 'note', rest.slice(1), 'symbols');
+  if (at === 'file') return cmdPassthrough(root, found, 'note', rest.slice(1), 'files');
   die([
-    'usage: sextant note symbol set <key> --text "..."',
-    '       sextant note file set-summary <path> --text "..."',
-    '       sextant note file edge <a> <b> --type <t>',
+    'usage: scope note symbol set <key> --text "..."',
+    '       scope note file set-summary <path> --text "..."',
+    '       scope note file edge <a> <b> --type <t>',
   ].join('\n'));
 }
 
-function cmdStats(root, { atlas, scalpel }) {
-  if (scalpel) { console.log('symbol graph'); process.stdout.write(run(scalpel, ['stats'], root, { merge: true })); }
-  if (atlas) { console.log('\n' + 'file graph'); process.stdout.write(run(atlas, ['stats'], root, { merge: true })); }
+function cmdStats(root, { files, symbols }) {
+  if (symbols) { console.log('symbol graph'); process.stdout.write(run(symbols, ['stats'], root, { merge: true })); }
+  if (files) { console.log('\n' + 'file graph'); process.stdout.write(run(files, ['stats'], root, { merge: true })); }
 }
 
 // The orientation card, printed rather than pointed at: a path into a store directory is
 // one more thing to remember, and reading this is the first move of a session.
 function cmdMap(root) {
-  const f = path.join(root, '.atlas', 'MAP.md');
-  if (!fs.existsSync(f)) die('no orientation card yet. Run: sextant scan');
+  const f = path.join(root, '.scope', 'MAP.md');
+  if (!fs.existsSync(f)) die('no orientation card yet. Run: scope scan');
   process.stdout.write(fs.readFileSync(f, 'utf8'));
 }
 
@@ -626,7 +607,7 @@ const flag = (name) => {
 };
 const root = path.resolve(flag('--root') || process.cwd());
 if (!fs.existsSync(root)) die(`no such root: ${root}`);
-const found = tools(root);
+const found = tools();
 const cmd = argv[0];
 const rest = argv.slice(1);
 const positional = rest.filter((a, i) => {
@@ -638,7 +619,7 @@ if (cmd === 'scan') cmdScan(root, found);
 else if (cmd === 'status') cmdStatus(root, found);
 else if (cmd === 'view') await cmdView(root, found, flag('--out'));
 else if (cmd === 'impact') {
-  if (!positional.length) die('usage: sextant impact <name|id>');
+  if (!positional.length) die('usage: scope impact <name|id>');
   cmdImpact(root, found, positional[0], flag('--depth'));
 } else if (cmd === 'map') cmdMap(root);
 else if (cmd === 'note') cmdNote(root, found, rest);

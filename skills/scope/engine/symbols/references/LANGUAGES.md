@@ -1,4 +1,4 @@
-# LANGUAGES.md — what scalpel captures per language
+# LANGUAGES.md — what the symbols engine captures per language
 
 Every fact below is checked against the shipped extractors (`scripts/lib/extract-*.mjs`),
 the grammar registry (`scripts/parsers/languages.mjs`) and the graph builder
@@ -71,7 +71,7 @@ re-read the cited lines before editing anything a `heuristic` edge pointed at.
   `methods=["X"]` names one. A `methods=[...]` listing several verbs produces NO route
   (it is never collapsed to the first verb); a one-element list is honored as usual.
   Route-honesty rule (shared with Java): when no unique path or unique verb can be
-  extracted, scalpel emits nothing instead of fabricating an endpoint.
+  extracted, the symbols engine emits nothing instead of fabricating an endpoint.
 - Tests: `test_*.py`/`*_test.py` pair to the same-named module by convention (`heuristic`)
   plus any imported target (`exact`).
 - Limitations: no `__all__` awareness beyond plain re-export resolution; dynamic dispatch
@@ -126,7 +126,7 @@ re-read the cited lines before editing anything a `heuristic` edge pointed at.
   `@PatchMapping`/`@DeleteMapping`/`@RequestMapping` at method level are `exact`
   (class-level `@RequestMapping` supplies the path prefix); combined annotation argument
   forms supported. A brace list naming several paths (`{"/a","/b"}`) produces NO route —
-  scalpel never invents a single endpoint from a multi-path mapping (a single-literal
+  the symbols engine never invents a single endpoint from a multi-path mapping (a single-literal
   brace form still extracts; an ambiguous class-level prefix degrades to no prefix).
   Route-honesty rule (shared with Python): no unique path or unique verb ⇒ no route node.
 - Tests: files under `src/test/java/**` pair to the main class of the same package+stem
@@ -155,18 +155,18 @@ function/class-ish declaration become nodes with:
 - module node also labeled `rough`.
 
 Rough symbols appear in `locate`/`slice`/`brief` so nothing is invisible; treat their spans
-as approximate. If a rough file matters to you, teach scalpel the extension instead of
+as approximate. If a rough file matters to you, teach the symbols engine the extension instead of
 trusting it blindly.
 
 ## Cross-cutting limits (all languages)
 
 - Resolution is lexical + convention only (NG2 in the design doc). No compiler, no
   type inference, no cross-repo (one root = one store).
-- `map stats` reports plain `.js/.mjs/.cjs` files under the registry language id
+- `scope stats` reports plain `.js/.mjs/.cjs` files under the registry language id
   `typescript` (the superset grammar that parses them), not a separate `javascript`
   id — dogfooding on expressjs/express showed this reads oddly; it is labeling, not
   misparsing.
 - Unresolved imports, dropped calls and barrel overflows are counted, never hidden:
-  see `map stats` → `unresolved:` line.
+  see `scope stats` → `unresolved:` line.
 - Re-export barrels are followed up to depth 5 (`BARREL_DEPTH_CAP`); beyond that the
   binding falls back to the barrel module itself and the call is labeled `heuristic`.

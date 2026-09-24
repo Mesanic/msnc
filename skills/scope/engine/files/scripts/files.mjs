@@ -1,9 +1,9 @@
 #!/usr/bin/env node
-// atlas — persistent codebase knowledge graph. See ../SKILL.md for the agent protocol.
+// files engine — persistent codebase knowledge graph. See the scope SKILL.md for the agent protocol.
 import fs from 'node:fs';
 import path from 'node:path';
 import {
-  addEdge, addNode, atlasDir, AtlasError, EDGE_TYPES, estTokens, fail, findRoot, idFor,
+  addEdge, addNode, filesDir, ScopeError, EDGE_TYPES, estTokens, fail, findRoot, idFor,
   loadConfig, loadGraph, normalizeLF, NODE_TYPES, removeNode, saveGraph, sha8, truncate,
 } from './lib/store.mjs';
 import { checkSelfDrift, expand, init as initStore, scan } from './lib/scan.mjs';
@@ -38,12 +38,12 @@ function parseArgs(argv) {
 
 function ctxFor() {
   const root = findRoot();
-  return { root, dir: atlasDir(root) };
+  return { root, dir: filesDir(root) };
 }
 
 function requireStore(ctx) {
   if (!fs.existsSync(ctx.dir)) {
-    fail('this repo is not indexed yet — run `sextant scan`');
+    fail('this repo is not indexed yet — run `scope scan`');
   }
   const graph = loadGraph(ctx.dir);
   for (const w of graph.warnings) say(`warn: ${w}`);
@@ -67,7 +67,7 @@ function resolveNode(graph, ref) {
   const matches = [...graph.nodes.values()].filter((n) => n.k === key || n.k.endsWith('/' + key));
   if (matches.length === 1) return matches[0];
   if (matches.length > 1) fail(`"${ref}" matches ${matches.length} nodes: ${matches.slice(0, 5).map((m) => m.k).join(', ')}`);
-  fail(`no node for "${ref}" — try \`sextant query "${ref}"\``);
+  fail(`no node for "${ref}" — try \`scope query "${ref}"\``);
   return null;
 }
 
@@ -76,17 +76,17 @@ function resolveNode(graph, ref) {
 const COMMANDS = {};
 
 COMMANDS.init = {
-  help: 'init — create the file graph store and gitignore entries (use `sextant scan`)',
+  help: 'init — create the file graph store and gitignore entries (use `scope scan`)',
   run(ctx) {
     const r = initStore(ctx);
     say(r.created.length ? `created:\n  ${r.created.join('\n  ')}` : 'already initialized — nothing to do');
     if (!r.gitOk) say('warn: not a git repository — push state and issue sync are unavailable');
-    say('\nnext: sextant scan');
+    say('\nnext: scope scan');
   },
 };
 
 COMMANDS.scan = {
-  help: 'sextant scan [--full] — index files, edges and anchors; regenerate MAP.md sections',
+  help: 'scope scan [--full] — index files, edges and anchors; regenerate MAP.md sections',
   run(ctx, args) {
     const r = scan(ctx, args.raw);
     for (const w of r.warnings) say(`warn: ${w}`);
@@ -103,7 +103,7 @@ COMMANDS.scan = {
 };
 
 COMMANDS.index = {
-  help: 'sextant index — rebuild the inverted index from the graph',
+  help: 'scope index — rebuild the inverted index from the graph',
   run(ctx) {
     const graph = requireStore(ctx);
     const r = buildIndex(ctx.dir, graph);
@@ -112,11 +112,11 @@ COMMANDS.index = {
 };
 
 COMMANDS.query = {
-  help: 'sextant query "terms" [--type T] [--k N] [--budget TOKENS] — ranked retrieval',
+  help: 'scope query "terms" [--type T] [--k N] [--budget TOKENS] — ranked retrieval',
   run(ctx, args) {
     const graph = requireStore(ctx);
     const q = args.positional.join(' ').trim();
-    if (!q) fail('usage: sextant query "search terms"');
+    if (!q) fail('usage: scope query "search terms"');
     const config = loadConfig(ctx.dir);
     let index = loadIndex(ctx.dir);
     if (!index.size) { buildIndex(ctx.dir, graph); index = loadIndex(ctx.dir); }
@@ -125,7 +125,7 @@ COMMANDS.query = {
     if (!hits.length) {
       say(`no hits for "${q}".`);
       say('broaden the terms, or Grep for it and then record what you find:');
-      say('  sextant note file add --type concept --key <slug> --summary "..." ');
+      say('  scope note file add --type concept --key <slug> --summary "..." ');
       return;
     }
 
@@ -155,16 +155,16 @@ COMMANDS.query = {
       say(block);
       shown += 1;
     }
-    say(`\nnext: sextant context <id> for the full upstream/downstream picture`);
+    say(`\nnext: scope context <id> for the full upstream/downstream picture`);
   },
 };
 
 COMMANDS.context = {
-  help: 'sextant context <id|path> — one card: upstream, downstream, impact, tests, docs, issues, git',
+  help: 'scope context <id|path> — one card: upstream, downstream, impact, tests, docs, issues, git',
   run(ctx, args) {
     const graph = requireStore(ctx);
     const ref = args.positional[0];
-    if (!ref) fail('usage: sextant context <id|path>');
+    if (!ref) fail('usage: scope context <id|path>');
     const node = resolveNode(graph, ref);
     const overlays = loadOverlays(ctx.root);
     const c = contextCard(graph, node, overlays);
@@ -227,10 +227,10 @@ COMMANDS.context = {
 };
 
 COMMANDS.neighbors = {
-  help: 'sextant neighbors <id> [--depth 1-3] [--dir in|out|both] [--type T] — adjacency by edge type',
+  help: 'scope neighbors <id> [--depth 1-3] [--dir in|out|both] [--type T] — adjacency by edge type',
   run(ctx, args) {
     const graph = requireStore(ctx);
-    const node = resolveNode(graph, args.positional[0] || fail('usage: sextant neighbors <id>'));
+    const node = resolveNode(graph, args.positional[0] || fail('usage: scope neighbors <id>'));
     const levels = neighbors(graph, node.id, {
       depth: Number(args.flags.depth || 1),
       dir: args.flags.dir,
@@ -253,11 +253,11 @@ COMMANDS.neighbors = {
 };
 
 COMMANDS.path = {
-  help: 'sextant path <a> <b> — how two nodes connect (up to 6 hops, any edge type)',
+  help: 'scope path <a> <b> — how two nodes connect (up to 6 hops, any edge type)',
   run(ctx, args) {
     const graph = requireStore(ctx);
-    const a = resolveNode(graph, args.positional[0] || fail('usage: sextant path <a> <b>'));
-    const b = resolveNode(graph, args.positional[1] || fail('usage: sextant path <a> <b>'));
+    const a = resolveNode(graph, args.positional[0] || fail('usage: scope path <a> <b>'));
+    const b = resolveNode(graph, args.positional[1] || fail('usage: scope path <a> <b>'));
     const p = findPath(graph, a.id, b.id);
     if (!p) { say(`no path within 6 hops between ${a.k} and ${b.k}`); return; }
     say(p.map((step, i) => (i === 0 ? short(graph, step.id) : ` -${step.type}${step.arrow} ${short(graph, step.id)}`)).join(''));
@@ -265,7 +265,7 @@ COMMANDS.path = {
 };
 
 COMMANDS.verify = {
-  help: 'sextant verify — detect summaries that drifted from their file (stale) and vanished files (dead)',
+  help: 'scope verify — detect summaries that drifted from their file (stale) and vanished files (dead)',
   run(ctx) {
     const graph = requireStore(ctx);
     const r = verify(graph, ctx.root, (rel) => hashOfFile(ctx.root, rel));
@@ -277,7 +277,7 @@ COMMANDS.verify = {
     if (r.dead.length) {
       say(`dead (${r.dead.length}) — file no longer exists:`);
       for (const n of r.dead.slice(0, 20)) say(`  ${n.id} ${n.k}`);
-      say('  run `sextant prune` to remove them');
+      say('  run `scope prune` to remove them');
     }
     if (!r.stale.length && !r.dead.length) say('clean — every node matches its file');
     else saveGraph(ctx.dir, graph);
@@ -287,7 +287,7 @@ COMMANDS.verify = {
 };
 
 COMMANDS.prune = {
-  help: 'sextant prune [--dry-run] — remove dead nodes, orphan edges and duplicates; flag oversized summaries',
+  help: 'scope prune [--dry-run] — remove dead nodes, orphan edges and duplicates; flag oversized summaries',
   run(ctx, args) {
     const graph = requireStore(ctx);
     const config = loadConfig(ctx.dir);
@@ -322,12 +322,12 @@ COMMANDS.prune = {
 };
 
 COMMANDS.stats = {
-  help: 'sextant stats — store size in tokens, counts by type, and budget breaches',
+  help: 'scope stats — store size in tokens, counts by type, and budget breaches',
   run(ctx) {
     const graph = requireStore(ctx);
     const config = loadConfig(ctx.dir);
     const layers = [
-      ['MAP.md', path.join(ctx.dir, 'MAP.md')],
+      ['MAP.md', path.join(ctx.root, '.scope', 'MAP.md')],
       ['nodes.jsonl', path.join(ctx.dir, 'graph', 'nodes.jsonl')],
       ['edges.jsonl', path.join(ctx.dir, 'graph', 'edges.jsonl')],
       ['terms.tsv', path.join(ctx.dir, 'index', 'terms.tsv')],
@@ -370,13 +370,13 @@ COMMANDS.stats = {
 
     const stale = [...graph.nodes.values()].filter((n) => n.st === 'stale').length;
     const dead = [...graph.nodes.values()].filter((n) => n.st === 'dead').length;
-    if (stale || dead) say(`\n${stale} stale, ${dead} dead — sextant verify / sextant prune`);
+    if (stale || dead) say(`\n${stale} stale, ${dead} dead — scope verify / scope prune`);
     if (total > config.budgets.store_tokens) say(`\nover budget: store is ${total} tokens vs ${config.budgets.store_tokens} — prune and tighten summaries`);
   },
 };
 
 COMMANDS.note = {
-  help: 'sextant note file add|set-summary|edge — write insight back into the graph',
+  help: 'scope note file add|set-summary|edge — write insight back into the graph',
   run(ctx, args) {
     const graph = requireStore(ctx);
     const config = loadConfig(ctx.dir);
@@ -403,7 +403,7 @@ COMMANDS.note = {
       }
       say(`added ${id} ${type} ${key}`);
     } else if (sub === 'set-summary') {
-      const node = resolveNode(graph, args.positional[1] || fail('usage: sextant note file set-summary <id> --summary "..."'));
+      const node = resolveNode(graph, args.positional[1] || fail('usage: scope note file set-summary <id> --summary "..."'));
       const summary = String(args.flags.summary || fail('--summary is required'));
       if (summary.length > max) fail(`summary is ${summary.length} chars, limit is ${max} — say it denser`);
       node.s = summary;
@@ -418,14 +418,14 @@ COMMANDS.note = {
       say(`updated ${node.id} ${node.k}`);
     } else if (sub === 'edge') {
       const [s, t, d] = args.positional.slice(1);
-      if (!s || !t || !d) fail('usage: sextant note file edge <src> <type> <dst>');
+      if (!s || !t || !d) fail('usage: scope note file edge <src> <type> <dst>');
       if (!EDGE_TYPES.has(t)) fail(`unknown edge type "${t}" — one of: ${[...EDGE_TYPES].join(', ')}`);
       const src = resolveNode(graph, s);
       const dst = resolveNode(graph, d);
       addEdge(graph, src.id, t, dst.id);
       say(`${src.id} -${t}→ ${dst.id}`);
     } else {
-      fail('usage: sextant note file add|set-summary|edge (see SKILL.md)');
+      fail('usage: scope note file add|set-summary|edge (see SKILL.md)');
     }
 
     saveGraph(ctx.dir, graph);
@@ -449,16 +449,16 @@ function short(graph, id) {
 // Placeholders wired into the dispatch table so `scan` can check self-knowledge drift
 // against the real command list from the first commit onward.
 COMMANDS.expand = {
-  help: 'sextant expand <path> — symbol-level nodes with line anchors for ranged reads',
+  help: 'scope expand <path> — symbol-level nodes with line anchors for ranged reads',
   run(ctx, args) {
     const r = expand(ctx, args.raw);
     say(`${r.file.k}: ${r.total} symbols (${r.created} new, ${r.removed} gone)`);
-    say('anchors now available — sextant context ' + r.file.k);
+    say('anchors now available — scope context ' + r.file.k);
   },
 };
 
 COMMANDS['git-overlay'] = {
-  help: 'sextant git-overlay — refresh per-file push state (pushed/unpushed/staged/modified/untracked)',
+  help: 'scope git-overlay — refresh per-file push state (pushed/unpushed/staged/modified/untracked)',
   run(ctx) {
     const o = gitOverlay(ctx);
     const head = o.detached ? 'detached HEAD' : `${o.branch || '(no branch)'}`;
@@ -470,16 +470,16 @@ COMMANDS['git-overlay'] = {
 };
 
 COMMANDS.issues = {
-  help: 'sextant issues [--limit N] | sextant issues link --blocker N --blocked M — sync GitHub, or create a dependency',
+  help: 'scope issues [--limit N] | scope issues link --blocker N --blocked M — sync GitHub, or create a dependency',
   run(ctx, args) {
     const config = loadConfig(ctx.dir);
     if (args.positional[0] === 'link') {
       const blocker = Number(args.flags.blocker);
       const blocked = Number(args.flags.blocked);
-      if (!blocker || !blocked) fail('usage: sextant issues link --blocker <n> --blocked <m>');
+      if (!blocker || !blocked) fail('usage: scope issues link --blocker <n> --blocked <m>');
       const r = linkIssues(ctx, blocker, blocked);
       say(`#${blocker} now blocks #${blocked}${r.already ? ' (already linked)' : ''} [db id ${r.dbid}]`);
-      say('run `sextant issues` to pull the new edge into the graph');
+      say('run `scope issues` to pull the new edge into the graph');
       return;
     }
     const graph = requireStore(ctx);
@@ -504,25 +504,25 @@ COMMANDS.issues = {
 };
 
 COMMANDS['graph-html'] = {
-  help: 'sextant view — generate the self-contained interactive viewer for the user',
+  help: 'scope view — generate the self-contained interactive viewer for the user',
   run(ctx) {
     const graph = requireStore(ctx);
     const r = graphHtml(ctx, graph);
     say(`wrote ${r.file}`);
     say(`${r.nodes} nodes, ${r.edges} edges, ${Math.round(r.bytes / 1024)} KB, no external requests`);
-    if (!r.hasGit) say('note: no git overlay — run `sextant git-overlay` first to show push state');
-    if (!r.hasIssues) say('note: no issue overlay — run `sextant issues` first to show issues and blockers');
+    if (!r.hasGit) say('note: no git overlay — run `scope git-overlay` first to show push state');
+    if (!r.hasIssues) say('note: no issue overlay — run `scope issues` first to show issues and blockers');
   },
 };
 
 // --- entry -----------------------------------------------------------------
 
 function usage() {
-  say('atlas — persistent codebase knowledge graph');
+  say('files engine — persistent codebase knowledge graph');
   say('');
   for (const name of Object.keys(COMMANDS).sort()) say('  ' + COMMANDS[name].help);
   say('');
-  say('This engine backs the sextant skill; read its SKILL.md for the protocol.');
+  say('This engine backs the Scope skill; read its SKILL.md for the protocol.');
 }
 
 function main() {
@@ -537,7 +537,7 @@ function main() {
     command.run(ctxFor(), args);
     return 0;
   } catch (e) {
-    if (e instanceof AtlasError) { say(`error: ${e.message}`); return 1; }
+    if (e instanceof ScopeError) { say(`error: ${e.message}`); return 1; }
     throw e;
   }
 }

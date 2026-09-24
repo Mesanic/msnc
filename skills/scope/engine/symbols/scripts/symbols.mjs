@@ -37,14 +37,14 @@ const SUBCOMMANDS = {
   brief: { milestone: 'M2', help: 'compact orientation card for a symbol' },
   check: { milestone: 'M3', help: 'verify no dependent drift after edits' },
   note: { milestone: 'M3', help: 'append a human note to the ledger' },
-  init: { milestone: 'M3', help: 'initialize .map/ for a project' },
+  init: { milestone: 'M3', help: 'initialize .scope/symbols/ for a project' },
   stats: { milestone: 'M3', help: 'print store statistics' },
   view: { milestone: 'M5', help: 'render offline Graph/Flow/Change-Lens HTML viewer' },
 };
 
 function usage(stream = process.stderr) {
-  stream.write("sextant symbol-graph engine - normally driven through `sextant`\n");
-  stream.write('\nusage: map.mjs <subcommand> [args]\n');
+  stream.write("Scope symbol-graph engine - normally driven through `scope`\n");
+  stream.write('\nusage: symbols.mjs <subcommand> [args]\n');
   stream.write('\nsubcommands:\n');
   for (const name of Object.keys(SUBCOMMANDS)) {
     const { help, milestone } = SUBCOMMANDS[name];
@@ -55,7 +55,7 @@ function usage(stream = process.stderr) {
 
 function usageFor(stream, name) {
   const spec = SUBCOMMANDS[name];
-  stream.write(`usage: map.mjs ${name} [--root <dir>] [--full] [--jobs <n>]\n`);
+  stream.write(`usage: symbols.mjs ${name} [--root <dir>] [--full] [--jobs <n>]\n`);
   stream.write(`\n${spec?.help ?? ''}\n`);
 }
 
@@ -123,12 +123,12 @@ async function checkRoot(rootArg) {
   try {
     const rootStat = await stat(rootArg);
     if (!rootStat.isDirectory()) {
-      console.error(`scalpel: --root "${rootArg}" is not a directory`);
+      console.error(`symbols: --root "${rootArg}" is not a directory`);
       return false;
     }
   } catch (err) {
     if (err && err.code === 'ENOENT') {
-      console.error(`scalpel: --root "${path.resolve(rootArg)}" does not exist`);
+      console.error(`symbols: --root "${path.resolve(rootArg)}" does not exist`);
       return false;
     }
     throw err;
@@ -146,7 +146,7 @@ async function runScan(argv) {
     opts = parseScanArgs(argv);
   } catch (err) {
     if (err instanceof UsageError) {
-      console.error(`scalpel: ${err.message}\n`);
+      console.error(`symbols: ${err.message}\n`);
       usageFor(process.stderr, 'scan');
       return 2;
     }
@@ -189,16 +189,16 @@ async function runLocate(argv) {
     });
   } catch (err) {
     if (err instanceof UsageError) {
-      console.error(`scalpel: ${err.message}\n`);
-      process.stderr.write('usage: sextant locate <query> [--root <dir>] [--limit <n>] [--json]\n');
+      console.error(`symbols: ${err.message}\n`);
+      process.stderr.write('usage: scope locate <query> [--root <dir>] [--limit <n>] [--json]\n');
       return 2;
     }
     throw err;
   }
   const query = (opts._[0] ?? '').trim();
   if (!query) {
-    console.error('scalpel: a search query is required\n');
-    process.stderr.write('usage: sextant locate <query> [--root <dir>] [--limit <n>] [--json]\n');
+    console.error('symbols: a search query is required\n');
+    process.stderr.write('usage: scope locate <query> [--root <dir>] [--limit <n>] [--json]\n');
     return 2;
   }
   if (!(await checkRoot(opts.root))) return 2;
@@ -234,8 +234,8 @@ async function runImpact(argv) {
     });
   } catch (err) {
     if (err instanceof UsageError) {
-      console.error(`scalpel: ${err.message}\n`);
-      process.stderr.write('usage: sextant impact <key> [--up|--down|--both] [--depth <n>] [--root <dir>]\n');
+      console.error(`symbols: ${err.message}\n`);
+      process.stderr.write('usage: scope impact <key> [--up|--down|--both] [--depth <n>] [--root <dir>]\n');
       return 2;
     }
     throw err;
@@ -245,8 +245,8 @@ async function runImpact(argv) {
   const direction = opts.up ? 'up' : opts.both ? 'both' : 'down';
   const key = opts._[0];
   if (!key) {
-    console.error('scalpel: a symbol key is required (node id or unique name)\n');
-    process.stderr.write('usage: sextant impact <key> [--up|--down|--both] [--depth <n>] [--root <dir>]\n');
+    console.error('symbols: a symbol key is required (node id or unique name)\n');
+    process.stderr.write('usage: scope impact <key> [--up|--down|--both] [--depth <n>] [--root <dir>]\n');
     return 2;
   }
   if (!(await checkRoot(opts.root))) return 2;
@@ -276,16 +276,16 @@ async function runSlice(argv) {
     });
   } catch (err) {
     if (err instanceof UsageError) {
-      console.error(`scalpel: ${err.message}\n`);
-      process.stderr.write('usage: sextant slice <key|path:a-b> [--expand] [--max-tokens <n>] [--root <dir>]\n');
+      console.error(`symbols: ${err.message}\n`);
+      process.stderr.write('usage: scope slice <key|path:a-b> [--expand] [--max-tokens <n>] [--root <dir>]\n');
       return 2;
     }
     throw err;
   }
   const key = opts._[0];
   if (!key) {
-    console.error('scalpel: a key is required: node id, symbol name, or path:a-b\n');
-    process.stderr.write('usage: sextant slice <key|path:a-b> [--expand] [--max-tokens <n>] [--root <dir>]\n');
+    console.error('symbols: a key is required: node id, symbol name, or path:a-b\n');
+    process.stderr.write('usage: scope slice <key|path:a-b> [--expand] [--max-tokens <n>] [--root <dir>]\n');
     return 2;
   }
   if (!(await checkRoot(opts.root))) return 2;
@@ -315,16 +315,16 @@ async function runBrief(argv) {
     opts = parseCommandArgs(argv, { options: { ...ROOT_OPT() }, maxPositionals: 1 });
   } catch (err) {
     if (err instanceof UsageError) {
-      console.error(`scalpel: ${err.message}\n`);
-      process.stderr.write('usage: sextant brief <key> [--root <dir>]\n');
+      console.error(`symbols: ${err.message}\n`);
+      process.stderr.write('usage: scope brief <key> [--root <dir>]\n');
       return 2;
     }
     throw err;
   }
   const key = opts._[0];
   if (!key) {
-    console.error('scalpel: a symbol key is required\n');
-    process.stderr.write('usage: sextant brief <key> [--root <dir>]\n');
+    console.error('symbols: a symbol key is required\n');
+    process.stderr.write('usage: scope brief <key> [--root <dir>]\n');
     return 2;
   }
   if (!(await checkRoot(opts.root))) return 2;
@@ -335,10 +335,10 @@ async function runBrief(argv) {
   return 0;
 }
 
-const CHECK_USAGE = 'usage: sextant check [--root <dir>] [--json]\n';
-const NOTE_USAGE = 'usage: sextant note symbol set <key> --text "..." | note symbol edge <fromKey> <toKey> --text "..." [--root <dir>]\n';
-const INIT_USAGE = 'usage: sextant scan [--root <dir>]\n';
-const STATS_USAGE = 'usage: sextant stats [--root <dir>]\n';
+const CHECK_USAGE = 'usage: scope check [--root <dir>] [--json]\n';
+const NOTE_USAGE = 'usage: scope note symbol set <key> --text "..." | note symbol edge <fromKey> <toKey> --text "..." [--root <dir>]\n';
+const INIT_USAGE = 'usage: scope scan [--root <dir>]\n';
+const STATS_USAGE = 'usage: scope stats [--root <dir>]\n';
 
 async function runCheck(argv) {
   let opts;
@@ -349,7 +349,7 @@ async function runCheck(argv) {
     });
   } catch (err) {
     if (err instanceof UsageError) {
-      console.error(`scalpel: ${err.message}\n`);
+      console.error(`symbols: ${err.message}\n`);
       process.stderr.write(CHECK_USAGE);
       return 2;
     }
@@ -379,7 +379,7 @@ async function runNote(argv) {
     });
   } catch (err) {
     if (err instanceof UsageError) {
-      console.error(`scalpel: ${err.message}\n`);
+      console.error(`symbols: ${err.message}\n`);
       process.stderr.write(NOTE_USAGE);
       return 2;
     }
@@ -388,12 +388,12 @@ async function runNote(argv) {
   const sub = opts._[0];
   const text = typeof opts.text === 'string' ? opts.text : '';
   if ((sub !== 'set' && sub !== 'edge') || (sub === 'set' && opts._.length !== 2) || (sub === 'edge' && opts._.length !== 3)) {
-    console.error('scalpel: expected `note set <key>` or `note symbol edge <fromKey> <toKey>` with --text\n');
+    console.error('symbols: expected `note set <key>` or `note symbol edge <fromKey> <toKey>` with --text\n');
     process.stderr.write(NOTE_USAGE);
     return 2;
   }
   if (!text.trim()) {
-    console.error('scalpel: a non-empty --text is required\n');
+    console.error('symbols: a non-empty --text is required\n');
     process.stderr.write(NOTE_USAGE);
     return 2;
   }
@@ -418,12 +418,12 @@ async function runNote(argv) {
 }
 
 function printInitResult(res) {
-  printOut(`init ${res.mapDirPosix}`);
+  printOut(`init ${res.symbolsDirPosix}`);
   printOut(`index: ${res.metaWritten ? 'created (placeholder meta; first scan replaces it)' : 'existing'}`);
   printOut(`ledger notes.jsonl: v${res.ledgerSchemaVersion} ${res.notesCreated ? 'created' : 'existing'} (tracked in git, never gitignored)`);
-  printOut(`gitignore: ${res.gitignoreStatus} (.map/index/ ignored; .map/ledger/ stays tracked)`);
-  if (res.wholesaleMapIgnore) {
-    console.error('warning: .gitignore ignores .map/ entirely — un-ignore .map/ledger/ or notes will be lost');
+  printOut(`gitignore: ${res.gitignoreStatus} (.scope/symbols/index/ ignored; .scope/symbols/ledger/ stays tracked)`);
+  if (res.wholesaleIgnore) {
+    console.error('warning: .gitignore ignores .scope/symbols/ entirely — un-ignore .scope/symbols/ledger/ or notes will be lost');
   }
   printOut(HOOK_SNIPPET.join('\n'));
 }
@@ -434,7 +434,7 @@ async function runInit(argv) {
     opts = parseCommandArgs(argv, { options: { ...ROOT_OPT() }, maxPositionals: 0 });
   } catch (err) {
     if (err instanceof UsageError) {
-      console.error(`scalpel: ${err.message}\n`);
+      console.error(`symbols: ${err.message}\n`);
       process.stderr.write(INIT_USAGE);
       return 2;
     }
@@ -451,7 +451,7 @@ async function runStats(argv) {
     opts = parseCommandArgs(argv, { options: { ...ROOT_OPT() }, maxPositionals: 0 });
   } catch (err) {
     if (err instanceof UsageError) {
-      console.error(`scalpel: ${err.message}\n`);
+      console.error(`symbols: ${err.message}\n`);
       process.stderr.write(STATS_USAGE);
       return 2;
     }
@@ -462,7 +462,7 @@ async function runStats(argv) {
   return 0;
 }
 
-const VIEW_USAGE = 'usage: sextant view [--root <dir>] [--out <file>]\n';
+const VIEW_USAGE = 'usage: scope view [--root <dir>] [--out <file>]\n';
 
 async function runView(argv) {
   let opts;
@@ -476,7 +476,7 @@ async function runView(argv) {
     });
   } catch (err) {
     if (err instanceof UsageError) {
-      console.error(`scalpel: ${err.message}\n`);
+      console.error(`symbols: ${err.message}\n`);
       process.stderr.write(VIEW_USAGE);
       return 2;
     }
@@ -519,13 +519,13 @@ async function main(argv) {
   }
   const sub = SUBCOMMANDS[cmd];
   if (!sub) {
-    console.error(`scalpel: unknown subcommand "${cmd}"\n`);
+    console.error(`symbols: unknown subcommand "${cmd}"\n`);
     usage();
     return 2;
   }
   const handler = HANDLERS[cmd];
   if (!handler) {
-    console.error(`scalpel: "${cmd}" is not implemented until ${sub.milestone}`);
+    console.error(`symbols: "${cmd}" is not implemented until ${sub.milestone}`);
     return 2;
   }
   return handler(argv.slice(1));
@@ -537,7 +537,7 @@ main(process.argv.slice(2))
   })
   .catch((err) => {
     if (err instanceof IndexVersionError) {
-      console.error(`scalpel: ${err.message}`);
+      console.error(`symbols: ${err.message}`);
       process.exitCode = 2;
     } else if (
       err instanceof UsageError ||
@@ -546,14 +546,14 @@ main(process.argv.slice(2))
       err instanceof StoreCorruptError ||
       err instanceof ViewOutputError
     ) {
-      console.error(`scalpel: ${err.message}`);
+      console.error(`symbols: ${err.message}`);
       process.exitCode = 2;
     } else if (err instanceof LedgerCorruptError || err instanceof LedgerLockError) {
       // Operational ledger failures: not user error, but the write did not land.
-      console.error(`scalpel: ${err.message}`);
+      console.error(`symbols: ${err.message}`);
       process.exitCode = 1;
     } else {
-      console.error(`scalpel: ${err?.stack ?? err}`);
+      console.error(`symbols: ${err?.stack ?? err}`);
       process.exitCode = 1;
     }
   });

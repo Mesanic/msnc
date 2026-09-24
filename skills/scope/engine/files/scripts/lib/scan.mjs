@@ -1,13 +1,13 @@
 // scan: walk the repo, extract structure, reconcile the graph, regenerate MAP.md.
 //
 // Every file is read and analyzed on every scan. The content hash is not a speed shortcut - it is
-// how atlas knows when an agent-written summary has gone stale. Re-analyzing everything keeps
+// how the file graph knows when an agent-written summary has gone stale. Re-analyzing everything keeps
 // edges correct when a previously-unresolvable import suddenly resolves because a file landed.
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
-  addEdge, addNode, atlasDir, dropEdges, estTokens, EXPAND_EDGE_TYPES, fail, idFor, isGitRepo,
+  addEdge, addNode, filesDir, dropEdges, estTokens, EXPAND_EDGE_TYPES, fail, idFor, isGitRepo,
   joinPosix, loadConfig, loadGraph, makeMatcher, normalizeLF, run, saveGraph, sha8,
   SCAN_EDGE_TYPES, SCAN_SOURCE_PREFIX, toPosix, truncate, writeFileAtomic,
 } from './store.mjs';
@@ -34,8 +34,8 @@ const TEST_PATTERNS = [
   /^(.*)Test\.java$/,
 ];
 
-// A directory holding a SKILL.md is an installed agent skill -- atlas, scalpel, sextant or
-// any other. It is tooling that happens to sit in the repo, not the repo's own code: nothing
+// A directory holding a SKILL.md is an installed agent skill -- Scope or any other. It is
+// tooling that happens to sit in the repo, not the repo's own code: nothing
 // here imports it and nobody edits it from this project, so indexing it buries the real graph
 // under hundreds of nodes that cost context on every query and answer nothing about the code.
 // Detected by the marker file rather than a name list, so it covers skills wherever they are
@@ -66,7 +66,7 @@ export function listFiles(root, config) {
       let entries;
       try { entries = fs.readdirSync(dir, { withFileTypes: true }); } catch { return; }
       for (const e of entries) {
-        if (e.name === '.git' || e.name === '.atlas') continue;
+        if (e.name === '.git' || e.name === '.scope') continue;
         const rel = prefix ? prefix + '/' + e.name : e.name;
         if (e.isDirectory()) { if (!ignore(rel + '/')) walk(path.join(dir, e.name), rel); }
         else if (e.isFile()) rels.push(rel);
@@ -200,8 +200,8 @@ function tsPathRules(root, dirs) {
 export function scan(ctx, argv) {
   const full = argv.includes('--full');
   const { root } = ctx;
-  const dir = atlasDir(root);
-  if (!fs.existsSync(dir)) fail('no .atlas store here — run `sextant scan` first');
+  const dir = filesDir(root);
+  if (!fs.existsSync(dir)) fail('no .scope/files store here — run `scope scan` first');
   const config = loadConfig(dir);
   const maxChars = config.summaryMaxChars || 200;
   const graph = loadGraph(dir);
@@ -491,7 +491,7 @@ export function expandFile(root, rel, graph, config, seenIds) {
   const maxChars = config.summaryMaxChars || 200;
 
   const fileNode = ['entry', 'file', 'adr'].map((t) => graph.byKey.get(t + ':' + rel)).find(Boolean);
-  if (!fileNode) fail(`${rel} is not in the graph — run \`sextant scan\` first`);
+  if (!fileNode) fail(`${rel} is not in the graph — run \`scope scan\` first`);
 
   const exported = new Set(rec.anchors.map(([n]) => n));
   const symbols = new Map();
@@ -561,11 +561,11 @@ export function expandFile(root, rel, graph, config, seenIds) {
 }
 
 export function expand(ctx, argv) {
-  const dir = atlasDir(ctx.root);
+  const dir = filesDir(ctx.root);
   const config = loadConfig(dir);
   const graph = loadGraph(dir);
   const rel = toPosix(argv.find((a) => !a.startsWith('--')) || '').replace(/^\.\//, '');
-  if (!rel) fail('usage: sextant expand <path>');
+  if (!rel) fail('usage: scope expand <path>');
   // This file's own sym ids must NOT count as taken. expandFile is about to re-derive
   // exactly those ids from exactly those keys, and idFor() treats a taken id as a
   // collision and lengthens the digest — so seeding them here minted a second node per
@@ -593,10 +593,10 @@ function tagsFor(rel, rec, config) {
   return [...tags].filter(Boolean).sort();
 }
 
-// Skill nodes describe atlas itself, not the repo. They are off by default (`selfKnowledge`
-// in .atlas/config.json) because 30 nodes and 55 edges of tool documentation is context every
+// Skill nodes describe Scope itself, not the repo. They are off by default (`selfKnowledge`
+// in .scope/files/config.json) because 30 nodes and 55 edges of tool documentation is context every
 // query pays for and no edit to this project can ever change. Set it to true in a repo where
-// you want atlas to be queryable about its own commands.
+// you want Scope to be queryable about its own commands.
 function seedSelfKnowledge(graph, maxChars, enabled) {
   // Cleared unconditionally: turning the flag off has to actually remove skill nodes from a
   // store that already has them, not leave 30 orphans nothing will ever collect.
@@ -630,8 +630,8 @@ export function checkSelfDrift(commands) {
 
 // --- MAP.md ----------------------------------------------------------------
 
-const BEGIN = (name) => `<!-- atlas:auto:begin ${name} -->`;
-const END = (name) => `<!-- atlas:auto:end ${name} -->`;
+const BEGIN = (name) => `<!-- scope:auto:begin ${name} -->`;
+const END = (name) => `<!-- scope:auto:end ${name} -->`;
 
 function replaceSection(text, name, body) {
   const b = BEGIN(name);
@@ -644,7 +644,8 @@ function replaceSection(text, name, body) {
 }
 
 function writeMap(root, dir, config, graph, extra) {
-  const file = path.join(dir, 'MAP.md');
+  // One map for both engines, at the top of the data folder.
+  const file = path.join(root, '.scope', 'MAP.md');
   const name = config.name || path.basename(root);
   let text = fs.existsSync(file) ? normalizeLF(fs.readFileSync(file, 'utf8')) : '';
 
@@ -686,10 +687,10 @@ function writeMap(root, dir, config, graph, extra) {
     `Types: ${Object.entries(byType).sort().map(([t, c]) => `${t} ${c}`).join(' · ')}.`,
     Object.keys(langs).length ? `Languages: ${Object.entries(langs).sort((a, b) => b[1] - a[1]).map(([l, c]) => `${l} ${c}`).join(' · ')}.` : '',
     '',
-    // Paths only: `sextant context <path>` works, and eleven hex ids cost ~60 tokens every session.
+    // Paths only: `scope context <path>` works, and eleven hex ids cost ~60 tokens every session.
     `**Modules**: ${mods.map((m) => `\`${m.n.k}\` ${m.c}`).join(' · ')}`,
     entries.length ? `**Entrypoints**: ${entries.map((e) => `\`${e.k}\``).join(' · ')}` : '',
-    stale || dead ? `\n_${stale} stale, ${dead} dead — run \`sextant verify\`._` : '',
+    stale || dead ? `\n_${stale} stale, ${dead} dead — run \`scope verify\`._` : '',
   ].filter((l) => l !== '').join('\n');
 
   const sample = mods[0] ? mods[0].n.k : (entries[0] ? entries[0].k : 'src');
@@ -697,9 +698,9 @@ function writeMap(root, dir, config, graph, extra) {
   // the session-start budget saying the same thing twice.
   const howto = [
     '```bash',
-    'node "<scope>/scripts/sextant.mjs" query "nouns of your task"   # ranked hits, ~40 tokens each',
-    `node "<scope>/scripts/sextant.mjs" context ${sample}`,
-    `node "<scope>/scripts/sextant.mjs" impact ${sample}             # REQUIRED before any edit`,
+    'node "<scope>/scripts/scope.mjs" query "nouns of your task"   # ranked hits, ~40 tokens each',
+    `node "<scope>/scripts/scope.mjs" context ${sample}`,
+    `node "<scope>/scripts/scope.mjs" impact ${sample}             # REQUIRED before any edit`,
     '```',
     'Query before you Grep; impact before you edit. `<scope>` is the `msnc:scope` skill folder: the skill has the full path and the protocol.',
   ].join('\n');
@@ -715,24 +716,9 @@ function writeMap(root, dir, config, graph, extra) {
 
 // --- init ------------------------------------------------------------------
 
-const CLAUDE_BEGIN = '<!-- atlas:begin -->';
-const CLAUDE_END = '<!-- atlas:end -->';
-
-const CLAUDE_BLOCK = `${CLAUDE_BEGIN}
-## Atlas-first
-
-This repo has a knowledge graph at \`.atlas/\`. Before any codebase search or exploration —
-before Grep, Glob, or opening files to orient yourself — use the \`atlas\` skill: read
-\`.atlas/MAP.md\`, then \`sextant query\` / \`sextant context\` for the task's nouns. Raw search is the
-fallback for a miss, not the first move.
-
-Write back what you learn (\`sextant note file set-summary\`, \`sextant note file edge\`, \`sextant scan\`) before
-ending a turn. The graph plus GitHub issues are the only stores — no scratch notes or TODO files.
-${CLAUDE_END}`;
-
 export function init(ctx) {
   const { root } = ctx;
-  const dir = atlasDir(root);
+  const dir = filesDir(root);
   const created = [];
   for (const sub of ['', 'graph', 'index', 'overlays', 'view']) {
     const p = sub ? path.join(dir, sub) : dir;
@@ -743,13 +729,13 @@ export function init(ctx) {
   if (!fs.existsSync(cfgPath)) {
     const cfg = { ...loadConfig(dir), name: path.basename(root) };
     writeFileAtomic(cfgPath, JSON.stringify(cfg, null, 2) + '\n');
-    created.push('.atlas/config.json');
+    created.push('.scope/files/config.json');
   }
 
   const giPath = path.join(root, '.gitignore');
-  const want = ['.atlas/overlays/', '.atlas/view/'];
+  const want = ['.scope/files/overlays/', '.scope/files/view/'];
   let gi = fs.existsSync(giPath) ? normalizeLF(fs.readFileSync(giPath, 'utf8')) : '';
-  // A repo that already ignores `.atlas/` wholesale does not need `.atlas/overlays/` too,
+  // A repo that already ignores `.scope/` wholesale does not need `.scope/files/overlays/` too,
   // and appending it anyway leaves every fresh checkout with a modified .gitignore after
   // its first scan. Covered means: an exact match, or an existing rule that is a parent
   // directory of the one we want.
@@ -767,10 +753,7 @@ export function init(ctx) {
     created.push('.gitignore (+' + missing.join(', ') + ')');
   }
 
-  // Vendored inside sextant: sextant owns the single CLAUDE.md routing block, so this
-  // engine writes none. Two blocks describing overlapping tools is exactly how a reader
-  // ends up unsure which command to call.
-  void CLAUDE_BLOCK;
+  // No CLAUDE.md routing block: MSNC's Tuner does the routing.
 
   const gitOk = isGitRepo(root);
   return { root, created, gitOk };

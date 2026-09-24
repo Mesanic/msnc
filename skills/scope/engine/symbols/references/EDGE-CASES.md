@@ -19,7 +19,7 @@ this list ever disagree, the code wins.
 3. **Barrel depth-cap fallback.** Re-export chains (`index.ts` barrels) are followed up to
    5 hops (`BARREL_DEPTH_CAP`). Deeper: the binding falls back to the last barrel module
    and the call becomes a `heuristic` module-level edge. Surfacing: `heuristic` label on
-   the call + `barrelOverflows=N` in `map stats`. Why: unbounded re-export chasing is
+   the call + `barrelOverflows=N` in `scope stats`. Why: unbounded re-export chasing is
    where naive mappers blow up; a capped honest guess beats an uncrawlable graph.
 
 4. **Shadow-drop.** A call whose head is shadowed by a local variable or a parameter of
@@ -47,7 +47,7 @@ this list ever disagree, the code wins.
    per package (`packages/core/src/index` vs `packages/web/src/main`) so same-named files
    never collide. Test-runner markers are recognized at root and up to 3 directory levels
    below it. Go is the exception: a single `go.mod` at the scan root is read; nested Go
-   modules are not. Surfacing: runner sources listed by `map check --json`
+   modules are not. Surfacing: runner sources listed by `scope check --json`
    (`runnerSources`); imports crossing package boundaries inside one store still resolve
    if relative paths match.
 
@@ -70,7 +70,7 @@ this list ever disagree, the code wins.
     ANSWERING commands (locate / impact / slice / brief / note / check): their auto-resync
     scan force-fulls when meta is missing/older/corrupt. The read-only reporting commands
     never rewrite an index: `stats` and `view` REFUSE an older-schema store outright
-    (exit 2, "run `map scan` to rebuild"). A store NEWER than the tool is refused
+    (exit 2, "run `scope scan` to rebuild"). A store NEWER than the tool is refused
     everywhere (we cannot parse our own future). Surfacing: answering command on an older
     store → silent full rescan (first run after upgrade is slower); `stats`/`view` on
     older, or any command on newer → `IndexVersionError`, exit 2.
@@ -84,7 +84,7 @@ this list ever disagree, the code wins.
 
 13. **Identical-body collisions.** Note keys are content-derived
     (`sha256(sigHash|normalizedBody)[:16]`); two live symbols with identical signature and
-    body collide on one key. Surfacing: `map check` reports `ambiguous` with BOTH
+    body collide on one key. Surfacing: `scope check` reports `ambiguous` with BOTH
     candidate ids and refuses to pick (exit 1 until resolved). Why: silently choosing
     would attach knowledge to the wrong function; disambiguate by editing one body.
 
@@ -99,7 +99,7 @@ this list ever disagree, the code wins.
     `lang:"unknown"`, `confidence:"rough"`, no edges. Why: a wrong-but-labeled hint beats
     an invisible file, and pretending grammar-level precision without a grammar would be
     dishonest. Surfacing: `rough` labels everywhere those nodes appear;
-    `lang unknown: … rough=N` line in `map stats`.
+    `lang unknown: … rough=N` line in `scope stats`.
 
 16. **Large files.** Source files over 1 048 576 bytes (1 MiB,
     `MAX_SOURCE_FILE_BYTES`) are skipped BEFORE reading/parsing and never indexed.
@@ -110,7 +110,7 @@ this list ever disagree, the code wins.
     and downstream budgets cannot rescue megabyte-wide spans. This replaces the earlier
     draft's "no cap" stance — the cap is the honesty-preserving choice. Surfacing: never
     silent — `scan` stderr gains `· N oversize skipped (cap 1048576 B)` plus one
-    `note:` line per skipped path; `meta.stats.skippedOversize`; `map stats` shows
+    `note:` line per skipped path; `meta.stats.skippedOversize`; `scope stats` shows
     `skipped: binary=…, oversize=…`. Oversized files do NOT mark the index incomplete
     (deliberate skip, like binaries).
 
@@ -121,11 +121,11 @@ this list ever disagree, the code wins.
     lines; contributes to `issues`, exit 1 until fixed.
 
 18. **Incomplete-index refusal.** If any file failed extraction during the resync that
-    precedes every query, scalpel refuses to answer from a partial graph.
-    Surfacing: `map scan` prints per-file `warning:` lines and marks meta incomplete;
+    precedes every query, the symbols engine refuses to answer from a partial graph.
+    Surfacing: `scope scan` prints per-file `warning:` lines and marks meta incomplete;
     query commands exit 2 with "index is incomplete (N files failed extraction);
     refusing to answer from an incomplete index". Corrupt segments similarly raise
-    `StoreCorruptError` (exit 2) suggesting `map scan --full`.
+    `StoreCorruptError` (exit 2) suggesting `scope scan --full`.
 
 19. **Truncation honesty.** Every output has a deterministic budget contract:
     locate lines ellipsize at ~40 tokens; impact and check reports fill greedily under
@@ -146,7 +146,7 @@ this list ever disagree, the code wins.
 
 21. **Per-project ignore list.** `IGNORE_DIRS` in `lib/walk.mjs` is the universal set
     (`node_modules`, `dist`, `vendor`, `target`, `__pycache__`, dotdirs). A repo that
-    needs more creates `<root>/.map/config.json` with
+    needs more creates `<root>/.scope/symbols/config.json` with
     `{ "ignoreDirs": ["runs", "apps/legacy"] }` — repo-relative posix paths matched
     against the directory itself, so a top-level name and a nested path both work. The
     walk is **pruned before descending**, so an ignored tree is never read. Why: this
@@ -155,7 +155,7 @@ this list ever disagree, the code wins.
     oversize-skipped *source*, which reads as though real code had been dropped.
     Surfacing: none directly — the files simply do not appear in `stats` or the store.
     A missing or malformed config means no extra ignores and never fails a scan. The
-    file is not gitignored (`map init` ignores only `.map/index/`), so it commits with
-    the repo. Atlas keeps its own separate list at `.atlas/config.json` under `ignore`
-    (globs, not paths); both need the entry, and `sextant view` reports the gap between
+    file is not gitignored (`scope init` ignores only `.scope/symbols/index/`), so it commits with
+    the repo. The files engine keeps its own separate list at `.scope/files/config.json` under `ignore`
+    (globs, not paths); both need the entry, and `scope view` reports the gap between
     them as skipped symbols.

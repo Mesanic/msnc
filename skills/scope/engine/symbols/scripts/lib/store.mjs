@@ -10,8 +10,8 @@ import {
 } from './util.mjs';
 
 export const SCHEMA_VERSION = 1;
-export const TOOL_ID = 'scalpel@0.0.1';
-export const MAP_DIRNAME = '.map';
+export const TOOL_ID = 'scope-symbols@0.0.1';
+export const SYMBOLS_DIRNAME = '.scope/symbols';
 export const INDEX_DIRNAME = 'index';
 export const LEDGER_DIRNAME = 'ledger';
 export const NODES_SEGMENT = 'nodes-000.jsonl';
@@ -27,16 +27,16 @@ export class IndexVersionError extends Error {
   }
 }
 
-export function mapDirFor(projectRoot) {
-  return path.join(path.resolve(projectRoot), MAP_DIRNAME);
+export function symbolsDirFor(projectRoot) {
+  return path.join(path.resolve(projectRoot), SYMBOLS_DIRNAME);
 }
 
 export function ledgerDirFor(projectRoot) {
-  return path.join(mapDirFor(projectRoot), LEDGER_DIRNAME);
+  return path.join(symbolsDirFor(projectRoot), LEDGER_DIRNAME);
 }
 
 export function storeDirFor(projectRoot) {
-  return path.join(mapDirFor(projectRoot), INDEX_DIRNAME);
+  return path.join(symbolsDirFor(projectRoot), INDEX_DIRNAME);
 }
 
 export function storePosixDirFor(projectRoot) {
@@ -87,7 +87,7 @@ export async function readMeta(storeDir) {
   const v = meta.schemaVersion;
   if (v > SCHEMA_VERSION) {
     throw new IndexVersionError(
-      `scalpel: index schemaVersion ${v} is newer than supported ${SCHEMA_VERSION}; run \`sextant scan\` with an up-to-date scalpel to rebuild`,
+      `symbols: index schemaVersion ${v} is newer than supported ${SCHEMA_VERSION}; run \`scope scan\` with an up-to-date Scope to rebuild`,
     );
   }
   return { status: v < SCHEMA_VERSION ? 'older' : 'ok', meta };

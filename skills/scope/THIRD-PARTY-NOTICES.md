@@ -1,22 +1,22 @@
 # Third-party notices
 
-sextant redistributes the prebuilt binaries below so that `sextant scan` parses source
+Scope redistributes the prebuilt binaries below so that `scope scan` parses source
 without a build step or a network fetch. They are unmodified upstream artifacts; only
 `web-tree-sitter.js` was renamed to `.mjs` (byte-identical, see the note in
-`engine/scalpel/scripts/vendor/MANIFEST.json`, which also records a sha256 for each file).
+`engine/symbols/scripts/vendor/MANIFEST.json`, which also records a sha256 for each file).
 
 Every one is under the MIT License. The full text appears once at the end; each package's
 own copyright line is listed with it, as MIT requires.
 
 | Package | Vendored as | Upstream | Copyright |
 |---|---|---|---|
-| `web-tree-sitter@0.26.13` | `engine/scalpel/scripts/vendor/web-tree-sitter/` | https://github.com/tree-sitter/tree-sitter | Copyright (c) 2018 Max Brunsfeld |
-| `tree-sitter-typescript@0.23.2` | `engine/scalpel/scripts/vendor/grammars/tree-sitter-typescript.wasm, tree-sitter-tsx.wasm` | https://github.com/tree-sitter/tree-sitter-typescript | Copyright (c) 2017 Max Brunsfeld |
-| `tree-sitter-python@0.25.0` | `engine/scalpel/scripts/vendor/grammars/tree-sitter-python.wasm` | https://github.com/tree-sitter/tree-sitter-python | Copyright (c) 2016 Max Brunsfeld |
-| `tree-sitter-go@0.25.0` | `engine/scalpel/scripts/vendor/grammars/tree-sitter-go.wasm` | https://github.com/tree-sitter/tree-sitter-go | Copyright (c) 2014 Max Brunsfeld |
-| `tree-sitter-rust@0.24.0` | `engine/scalpel/scripts/vendor/grammars/tree-sitter-rust.wasm` | https://github.com/tree-sitter/tree-sitter-rust | Copyright (c) 2017 Maxim Sokolov |
-| `tree-sitter-java@0.23.5` | `engine/scalpel/scripts/vendor/grammars/tree-sitter-java.wasm` | https://github.com/tree-sitter/tree-sitter-java | Copyright (c) 2017 Ayman Nadeem |
-| `tree-sitter-c-sharp@0.23.5` | `engine/scalpel/scripts/vendor/grammars/tree-sitter-c_sharp.wasm` | https://github.com/tree-sitter/tree-sitter-c-sharp | Copyright (c) 2014-2023 Max Brunsfeld, Damien Guard, Amaan Qureshi, and contributors. |
+| `web-tree-sitter@0.26.13` | `engine/symbols/scripts/vendor/web-tree-sitter/` | https://github.com/tree-sitter/tree-sitter | Copyright (c) 2018 Max Brunsfeld |
+| `tree-sitter-typescript@0.23.2` | `engine/symbols/scripts/vendor/grammars/tree-sitter-typescript.wasm, tree-sitter-tsx.wasm` | https://github.com/tree-sitter/tree-sitter-typescript | Copyright (c) 2017 Max Brunsfeld |
+| `tree-sitter-python@0.25.0` | `engine/symbols/scripts/vendor/grammars/tree-sitter-python.wasm` | https://github.com/tree-sitter/tree-sitter-python | Copyright (c) 2016 Max Brunsfeld |
+| `tree-sitter-go@0.25.0` | `engine/symbols/scripts/vendor/grammars/tree-sitter-go.wasm` | https://github.com/tree-sitter/tree-sitter-go | Copyright (c) 2014 Max Brunsfeld |
+| `tree-sitter-rust@0.24.0` | `engine/symbols/scripts/vendor/grammars/tree-sitter-rust.wasm` | https://github.com/tree-sitter/tree-sitter-rust | Copyright (c) 2017 Maxim Sokolov |
+| `tree-sitter-java@0.23.5` | `engine/symbols/scripts/vendor/grammars/tree-sitter-java.wasm` | https://github.com/tree-sitter/tree-sitter-java | Copyright (c) 2017 Ayman Nadeem |
+| `tree-sitter-c-sharp@0.23.5` | `engine/symbols/scripts/vendor/grammars/tree-sitter-c_sharp.wasm` | https://github.com/tree-sitter/tree-sitter-c-sharp | Copyright (c) 2014-2023 Max Brunsfeld, Damien Guard, Amaan Qureshi, and contributors. |
 
 ## The MIT License (MIT)
 

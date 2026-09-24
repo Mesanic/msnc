@@ -5,7 +5,7 @@
 //                               These are what break if this changes.
 //   "depends on" / downstream = what this file imports, transitively.
 import path from 'node:path';
-import { atlasDir, readJsonIfExists, truncate } from './store.mjs';
+import { filesDir, readJsonIfExists, truncate } from './store.mjs';
 
 const FLOW_EDGES = new Set(['imports', 'calls']);
 
@@ -199,7 +199,7 @@ function stitch(fromA, fromB, meet) {
 }
 
 export function loadOverlays(root) {
-  const dir = atlasDir(root);
+  const dir = filesDir(root);
   return {
     git: readJsonIfExists(path.join(dir, 'overlays', 'git.json')),
     issues: readJsonIfExists(path.join(dir, 'overlays', 'issues.json')),

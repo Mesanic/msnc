@@ -54,7 +54,7 @@ export async function atomicWriteFile(targetPath, data) {
     await writeFile(tmp, data);
     // Windows: replace-renames can transiently fail while another process
     // holds a short-lived handle on the destination (antivirus/indexer or a
-    // concurrent scalpel writer). Bounded retry on exactly those codes.
+    // concurrent symbols writer). Bounded retry on exactly those codes.
     for (let attempt = 1; ; attempt++) {
       try {
         await rename(tmp, targetPath);

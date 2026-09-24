@@ -1,6 +1,6 @@
-// git-overlay: per-file push state, written to .atlas/overlays/git.json (gitignored).
+// git-overlay: per-file push state, written to .scope/files/overlays/git.json (gitignored).
 import path from 'node:path';
-import { atlasDir, fail, run, writeFileAtomic } from './store.mjs';
+import { filesDir, fail, run, writeFileAtomic } from './store.mjs';
 
 // Worst state wins, so a file that is both committed-unpushed and edited reads as "modified".
 const RANK = { pushed: 0, unpushed: 1, staged: 2, modified: 3, untracked: 4, conflicted: 5 };
@@ -37,7 +37,7 @@ function parsePorcelain(z) {
 
 export function gitOverlay(ctx) {
   const { root } = ctx;
-  const dir = atlasDir(root);
+  const dir = filesDir(root);
   if (!run('git', ['rev-parse', '--is-inside-work-tree'], { cwd: root }).ok) {
     fail('not a git repository — push state is unavailable here');
   }

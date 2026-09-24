@@ -179,7 +179,7 @@ export async function scan(options = {}) {
   if (metaState.status === 'future') {
     throw new IndexVersionError(
       metaState.error?.message ??
-        'index schemaVersion is newer than supported; run `sextant scan` with an up-to-date scalpel to rebuild',
+        'index schemaVersion is newer than supported; run `scope scan` with an up-to-date Scope to rebuild',
     );
   }
 

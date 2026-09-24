@@ -1,4 +1,4 @@
-; scalpel extraction query for Java.
+; Scope symbol extraction query for Java.
 ;
 ; Capture conventions consumed by lib/extract.mjs:
 ;   *.def  - the full definition node (span source)

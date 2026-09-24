@@ -12,7 +12,7 @@
     },
     "changes": [
       "Skills renamed ponytail, ponytail-review, ponytail-audit, ponytail-debt → trim, trim-review, trim-audit, trim-debt; /ponytail → /msnc:trim, \"stop ponytail\" → \"stop trim\"",
-      "trim: caller check reads \"repo has a Scope index → `sextant impact`; otherwise grep every caller\"",
+      "trim: caller check reads \"repo has a Scope index → `scope impact`; otherwise grep every caller\"",
       "trim: marker comment `ponytail:` → `trim:`; trim-debt harvests `trim:` and legacy `ponytail:`",
       "trim: Rules asks the why behind every new file, dependency or abstraction; no why → don't add it",
       "trim: \"Complex request?\" → \"Open question in a small task?\" (ship the lazy version, never stall), so the Tuner's sizing decides what large work does",
@@ -72,7 +72,7 @@
     },
     "changes": [
       "Renamed: aside command → aside skill; verification-loop, context-budget, config-gc → verify, doctor, declutter. All four typed-only",
-      "verify: sextant check phase when the repo has a Scope index",
+      "verify: scope check phase when the repo has a Scope index",
       "doctor: MSNC checks added, run by doctor.mjs (options, always-loaded estimate, duplicate skills, project plugin settings, old Scope layouts)",
       "declutter: MSNC duplicates and project plugin overrides added as scan channels; trash-first and ask-per-item rules kept",
       "Details in each folder's UPSTREAM.md"

@@ -46,7 +46,7 @@ async function readSegmentGuarded(absPath, label) {
   } catch (err) {
     if (err instanceof SyntaxError) {
       throw new StoreCorruptError(
-        `${label} segment is corrupt (${err.message}); run \`sextant scan --full\` to rebuild`,
+        `${label} segment is corrupt (${err.message}); run \`scope scan --full\` to rebuild`,
       );
     }
     throw err;
@@ -105,14 +105,14 @@ export async function loadQueryStore(root, deps = {}) {
     const n = result.warnings?.length ?? 0;
     throw new IncompleteIndexError(
       `index is incomplete (${n} file${n === 1 ? '' : 's'} failed extraction); ` +
-        'run `sextant scan` to inspect warnings — refusing to answer from an incomplete index',
+        'run `scope scan` to inspect warnings — refusing to answer from an incomplete index',
     );
   }
   const dir = storeDirFor(path.resolve(root));
   const metaState = await readMeta(dir);
   if (metaState.status !== 'ok' || !metaState.meta?.complete) {
     throw new IncompleteIndexError(
-      'index is missing or not marked complete; run `sextant scan` to rebuild',
+      'index is missing or not marked complete; run `scope scan` to rebuild',
     );
   }
   const nodes = await readSegmentGuarded(path.join(dir, NODES_SEGMENT), 'nodes');

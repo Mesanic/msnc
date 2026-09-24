@@ -1,5 +1,5 @@
 // Per-language extraction: imports, exported symbols with line anchors, doc lines.
-// Philosophy: recall over precision. Regex cannot parse these languages exactly, so atlas
+// Philosophy: recall over precision. Regex cannot parse these languages exactly, so the file graph
 // prefers a slightly incomplete graph that is honest over a complete one that invents edges.
 // Agent write-back and `expand` fill the gaps.
 import { joinPosix, truncate } from './store.mjs';
@@ -437,7 +437,7 @@ function resolveBareTs(spec, fromRel, ctx, probe) {
   if (!pkg) return null;
   const target = pkg.map[m[2] ? './' + m[2] : '.'];
   if (target) {
-    // Published entries often point at build output that atlas ignores; fall back to source.
+    // Published entries often point at build output that the file graph ignores; fall back to source.
     return probe(joinPosix(pkg.dir, target))
       || probe(joinPosix(pkg.dir, target.replace(/^(?:\.\/)?(?:dist|build|lib|out)\//, 'src/')))
       || null;

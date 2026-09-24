@@ -12,7 +12,7 @@ import { UsageError } from './usage-error.mjs';
 import { cmpStr, toPosix } from './util.mjs';
 
 /**
- * `map stats` — read-only index statistics from meta.json + segments.
+ * `scope stats` — read-only index statistics from meta.json + segments.
  * Deliberately does NOT resync: stats describe the store as it sits on disk.
  * Volatile fields (timestamps, durations, last-scan counters) are confined to
  * the clearly-flagged `lastScan` block; everything else is deterministic for
@@ -22,14 +22,14 @@ export async function collectStats(rootAbs) {
   const dir = storeDirFor(path.resolve(rootAbs));
   const metaState = await readMeta(dir);
   if (metaState.status === 'missing') {
-    throw new UsageError('this repo is not indexed yet; run `sextant scan` first');
+    throw new UsageError('this repo is not indexed yet; run `scope scan` first');
   }
   if (metaState.status === 'corrupt') {
-    throw new StoreCorruptError('meta.json is corrupt; run `sextant scan --full` to rebuild');
+    throw new StoreCorruptError('meta.json is corrupt; run `scope scan --full` to rebuild');
   }
   if (metaState.status === 'older') {
     throw new UsageError(
-      `index schemaVersion ${metaState.meta.schemaVersion} is older than supported ${SCHEMA_VERSION}; run \`sextant scan\` to rebuild`,
+      `index schemaVersion ${metaState.meta.schemaVersion} is older than supported ${SCHEMA_VERSION}; run \`scope scan\` to rebuild`,
     );
   }
   const meta = metaState.meta;
@@ -41,7 +41,7 @@ export async function collectStats(rootAbs) {
     edgeRecords = await readSegment(path.join(dir, EDGES_SEGMENT));
   } catch (err) {
     if (err instanceof SyntaxError) {
-      throw new StoreCorruptError(`index segment is corrupt (${err.message}); run \`sextant scan --full\` to rebuild`);
+      throw new StoreCorruptError(`index segment is corrupt (${err.message}); run \`scope scan --full\` to rebuild`);
     }
     throw err;
   }
@@ -175,7 +175,7 @@ export function formatStats(s) {
     `unresolved: imports=${s.unresolved.imports}, droppedCalls=${s.unresolved.droppedCalls}, barrelOverflows=${s.unresolved.barrelOverflows}`,
     `lastScan (volatile): updatedAt=${s.lastScan.updatedAt ?? '-'} durationMs=${s.lastScan.durationMs ?? '-'} scanned=${s.lastScan.scanned ?? '-'} reused=${s.lastScan.reused ?? '-'}`,
   ];
-  if (s.placeholder) lines.push('note: placeholder meta from `map init`; first `sextant scan` will replace it');
+  if (s.placeholder) lines.push('note: placeholder meta from `symbols.mjs init`; first `scope scan` will replace it');
   return lines.join('\n');
 }
 

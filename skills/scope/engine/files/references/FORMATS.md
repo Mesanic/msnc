@@ -1,6 +1,6 @@
-# Atlas store formats
+# File graph store formats
 
-The contract for everything under `.atlas/`. Read this when editing the store by hand, debugging a
+The contract for everything under `.scope/files/`. Read this when editing the store by hand, debugging a
 noisy diff, resolving a merge conflict, or extending the schema.
 
 ## Contents
@@ -20,14 +20,14 @@ noisy diff, resolving a merge conflict, or extending the schema.
 
 | Path | Committed | Owner |
 |---|---|---|
-| `.atlas/MAP.md` | yes | scan (auto sections) + agent (prose) |
-| `.atlas/config.json` | yes | human/agent |
-| `.atlas/graph/nodes.jsonl` | yes | scan + agent write-back |
-| `.atlas/graph/edges.jsonl` | yes | scan + issues + agent |
-| `.atlas/index/terms.tsv` | yes (regenerable) | index |
-| `.atlas/overlays/git.json` | **no** | git-overlay |
-| `.atlas/overlays/issues.json` | **no** | issues |
-| `.atlas/view/atlas.html` | **no** | graph-html |
+| `.scope/MAP.md` | yes | scan (auto sections) + agent (prose) |
+| `.scope/files/config.json` | yes | human/agent |
+| `.scope/files/graph/nodes.jsonl` | yes | scan + agent write-back |
+| `.scope/files/graph/edges.jsonl` | yes | scan + issues + agent |
+| `.scope/files/index/terms.tsv` | yes (regenerable) | index |
+| `.scope/files/overlays/git.json` | **no** | git-overlay |
+| `.scope/files/overlays/issues.json` | **no** | issues |
+| `.scope/files/view/scope.html` | **no** | graph-html |
 
 Overlays and the view are gitignored because they describe *this working tree right now*.
 Committing them would produce a diff on every status change and conflict on every merge.
@@ -43,7 +43,7 @@ machine and paid for in tokens.
 | `t` | string | yes | Type: `file`, `mod`, `sym`, `concept`, `adr`, `issue`, `skill`, `note`, `entry` |
 | `k` | string | yes | Canonical key. Paths are repo-relative POSIX. See table below. |
 | `s` | string | yes | Summary, **hard max 200 chars** (`config.summaryMaxChars`) |
-| `g` | string[] | no | Lowercase tags: module names, issue labels, `doc`, `test`, `atlas` |
+| `g` | string[] | no | Lowercase tags: module names, issue labels, `doc`, `test`, `scope` |
 | `h` | string | no | 8 hex chars of sha256 over LF-normalized content, **as of when `s` was written** |
 | `a` | array | no | Up to 8 anchors `["symbolName", lineNumber]`, 1-based |
 | `st` | string | no | `stale` or `dead`. Omitted when `ok` (the common case) |
@@ -60,7 +60,7 @@ Key format by type:
 | `sym` | `path#Symbol` | `src/auth/login.ts#loginUser` |
 | `issue` | `#number` | `#42` |
 | `concept`, `note` | kebab slug | `token-budget-policy` |
-| `skill` | manifest key | `atlas scan` |
+| `skill` | manifest key | `scope scan` |
 
 **The `by` guard is load-bearing.** Scan never overwrites a summary where `by:agent` — it only
 sets `st:stale` when the content hash drifts. Machine structure and human insight coexist; the
@@ -98,7 +98,7 @@ metadata object (rare, e.g. `{"n":3}` for mention count). Unique on the triple.
 **Ownership is what makes rescanning safe.** Scan rebuilds `imports`, `part-of`, `tested-by` and
 `documents` — but only where the source id is a file, entry, adr or mod node. That prefix guard
 matters: issues and skill nodes also use `part-of`, and those relations belong to issue sync and
-the self-manifest. Without it, every scan would silently delete the issue hierarchy and atlas's own
+the self-manifest. Without it, every scan would silently delete the issue hierarchy and the file graph's own
 self-knowledge edges. `exports` and `calls` belong to `expand`, which rebuilds them per file.
 Agent edges (`relates`, `implements`, agent-authored `calls`) are never machine-deleted; `prune`
 removes them only when an endpoint node is gone.
@@ -106,7 +106,7 @@ removes them only when an endpoint node is gone.
 **No regex-derived cross-file call graph.** Matching `foo(` across files produces mostly noise —
 same-named methods, shadowed locals, string literals. Flow analysis therefore runs on `imports`
 (plus any `calls` edges that expand or an agent contributed). This is a deliberate accuracy floor:
-atlas would rather say less and be right.
+the file graph would rather say less and be right.
 
 ## Id derivation
 
@@ -126,7 +126,7 @@ duplicate line rather than a conflicting one.
 {
   "v": 1,
   "name": "Map",
-  "ignore": ["node_modules/**", "dist/**", "build/**", ".atlas/**", "*.min.*", "*.lock",
+  "ignore": ["node_modules/**", "dist/**", "build/**", ".scope/**", "*.min.*", "*.lock",
              "package-lock.json", "*.map", ".git/**"],
   "maxFileKB": 512,
   "moduleDepth": 2,
@@ -157,7 +157,7 @@ implementations for marginal recall.
 Terms appearing in more than `max(20, 0.15 × N)` nodes are dropped as dynamic stopwords (except
 tag-derived terms). Postings are capped at 64 ids, keeping the highest `w`.
 
-Regenerable by `atlas index`, which is also the merge-conflict escape hatch.
+Regenerable by `scope index`, which is also the merge-conflict escape hatch.
 
 ## overlays/git.json
 
@@ -198,17 +198,17 @@ Auto-generated sections are delimited by sentinels; everything outside them is p
 byte-for-byte across scans:
 
 ```markdown
-# Name Atlas Map
-<!-- atlas:auto:begin overview -->
+# Name — repo map
+<!-- scope:auto:begin overview -->
 ...stack, counts, top modules with ids, entrypoints, stale count...
-<!-- atlas:auto:end overview -->
+<!-- scope:auto:end overview -->
 
 ## Orientation
 ...agent-authored prose. Scan never touches this...
 
-<!-- atlas:auto:begin howto -->
+<!-- scope:auto:begin howto -->
 ...canonical query commands using real ids from this graph...
-<!-- atlas:auto:end howto -->
+<!-- scope:auto:end howto -->
 ```
 
 If a sentinel pair is missing, scan appends a fresh pair at the end rather than rewriting unmarked
@@ -223,6 +223,6 @@ and it is what keeps `git status` quiet. It requires: nodes sorted by `id`, edge
 hashed after CRLF→LF normalization so `core.autocrlf` cannot cause phantom drift.
 
 Merge conflicts in JSONL are line-local because ids are content-derived and output is sorted.
-Resolution is mechanical: **keep both sides, then run `atlas scan && atlas index`** — the scan
+Resolution is mechanical: **keep both sides, then run `scope scan && scope index`** — the scan
 reconciles against the actual working tree and the index is regenerated from scratch. Never
 hand-merge `terms.tsv`; delete it and re-index.

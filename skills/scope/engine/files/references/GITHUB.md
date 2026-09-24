@@ -1,4 +1,4 @@
-# Atlas ↔ GitHub
+# Scope ↔ GitHub
 
 How issues, sub-issues and dependencies enter the graph, and the exact `gh` calls involved. Read
 this before doing GitHub graph surgery by hand or debugging a sync that came back empty.
@@ -16,11 +16,11 @@ this before doing GitHub graph surgery by hand or debugging a sync that came bac
 
 ## What sync produces
 
-`atlas issues` writes two things:
+`scope issues` writes two things:
 
 1. **Committed graph**: one `issue` node per issue (`i42`, summary = title truncated to 160 chars,
    labels as tags) plus `blocks`, `part-of`, `closes` and `mentions` edges.
-2. **Volatile overlay** (`.atlas/overlays/issues.json`, gitignored): open/closed state, assignees,
+2. **Volatile overlay** (`.scope/files/overlays/issues.json`, gitignored): open/closed state, assignees,
    cached database ids, blocker lists, and the computed frontier. Only the database ids are
    *cached* across syncs — see [`updatedAt` is not a freshness key for relations](#updatedat-is-not-a-freshness-key-for-relations).
 
@@ -28,7 +28,7 @@ The split matters. If open/closed lived in the committed graph, every issue clos
 dirty the repo and conflict across branches. Knowledge is durable; state is not.
 
 Closed issues stay in the graph. A closed issue is a record of *why* code looks the way it does,
-and `closes` edges make that discoverable from the file: `atlas context src/auth/login.ts` shows
+and `closes` edges make that discoverable from the file: `scope context src/auth/login.ts` shows
 the issues that produced it.
 
 ## The calls
@@ -93,11 +93,11 @@ success — the link is present, which is all the caller wanted.
 Use the wrapper rather than doing this by hand:
 
 ```bash
-node tools/sextant/scripts/sextant.mjs issues link --blocker 40 --blocked 41
+node "<scope>/scripts/scope.mjs" issues link --blocker 40 --blocked 41
 ```
 
 To read dependencies back: `gh api repos/OWNER/REPO/issues/41/dependencies/blocked_by --jq '[.[] | {number, state}]'`.
-Note the states — atlas needs them to compute `openBlockedBy`, since a closed blocker no longer
+Note the states — the file graph needs them to compute `openBlockedBy`, since a closed blocker no longer
 blocks anything.
 
 ## Sub-issues
@@ -115,7 +115,7 @@ parent is scope containment, a blocker is ordering. An epic's children are not b
 ## Fallback mode
 
 The dependencies and sub-issues endpoints are relatively new and can be unavailable (404/410) on
-some repos or plans. On that response atlas parses body conventions instead and sets
+some repos or plans. On that response the file graph parses body conventions instead and sets
 `fallbackMode: true` in the overlay:
 
 ```markdown
@@ -138,7 +138,7 @@ Two mechanisms, both cheap:
   commits. `closes #N` / `fixes #N` / `resolved #N` on a commit touching a file creates
   `["fileId", "closes", "iN"]`; a bare `#N` creates `mentions`.
 
-The payoff: `atlas context <file>` can answer "why does this file look like this" with the issues
+The payoff: `scope context <file>` can answer "why does this file look like this" with the issues
 that produced it, and the viewer can highlight where open work sits in the flow.
 
 ## The frontier
@@ -154,7 +154,7 @@ frontier issues a glow halo; blocked-open issues get a lock glyph.
 
 | Symptom | Cause | Response |
 |---|---|---|
-| `gh: command not found` | CLI not installed / not on PATH | atlas exits 1 with that message; graph untouched |
+| `gh: command not found` | CLI not installed / not on PATH | Scope exits 1 with that message; graph untouched |
 | `gh auth status` nonzero | Not logged in | Run `gh auth login`; nothing is written |
 | 404 on `/dependencies/blocked_by` | Endpoint unavailable for this repo | Automatic body-convention fallback |
 | GraphQL `blockedBy`/`subIssues` undefined | Older GHES, or dependencies disabled | Falls back to the per-issue REST calls, then to body conventions |

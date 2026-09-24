@@ -1,29 +1,29 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import {
-  MAP_DIRNAME,
+  SYMBOLS_DIRNAME,
   META_FILE,
   SCHEMA_VERSION,
   TOOL_ID,
-  mapDirFor,
+  symbolsDirFor,
   ledgerDirFor,
   storeDirFor,
 } from './store.mjs';
 import { LEDGER_SCHEMA_VERSION, NOTES_FILE } from './ledger.mjs';
 import { toPosix } from './util.mjs';
 
-export const GITIGNORE_LINE = '.map/index/';
+export const GITIGNORE_LINE = '.scope/symbols/index/';
 
 export const HOOK_SNIPPET = Object.freeze([
-  '# sextant pre-commit hook — paste into .git/hooks/pre-commit (or your hook manager)',
-  'node tools/sextant/scripts/sextant.mjs check || exit 1',
+  '# Scope pre-commit hook — paste into .git/hooks/pre-commit (or your hook manager)',
+  'node "<scope>/scripts/scope.mjs" check || exit 1',
 ]);
 
 /**
- * Initialize the .map/ skeleton (idempotent):
- *   .map/index/            — store dir (+ placeholder meta.json if absent)
- *   .map/ledger/           — notes dir (+ empty notes.jsonl if absent)
- *   .gitignore             — gains `.map/index/`; `.map/ledger/` stays tracked
+ * Initialize the .scope/symbols/ skeleton (idempotent):
+ *   .scope/symbols/index/  — store dir (+ placeholder meta.json if absent)
+ *   .scope/symbols/ledger/ — notes dir (+ empty notes.jsonl if absent)
+ *   .gitignore             — gains `.scope/symbols/index/`; `.scope/symbols/ledger/` stays tracked
  *
  * Never clobbers existing meta.json / notes.jsonl / .gitignore content.
  */
@@ -67,19 +67,19 @@ export async function initProject(rootAbs) {
   }
 
   let gitignoreStatus = 'present';
-  let wholesaleMapIgnore = false;
+  let wholesaleIgnore = false;
   if (gitignore === null) {
     await writeFile(gitignorePath, `${GITIGNORE_LINE}\n`);
     gitignoreStatus = 'created';
   } else {
     const lines = gitignore.split('\n').map((l) => l.trim());
-    wholesaleMapIgnore = lines.some((l) => l === MAP_DIRNAME || l === `${MAP_DIRNAME}/`);
+    wholesaleIgnore = lines.some((l) => ['.scope', SYMBOLS_DIRNAME].includes(l.replace(/\/$/, '')));
     const alreadyIgnored = lines.some(
       (l) => l === GITIGNORE_LINE || l === GITIGNORE_LINE.replace(/\/$/, ''),
     );
-    // wholesaleMapIgnore means the repo ignores `.map/` entirely -- appending the narrower
-    // `.map/index/` under it changes nothing except leaving .gitignore dirty after a scan.
-    if (!alreadyIgnored && !wholesaleMapIgnore) {
+    // wholesaleIgnore means the repo ignores `.scope/symbols/` entirely -- appending the narrower
+    // `.scope/symbols/index/` under it changes nothing except leaving .gitignore dirty after a scan.
+    if (!alreadyIgnored && !wholesaleIgnore) {
       let out = gitignore;
       if (out.length > 0 && !out.endsWith('\n')) out += '\n';
       out += `${GITIGNORE_LINE}\n`;
@@ -89,11 +89,11 @@ export async function initProject(rootAbs) {
   }
 
   return {
-    mapDirPosix: toPosix(mapDirFor(rootAbs)),
+    symbolsDirPosix: toPosix(symbolsDirFor(rootAbs)),
     ledgerSchemaVersion: LEDGER_SCHEMA_VERSION,
     notesCreated,
     metaWritten,
     gitignoreStatus,
-    wholesaleMapIgnore,
+    wholesaleIgnore,
   };
 }

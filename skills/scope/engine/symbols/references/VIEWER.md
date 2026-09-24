@@ -1,22 +1,22 @@
-# VIEWER.md — the offline `map view` HTML viewer
+# VIEWER.md — the offline `scope view` HTML viewer
 
-`map view` renders ONE self-contained HTML file embedding the current graph plus the
+`scope view` renders ONE self-contained HTML file embedding the current graph plus the
 latest check summary. It is a **passive read model**: it never rescans and never writes to
-the index — run `map scan` / `map check` first, then regenerate.
+the index — run `scope scan` / `scope check` first, then regenerate.
 
 ## Usage
 
 ```
-node tools/sextant/scripts/sextant.mjs view [--root <dir>] [--out <file>]
+node "<scope>/scripts/scope.mjs" view [--root <dir>] [--out <file>]
 ```
 
-- Default output: `<root>/.map/view-data.html`.
+- Default output: `<root>/.scope/symbols/view-data.html`.
 - `--out <file>` writes anywhere you like (a directory path is a usage error, exit 2).
 - Stdout line reports exact counts:
-  `view .map/view-data.html (22 of 22 symbols, 37 of 37 relations, 48356 bytes)`.
+  `view .scope/symbols/view-data.html (22 of 22 symbols, 37 of 37 relations, 48356 bytes)`.
 - If data was cut to fit the size bound, stderr adds a warning pointing at the in-page
   truncation banner.
-- Requires a complete index (exit 2 with "no complete scalpel index …; run `map scan`
+- Requires a complete index (exit 2 with "no complete symbol index …; run `scope scan`
   first" otherwise). A stale-schema store is refused the same way as other queries.
 
 ## Data bounding algorithm (why numbers may show "N of M")
@@ -45,14 +45,14 @@ the banner and stdout always give exact shown/total numbers, never silence.
   click any symbol to inspect it (kind, span, confidence, signature) and pick
   "Flow from here". Search box (`/`) filters by name/path, or by kind with a `kind:`
   prefix. **`kind:module` gives you the file graph** — every file as a node, the imports
-  between them as edges, everything else dimmed. That is the same picture atlas draws,
-  minus atlas's git and issue overlays. Any legend kind works: `kind:route`, `kind:class`.
+  between them as edges, everything else dimmed. That is the same picture the file graph draws,
+  minus its git and issue overlays. Any legend kind works: `kind:route`, `kind:class`.
 - **Flow**: entry→sink call flows for one selected entrypoint (route handlers and `main`
   functions are auto-detected; otherwise pick from the dropdown).
-- **Change Lens**: overlays the latest `map check` state — issue chip in the tab,
+- **Change Lens**: overlays the latest `scope check` state — issue chip in the tab,
   drift entries with stale dependents, dangling references, orphan/ambiguous notes,
-  rebindings, detected test runners and affected tests. Without a prior `map check` the
-  lens shows an explicit "run map check" hint instead of fake data.
+  rebindings, detected test runners and affected tests. Without a prior `scope check` the
+  lens shows an explicit "run scope check" hint instead of fake data.
 
 Keyboard: `1/2/3` switch tabs, `/` focuses search. Drag pans, wheel zooms.
 
@@ -70,8 +70,8 @@ byte-deterministic for the same store state.
 ## Regeneration etiquette
 
 - Regenerate after every scan/check whose answer you might show a human:
-  `node tools/sextant/scripts/sextant.mjs view --root <dir>`.
+  `node "<scope>/scripts/scope.mjs" view --root <dir>`.
 - Treat the file as disposable derived art — do not hand-edit, do not commit unless your
-  team wants point-in-time snapshots (it lives in gitignored `.map/` by default).
+  team wants point-in-time snapshots (it lives in gitignored `.scope/symbols/` by default).
 - The embedded payload carries its own schema version (`v1`) and the tool id, so old
   snapshots stay interpretable.

@@ -1,4 +1,4 @@
-; scalpel extraction query for C#.
+; Scope symbol extraction query for C#.
 ;
 ; Capture conventions consumed by lib/extract.mjs:
 ;   *.def  - the full definition node (span source)

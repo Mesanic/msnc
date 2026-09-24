@@ -35,13 +35,13 @@ export const DEFAULT_CONFIG = {
   name: '',
   ignore: [
     'node_modules/**', 'dist/**', 'build/**', 'out/**', 'target/**', 'vendor/**',
-    '.atlas/**', '.git/**', '.venv/**', '__pycache__/**',
+    '.scope/**', '.git/**', '.venv/**', '__pycache__/**',
     '*.min.*', '*.lock', 'package-lock.json', '*.map', '*.snap', '*.log',
     // drizzle-kit's generated migration state: thousands of lines that describe the schema files already indexed
     '**/meta/_journal.json', '**/meta/*_snapshot.json',
   ],
   maxFileKB: 512,
-  // Seed the 30 nodes describing atlas's own commands into this repo's graph. Off: they are
+  // Seed the 30 nodes describing Scope's own commands into this repo's graph. Off: they are
   // the same in every project, cost context on every query, and say nothing about this code.
   selfKnowledge: false,
   moduleDepth: 2,
@@ -52,9 +52,9 @@ export const DEFAULT_CONFIG = {
   github: { enabled: true, issueLimit: 200, linkCommits: 200 },
 };
 
-export class AtlasError extends Error {}
+export class ScopeError extends Error {}
 
-export function fail(msg) { throw new AtlasError(msg); }
+export function fail(msg) { throw new ScopeError(msg); }
 
 // --- process helpers -------------------------------------------------------
 
@@ -87,14 +87,14 @@ export function findRoot(cwd = process.cwd()) {
   if (g.ok) return path.resolve(g.out.trim());
   let d = path.resolve(cwd);
   for (;;) {
-    if (fs.existsSync(path.join(d, '.atlas'))) return d;
+    if (fs.existsSync(path.join(d, '.scope'))) return d;
     const up = path.dirname(d);
     if (up === d) return path.resolve(cwd);
     d = up;
   }
 }
 
-export function atlasDir(root) { return path.join(root, '.atlas'); }
+export function filesDir(root) { return path.join(root, '.scope', 'files'); }
 
 export function isGitRepo(root) {
   return run('git', ['rev-parse', '--is-inside-work-tree'], { cwd: root }).ok;
@@ -157,7 +157,7 @@ export function loadConfig(dir) {
   if (!fs.existsSync(p)) return { ...DEFAULT_CONFIG };
   let raw;
   try { raw = JSON.parse(fs.readFileSync(p, 'utf8')); } catch (e) {
-    fail(`.atlas/config.json is not valid JSON (${e.message})`);
+    fail(`.scope/files/config.json is not valid JSON (${e.message})`);
   }
   return {
     ...DEFAULT_CONFIG,

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>scalpel view</title>
+<title>scope symbols</title>
 <style>
   :root {
     --bg: #10141a;
@@ -185,7 +185,7 @@
 </head>
 <body>
 <header>
-  <div id="brand">scalpel view <span class="root" id="root-line"></span></div>
+  <div id="brand">scope symbols <span class="root" id="root-line"></span></div>
   <nav id="tabs" aria-label="Viewer lenses">
     <button class="tab" id="tab-graph" aria-pressed="true">Graph</button>
     <button class="tab" id="tab-flow" aria-pressed="false">Flow</button>
@@ -221,11 +221,11 @@
   <button id="reset-view">reset view</button>
 </footer>
 
-<script type="application/json" id="scalpel-data">__SCALPEL_PAYLOAD__</script>
+<script type="application/json" id="scope-symbols-data">__SCOPE_SYMBOLS_PAYLOAD__</script>
 <script>
 'use strict';
 (function () {
-  var DATA = JSON.parse(document.getElementById('scalpel-data').textContent);
+  var DATA = JSON.parse(document.getElementById('scope-symbols-data').textContent);
 
   /* ---------- derived structures ---------- */
   var NODES = DATA.nodes;
@@ -309,7 +309,7 @@
       'Truncated to stay within the self-contained size limit (' + DATA.maxTotalBytes + ' bytes): showing ' +
       DATA.shown.n + ' of ' + DATA.totals.n + ' symbols and ' +
       DATA.shown.e + ' of ' + DATA.totals.e + ' relations. ' +
-      'The cut keeps the most connected symbols first (then larger spans); narrow the scanned scope and re-run `map scan` + `map view` for full detail.';
+      'The cut keeps the most connected symbols first (then larger spans); narrow the scanned scope and re-run `scope scan` + `scope view` for full detail.';
     banner.hidden = false;
     document.getElementById('banner-close').addEventListener('click', function () { banner.hidden = true; });
   }
@@ -899,7 +899,7 @@
       panel.innerHTML =
         '<h2>change lens</h2>' +
         '<div class="empty">No check has run yet (no <span class="mono">check-latest.json</span> in this index).' +
-        '<br><br>Run <span class="mono">map check</span> after edits, then regenerate with <span class="mono">map view</span> to see pending changes and drift overlaid here.</div>';
+        '<br><br>Run <span class="mono">scope check</span> after edits, then regenerate with <span class="mono">scope view</span> to see pending changes and drift overlaid here.</div>';
       panel.hidden = false;
       return;
     }
@@ -990,7 +990,7 @@
     matchSet = new Set();
     var hits = [];
     // `kind:module` isolates the file graph -- modules and the imports between them --
-    // the way atlas draws it. Works for any kind in the legend; prefix match, so short
+    // the way the file graph draws it. Works for any kind in the legend; prefix match, so short
     // queries like `kind:t` deliberately light every kind starting with t.
     var kindQ = q.indexOf('kind:') === 0 ? q.slice(5) : null;
     for (var i = 0; i < NODES.length; i++) {
@@ -1051,7 +1051,7 @@
       hideOverlay();
       if (mode === 'lens') {
         renderLensPanel();
-        setHint(LENS ? 'overlaying last-check drift (red ring) and dangling references (amber ring)' : 'no check data \u2014 run map check');
+        setHint(LENS ? 'overlaying last-check drift (red ring) and dangling references (amber ring)' : 'no check data \u2014 run scope check');
       } else {
         setHint('');
       }
@@ -1082,7 +1082,7 @@
 
   /* ---------- empty-index state ---------- */
   if (!NODES.length) {
-    showOverlay('<strong>Empty index.</strong> The embedded payload contains no symbols. Run <span class="mono">map scan</span>, then <span class="mono">map view</span> again.');
+    showOverlay('<strong>Empty index.</strong> The embedded payload contains no symbols. Run <span class="mono">scope scan</span>, then <span class="mono">scope view</span> again.');
   }
 
   /* ---------- boot ---------- */

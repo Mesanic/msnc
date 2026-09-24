@@ -2,7 +2,7 @@
 // overlay. See ../references/GITHUB.md for the API details and the database-id nuance.
 import path from 'node:path';
 import {
-  addEdge, addNode, atlasDir, dropEdges, fail, ISSUE_EDGE_TYPES, readJsonIfExists, run,
+  addEdge, addNode, filesDir, dropEdges, fail, ISSUE_EDGE_TYPES, readJsonIfExists, run,
   truncate, writeFileAtomic,
 } from './store.mjs';
 
@@ -91,7 +91,7 @@ function fetchRelations(owner, repo, root) {
 
 export function syncIssues(ctx, graph, opts = {}) {
   const { root } = ctx;
-  const dir = atlasDir(root);
+  const dir = filesDir(root);
   const auth = gh(['auth', 'status'], root);
   if (!auth.ok) fail('gh is not authenticated — run `gh auth login`, then retry');
   const slug = repoSlug(root);

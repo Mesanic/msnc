@@ -20,3 +20,10 @@
 - 2026-09-24 · leave past `evals/RESULTS.md` entries with the old names; new entries use Scope · they record what actually ran · undo: rewrite them
 - 2026-09-24 · order: one MSNC rename PR (pure `git mv` commit, then content edits, then bookkeeping removal); after merge, each repo gets its ticket-04 commit, its move commit and a `scope impact` check; the GitHub rename and archive come last · git history follows the files, and nothing references a read-only repo · undo: `git revert` per step
 - 2026-09-24 · no separate spec: `/msnc:tickets` works from this decision log · a spec would restate it · undo: run `/msnc:spec`
+- 2026-09-24 · engine override env vars are `SCOPE_FILES` and `SCOPE_SYMBOLS` (were `SEXTANT_ATLAS`, `SEXTANT_SCALPEL`) · they name the engines · undo: rename them
+- 2026-09-24 · `scope.mjs` finds its engines only in the bundled `engine/`; the old sibling and `.claude/skills` fallbacks are gone · no aliases for old layouts · undo: re-add the fallback paths
+- 2026-09-24 · identifiers renamed: `atlasDir`→`filesDir`, `AtlasError`→`ScopeError`, `mergeIntoAtlas`→`mergeIntoFileGraph`, `mapDirFor`→`symbolsDirFor` (`.scope/symbols`), and the rest that named the tool · they name the tool · undo: rename them
+- 2026-09-24 · in-memory provenance `atlas`/`scalpel` → `files`/`symbols` in the merge and the viewer together; stored tool ID `scope-symbols@0.0.1`; viewer `view/scope.html`; placeholders `__SCOPE_DATA__`, `__SCOPE_SYMBOLS_PAYLOAD__` · display-only names that must match each other · undo: rename both sides
+- 2026-09-24 · the symbols engine skips its `.gitignore` line when the repo already ignores all of `.scope/` · same rule the files engine applies · undo: check `.scope/symbols` only
+- 2026-09-24 · deleted the files engine's never-printed CLAUDE.md block, and fixed two self-manifest summaries that claimed init writes a CLAUDE.md block and a hook · simpler than renaming dead text; the summaries were wrong · undo: `git revert`
+- 2026-09-24 · the symbols engine's messages say `scope <cmd>`, and `symbols.mjs init` for commands only the engine has · `map` was that CLI's old name · undo: rename them

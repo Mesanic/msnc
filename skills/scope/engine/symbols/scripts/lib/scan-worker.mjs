@@ -7,7 +7,7 @@ import { canonicalizeText, contentHash } from './util.mjs';
 import { BINARY_SNIFF_BYTES, looksBinary } from './walk.mjs';
 
 if (!workerData || !parentPort) {
-  throw new Error('scalpel: scan-worker.mjs must run inside a Worker');
+  throw new Error('symbols: scan-worker.mjs must run inside a Worker');
 }
 
 const parsers = new Map();

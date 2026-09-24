@@ -1,4 +1,4 @@
-; scalpel extraction query for Python.
+; Scope symbol extraction query for Python.
 ;
 ; Capture conventions consumed by lib/extract.mjs:
 ;   *.def  - the full definition node (span source)

@@ -27,7 +27,7 @@ function loadRuntime() {
       .catch((err) => {
         runtimePromise = null;
         throw new Error(
-          `scalpel: failed to initialize vendored web-tree-sitter (${RUNTIME_ENTRY}): ${err?.message ?? err}`,
+          `symbols: failed to initialize vendored web-tree-sitter (${RUNTIME_ENTRY}): ${err?.message ?? err}`,
           { cause: err },
         );
       });
@@ -39,7 +39,7 @@ function requireSpec(lang) {
   const spec = LANGUAGES[lang];
   if (!spec) {
     const shipped = Object.keys(LANGUAGES).sort().join(', ');
-    throw new Error(`scalpel: unshipped language "${lang}". shipped languages: ${shipped}.`);
+    throw new Error(`symbols: unshipped language "${lang}". shipped languages: ${shipped}.`);
   }
   return spec;
 }
@@ -59,7 +59,7 @@ export function loadLanguage(lang) {
       bytes = await readFile(wasmAbs);
     } catch (err) {
       throw new Error(
-        `scalpel: missing vendored grammar wasm for "${lang}" (${spec.grammar}); see vendor/MANIFEST.json (${err?.code} ${err?.path ?? ''})`,
+        `symbols: missing vendored grammar wasm for "${lang}" (${spec.grammar}); see vendor/MANIFEST.json (${err?.code} ${err?.path ?? ''})`,
         { cause: err },
       );
     }
@@ -67,7 +67,7 @@ export function loadLanguage(lang) {
       return await Language.load(bytes);
     } catch (err) {
       throw new Error(
-        `scalpel: failed to load grammar wasm for "${lang}" (${wasmAbs}): ${err?.message ?? err}`,
+        `symbols: failed to load grammar wasm for "${lang}" (${wasmAbs}): ${err?.message ?? err}`,
         { cause: err },
       );
     }
@@ -106,7 +106,7 @@ export async function getParser(lang) {
         })().catch((err) => {
           queryPromise = null;
           throw new Error(
-            `scalpel: failed to compile query file "${spec.queryFile}" for "${lang}": ${err?.message ?? err}`,
+            `symbols: failed to compile query file "${spec.queryFile}" for "${lang}": ${err?.message ?? err}`,
             { cause: err },
           );
         });

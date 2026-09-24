@@ -1,4 +1,4 @@
-; scalpel extraction query for Go.
+; Scope symbol extraction query for Go.
 ;
 ; Capture conventions consumed by lib/extract.mjs:
 ;   *.def  - the full definition node (span source)
