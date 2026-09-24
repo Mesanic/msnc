@@ -1,0 +1,89 @@
+From 22849686aa6805c031c08e45bc1d0c8fdc4d7378 Mon Sep 17 00:00:00 2001
+From: Mesanic <7865719+Mesanic@users.noreply.github.com>
+Date: Wed, 23 Sep 2026 18:00:00 -0600
+Subject: [PATCH] impact: keep the impact log in .atlas/overlays/, not the temp
+ dir
+
+With Claude Code's Bash sandbox on, `sextant impact` runs with the
+sandbox's own TMPDIR while the pre-edit hook runs outside it, so the
+hook read a different temp dir and never saw the entry: every edit to
+a mapped file was refused forever. The repo is the one place both can
+reach. .atlas/overlays/ is machine state that scan keeps gitignored
+(re-adding the rule on every scan), so the log is not committed by
+accident. impact creates overlays/ when missing (it is gitignored, so a
+fresh clone with a tracked .atlas/graph lacks it). TTL unchanged; no
+log still blocks.
+---
+ scripts/impact-log.mjs | 21 +++++++++++++++------
+ scripts/sextant.mjs    |  8 ++++----
+ 2 files changed, 19 insertions(+), 10 deletions(-)
+
+diff --git a/scripts/impact-log.mjs b/scripts/impact-log.mjs
+index 2fbfbf7..89b9f8d 100644
+--- a/scripts/impact-log.mjs
++++ b/scripts/impact-log.mjs
+@@ -1,13 +1,22 @@
+ // Where `sextant impact` records what it answered for, and where the pre-edit hook looks.
+-// In the OS temp dir, not the repo: it is machine state with a lifetime of hours, and a
+-// gitignored file in every project is a file someone eventually commits by accident.
+-import crypto from 'node:crypto';
+-import os from 'node:os';
++// In the repo's .atlas/overlays/, not the OS temp dir: a sandboxed Bash has its own TMPDIR
++// while the hook runs outside the sandbox, so a temp-dir log is never seen by the gate. The
++// repo is the one place both can reach. overlays/ is machine state that scan keeps
++// gitignored (it re-adds the rule on every scan), so the log is never committed by accident.
++import fs from 'node:fs';
+ import path from 'node:path';
+ 
+ export const IMPACT_TTL_MS = (Number(process.env.SEXTANT_IMPACT_TTL_MIN) || 120) * 60 * 1000;
+ 
+ export function impactLogPath(root) {
+-  const key = crypto.createHash('sha256').update(path.resolve(root)).digest('hex').slice(0, 12);
+-  return path.join(os.tmpdir(), `sextant-impact-${key}.log`);
++  return path.join(root, '.atlas', 'overlays', 'impact.log');
++}
++
++// Best-effort: a read-only tree must not fail impact; the gate then keeps blocking.
++// mkdir because overlays/ is gitignored, so a fresh clone with a tracked .atlas/graph lacks it.
++export function recordImpact(root, file) {
++  try {
++    fs.mkdirSync(path.dirname(impactLogPath(root)), { recursive: true });
++    fs.appendFileSync(impactLogPath(root), `${Date.now()} ${file}\n`);
++  } catch { /* gate falls back to blocking */ }
+ }
+diff --git a/scripts/sextant.mjs b/scripts/sextant.mjs
+index 267d62c..19dd22f 100644
+--- a/scripts/sextant.mjs
++++ b/scripts/sextant.mjs
+@@ -17,7 +17,7 @@ import fs from 'node:fs';
+ import path from 'node:path';
+ import { fileURLToPath, pathToFileURL } from 'node:url';
+ import { mergeIntoAtlas } from './merge.mjs';
+-import { impactLogPath } from './impact-log.mjs';
++import { recordImpact } from './impact-log.mjs';
+ 
+ const HELP = `sextant — one instrument for reading and changing a codebase
+ 
+@@ -479,7 +479,7 @@ function resolveTarget(scalpel, root, key, onMiss = die) {
+ // unsatisfiable for exactly those files. Answer from the file graph instead: its
+ // importers, transitively to --depth, and record the entry the gate reads.
+ function fileGraphImpact(root, file, depth) {
+-  try { fs.appendFileSync(impactLogPath(root), `${Date.now()} ${file}\n`); } catch { /* gate falls back to blocking */ }
++  recordImpact(root, file);
+   console.log(`impact ${file} [up] (file graph only — no symbols for this file, so no line spans or tests)`);
+   const max = Number(depth) || 32;
+   const seen = new Set([file]);
+@@ -506,8 +506,8 @@ function cmdImpact(root, { atlas, scalpel }, key, depth) {
+     (atlas && fs.existsSync(path.resolve(root, key)) && readAtlasImporters(root, file) !== null ? null : die(msg)));
+   if (!target) return fileGraphImpact(root, file, depth);
+   // Record the file this answer covers, so the pre-edit hook can tell an edit that was
+-  // analysed from one that was not. Best-effort: a read-only temp dir must not fail impact.
+-  try { fs.appendFileSync(impactLogPath(root), `${Date.now()} ${target.path}\n`); } catch { /* gate falls back to blocking */ }
++  // analysed from one that was not.
++  recordImpact(root, target.path);
+ 
+   // 1. Scalpel's report, passed through verbatim — it is budgeted, carries
+   //    confidence labels and the test list, and must not be re-implemented here.
+-- 
+2.50.0.windows.2
+

@@ -3,7 +3,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -83,6 +83,22 @@ test('`sextant impact styles.css` clears the gate for that file', () => {
   assert.equal(r.status, 0, r.stderr);
   assert.equal(gate(...edit('src/styles.css')), null);
   assert.ok(gate(...edit('src/util.ts')), 'other files stay gated');
+});
+
+// Sandboxed Bash gets its own TMPDIR; the hook runs outside the sandbox with the host's.
+// .atlas/overlays/ is gitignored, so a fresh clone of a repo with a tracked .atlas/graph lacks it.
+test('impact run with a different temp dir than the gate (sandboxed Bash) still clears it', () => {
+  const tmpEnv = (d) => ({ ...baseEnv, TMPDIR: d, TMP: d, TEMP: d });
+  const [writerTmp, readerTmp] = [mkdtempSync(join(tmpdir(), 'msnc-bash-tmp-')), mkdtempSync(join(tmpdir(), 'msnc-hook-tmp-'))];
+  rmSync(join(repo, '.atlas', 'overlays'), { recursive: true, force: true });
+  assert.ok(gate(...edit('src/format.ts'), { env: tmpEnv(readerTmp) }), 'refused before impact');
+  const r = spawnSync(process.execPath, [CLI, 'impact', 'src/format.ts'], { cwd: repo, env: tmpEnv(writerTmp), encoding: 'utf8' });
+  assert.equal(r.status, 0, r.stderr);
+  assert.equal(gate(...edit('src/format.ts'), { env: tmpEnv(readerTmp) }), null);
+  assert.ok(gate(...edit('src/util.ts'), { env: tmpEnv(readerTmp) }), 'other files stay gated');
+  // The log now lives in the repo: only the scan's .gitignore rule keeps it out of commits.
+  assert.ok(readdirSync(join(repo, '.atlas', 'overlays')).length, 'log written under .atlas/overlays/');
+  assert.match(readFileSync(join(repo, '.gitignore'), 'utf8'), /^\.atlas\/overlays\/$/m);
 });
 
 test('scope_gate off lets every edit through', () => {
