@@ -1,6 +1,7 @@
 // Files only the file graph knows (CSS, HTML): `impact` answers from the file graph and
 // records the impact entry, so the pre-edit gate can clear. And `scan --no-claude-md`
-// leaves CLAUDE.md alone.
+// leaves CLAUDE.md alone. The impact log (.atlas/overlays/) drops stale entries and stays
+// out of git before any scan adds its rule.
 //   node --test scripts/impact-fallback.test.mjs
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -8,7 +9,7 @@ import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { impactLogPath } from './impact-log.mjs';
+import { IMPACT_TTL_MS, impactLogPath, recordImpact } from './impact-log.mjs';
 
 const CLI = path.join(import.meta.dirname, 'sextant.mjs');
 
@@ -69,4 +70,29 @@ test('a path neither graph knows still fails, and records nothing', () => {
   const r = sextant(root, 'impact', 'nope.css');
   assert.equal(r.status, 2);
   assert.doesNotMatch(logged(root), /nope\.css/);
+});
+
+test('the impact log lives in .atlas/overlays/ and recording drops entries past the TTL', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'sextant-log-'));
+  assert.equal(impactLogPath(dir), path.join(dir, '.atlas', 'overlays', 'impact.log'));
+  const old = Date.now() - IMPACT_TTL_MS - 60_000;
+  const fresh = Date.now() - 60_000;
+  fs.mkdirSync(path.dirname(impactLogPath(dir)), { recursive: true });
+  fs.writeFileSync(impactLogPath(dir), `${old} src/old.ts\n${fresh} src/fresh.ts\n`);
+  recordImpact(dir, 'src/new.ts');
+  const lines = logged(dir).trimEnd().split('\n');
+  assert.equal(lines.length, 2, logged(dir));
+  assert.equal(lines[0], `${fresh} src/fresh.ts`);
+  assert.match(lines[1], /^\d+ src\/new\.ts$/);
+});
+
+test('a log impact creates before any scan is never picked up by git', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'sextant-git-'));
+  const git = (...a) => spawnSync('git', a, { cwd: dir, encoding: 'utf8' });
+  git('init', '-q');
+  recordImpact(dir, 'src/app.ts');
+  assert.match(logged(dir), /^\d+ src\/app\.ts$/m);
+  assert.doesNotMatch(git('status', '--porcelain', '-uall').stdout, /impact\.log/);
+  git('add', '.atlas');
+  assert.doesNotMatch(git('diff', '--cached', '--name-only').stdout, /impact\.log/);
 });

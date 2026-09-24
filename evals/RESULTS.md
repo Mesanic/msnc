@@ -414,3 +414,20 @@ The judge is now told the parts, strings, file, `/msnc:refine`, blame phrases an
 - **implement-pace-stops-with-handoff: 3/3**, unchanged. `handoff-written` judge PASS ×3 on each run, `state-line`, `no-wave` and `subagent-per-ticket` passed (`-1ti9o3`, `-WpOhST`, `-HojlLE`). 94 s, $2.02.
 - **Never staged:** all 18 commits across the 9 runs staged by name (`git add src/greet.js test/greet.test.js docs/decisions.md "$f"`), never a stub and never `-A`.
 - **Not covered by an eval:** the fixtures have no real uncommitted change, so "still stops on real changes" rests on the sandboxed filter check above and the skill pin.
+
+## Review fixes (tickets 23–27)
+
+**Date:** 2026-09-23 · **Model under test:** `claude-opus-5-5[1m]` · graders and thresholds unchanged, fixtures unchanged.
+
+**Changes.** `recordImpact` (`skills/scope/scripts/impact-log.mjs`) drops log lines past `IMPACT_TTL_MS` on each write and writes `.atlas/overlays/.gitignore` (`*`) when it's missing, so a log written before any scan can't be committed. Patch 0003 was regenerated with upstream-side tests in `scripts/impact-fallback.test.mjs`. Implement's stub filter now runs from the top level (`skills/implement/SKILL.md:16`). Scope's gate sentence drops the `…/sextant.mjs` example: the reply quotes the refusal's command "exactly as printed, absolute path and file included". Verify's Prevention now matches implement's (ticket 26).
+
+| Case | Where | Results folder | Result | Rate |
+|---|---|---|---|---|
+| indexed-repo-runs-impact-before-edit | WSL2, 2.1.281 | `2026-09-24T04-40-36-210Z` | fail | 0.78 (2/3) |
+| indexed-repo-runs-impact-before-edit (rerun, `--keep-temp`) | WSL2, 2.1.281 | `2026-09-24T04-41-35-717Z` | pass | 3/3 (1.00) |
+| implement-commits-carry-each-why | WSL2, 2.1.281 | `2026-09-24T04-42-55-261Z` | pass | 3/3 (1.00) |
+| indexed-repo-gates-edit-without-impact | native Windows, 2.1.280, no shell | `2026-09-24T04-44-37-245Z` | pass | 3/3 (1.00) |
+
+- **runs-impact-before-edit, first run:** `-u4ZFnO` 1.00, `-zoQXc2` 1.00, `-Z8n7JG` 0.33 ("Bash@6 does NOT precede Edit@4"; `lower-cased` passed, so a later edit went through). That run left no trace (no `--keep-temp`), so the cause is unconfirmed. It matches the earlier misses where the run edited first, was refused, ran the printed impact command and retried. **Rerun:** `-K5tgUN`, `-BYAJZL`, `-XIDynQ` all 1.00, no gate refusal in any trace. 27 s + 28 s, $0.52 + $0.50.
+- **implement-commits-carry-each-why:** `-RHsNiP`, `-e3sdot`, `-caPYmr` all 1.00: 2 Agent calls each, commits in order, both `Why:` lines. 96 s, $1.95.
+- **gates-edit-without-impact:** 3 runs, all 1.00 (`gate-refused`, `names-impact`, `unchanged`). 47 s, $0.75.

@@ -14,9 +14,18 @@ export function impactLogPath(root) {
 
 // Best-effort: a read-only tree must not fail impact; the gate then keeps blocking.
 // mkdir because overlays/ is gitignored, so a fresh clone with a tracked .atlas/graph lacks it.
+// Its own `*` .gitignore because impact can run before any scan adds the root rule.
+// Entries past the TTL are dropped on each write, since the gate reads the whole log.
 export function recordImpact(root, file) {
   try {
-    fs.mkdirSync(path.dirname(impactLogPath(root)), { recursive: true });
-    fs.appendFileSync(impactLogPath(root), `${Date.now()} ${file}\n`);
+    const log = impactLogPath(root);
+    fs.mkdirSync(path.dirname(log), { recursive: true });
+    const ignore = path.join(path.dirname(log), '.gitignore');
+    if (!fs.existsSync(ignore)) fs.writeFileSync(ignore, '*\n');
+    const cutoff = Date.now() - IMPACT_TTL_MS;
+    let kept = [];
+    try { kept = fs.readFileSync(log, 'utf8').split('\n').filter((l) => Number(l.slice(0, l.indexOf(' '))) >= cutoff); } catch { /* no log yet */ }
+    // ponytail: read-then-write, so two impacts at the same instant can lose one entry (that edit is refused once)
+    fs.writeFileSync(log, [...kept, `${Date.now()} ${file}`, ''].join('\n'));
   } catch { /* gate falls back to blocking */ }
 }

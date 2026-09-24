@@ -87,7 +87,7 @@
       "skills/scope": "."
     },
     "changes": [
-      "Copy = pin + patches/sextant/0001 (impact answers CSS/HTML from the file graph and records the entry), 0002 (scan --no-claude-md) and 0003 (impact log in .atlas/overlays/, not the temp dir, so sandboxed Bash and the gate agree); not yet upstream, so sync --check reports scripts/impact-fallback.test.mjs as local only (and part of the scripts/sextant.mjs and scripts/impact-log.mjs changes) until the pin moves",
+      "Copy = pin + patches/sextant/0001 (impact answers CSS/HTML from the file graph and records the entry), 0002 (scan --no-claude-md) and 0003 (impact log in .atlas/overlays/, not the temp dir, so sandboxed Bash and the gate agree; its own .gitignore and a TTL trim keep it out of commits and small); not yet upstream, so sync --check reports scripts/impact-fallback.test.mjs as local only (and part of the scripts/sextant.mjs and scripts/impact-log.mjs changes) until the pin moves",
       "Repo root copied to skills/scope as the scope skill; SKILL.md rewritten for MSNC (model-invoked, CLI via ${CLAUDE_SKILL_DIR}, /msnc:scope init)",
       "sextant.mjs: scan never writes project hooks or a CLAUDE.md block (MSNC dispatcher is the gate, Tuner the routing)",
       "Edit gate rebuilt in hooks/msnc.mjs from scripts/pre-edit-hook.mjs",

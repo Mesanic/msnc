@@ -120,7 +120,7 @@ Issues to Fix:
 2. ...
 ```
 
-Each issue: **Cause** (what failed, `file:line`, expected vs got) · **Fix** (what makes it pass) · **Prevention**: the recipe change that stops a repeat, proposed through `/msnc:refine <recipe>` (the recipe the work followed) or as a recipe note. Say what happened, not who did it.
+Each issue: **Cause** (what failed, `file:line`, expected vs got) · **Fix** (what makes it pass) · **Prevention**: the recipe change that stops a repeat by guarding what let the failure in (such as running the tests before committing), not a better stop report, proposed through `/msnc:refine <recipe>` (the recipe the work followed) or as a recipe note. Say what happened, not who did it.
 
 ## Continuous Mode
 

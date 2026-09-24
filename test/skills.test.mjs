@@ -89,7 +89,8 @@ test('implement skips the sandbox\'s stub files at the start check and the commi
   const body = read('skills/implement/SKILL.md');
   const start = body.split('\n').find((l) => l.startsWith('- Uncommitted changes'));
   assert.match(start, /→ stop and ask/);
-  assert.match(start, /`git status --porcelain -uall \| while read -r s p; do \[ "\$s" = '\?\?' \] && \[ -c "\$p" \] \|\| echo "\$s \$p"; done`/);
+  // From the top level: porcelain paths are relative to it, and `-c` tests them against the cwd.
+  assert.match(start, /`\(cd "\$\(git rev-parse --show-toplevel\)" && git status --porcelain -uall \| while read -r s p; do \[ "\$s" = '\?\?' \] && \[ -c "\$p" \] \|\| echo "\$s \$p"; done\)`/);
   assert.match(start, /sandbox.*character devices.*`\.bashrc`.*don't count and are never staged/);
   assert.match(body, /other stray changes in `git status` → ask; sandbox stubs don't count/);
 });
@@ -162,6 +163,7 @@ test('implement and verify report every failure as cause, fix and prevention', (
   const verify = read('skills/verify/SKILL.md');
   assert.match(verify, /1\. <cause> · <fix> · <prevention>/);
   assert.match(verify, PREVENTION);
+  assert.match(verify, /\*\*Prevention\*\*: .*what let the failure in.*running the tests before committing.*not a better stop report/);
   assert.match(read('skills/verify/UPSTREAM.md'), /^- Issues to Fix .*cause · fix · prevention/m);
 });
 
@@ -250,13 +252,14 @@ test('scope is model-invoked with a short description and gives the CLI path, in
   assert.match(body, /CSS|HTML/);
 });
 
-test('scope: when the gate refusal cannot be cleared, the reply quotes the printed impact command with the file (ticket 24)', () => {
+test('scope: when the gate refusal cannot be cleared, the reply quotes the printed impact command exactly, path and file (ticket 24)', () => {
   const gate = read('skills/scope/SKILL.md').split('## The gate')[1];
   // Both dead ends: the command can't run, or it ran and the gate still refuses.
   assert.match(gate, /can't run/i);
   assert.match(gate, /still refuses/i);
-  assert.match(gate, /quote the command the refusal printed/i);
-  assert.ok(gate.includes('`node "…/sextant.mjs" impact src/router.ts`'), 'worked example with the file after impact');
+  assert.match(gate, /quote the refusal's command exactly as printed, absolute path and file included/i);
+  // A shortened path copied into the reply is a command the user can't run.
+  assert.doesNotMatch(gate, /…/, 'no ellipsis example');
 });
 
 // Record: spec "Record" and "ProcessDriven credit".
