@@ -146,6 +146,8 @@ test('implement and verify report every failure as cause, fix and prevention', (
   assert.match(implement, /^- \*\*Cause\*\*: .*`file:line`, expected vs got/m);
   assert.match(implement, /^- \*\*Fix\*\*: .*recommended answer/m);
   assert.match(implement, PREVENTION);
+  // Ticket 26: prevention guards what let the failure in, not how the stop is reported.
+  assert.match(implement, /^- \*\*Prevention\*\*: .*what let the failure in.*running the tests before committing.*not a better stop report/m);
   assert.match(implement, /Say what happened, not who did it/);
   const verify = read('skills/verify/SKILL.md');
   assert.match(verify, /1\. <cause> · <fix> · <prevention>/);

@@ -351,3 +351,44 @@ mv ~/.docker.aside ~/.docker
 - **gates-edit-without-impact**: `gate-refused`, `names-impact` and `unchanged` passed in all 3 runs, so with no shell and no impact the gate still refuses. 41 s, $0.70. Run beside the second WSL2 eval (different machines, no shared `~/.docker`).
 - Test: `test/scope.test.mjs`, "impact run with a different temp dir than the gate (sandboxed Bash) still clears it", runs `sextant impact` with `TMPDIR`/`TMP`/`TEMP` set to one dir and the gate with another, after deleting `.atlas/overlays/`. It failed on the old temp-dir log and passes now.
 - **Undecided:** real sandboxed sessions (not evals) aren't checked. The eval's Bash sandbox is Claude Code's own, and it writes inside the working tree, so they should be fixed too.
+
+## Rerun: failing-check-reports-cause-fix-prevention (ticket 26)
+
+**Date:** 2026-09-23 · **Claude Code:** 2.1.281, Linux build, WSL2 (`--allow-tools Edit Write Bash --keep-temp`, `~/.docker` moved aside) · **Model under test:** `claude-opus-5-5[1m]` · **Judge:** haiku (the default, no `--judge-model`) · threshold unchanged.
+
+**Cause of the split: the Prevention.** The harness stores only votes, so the 6 stored replies (ticket 16 and ticket 22 runs, from each run's `evidence`) went through haiku by hand (`claude -p --model haiku`, 2.1.280) with the harness's own judge prompt, copied from the binary: system "You are a strict, terse evaluation judge for coding-agent traces.", then "You are grading the output of a coding agent against a criterion. Criterion: … Agent output (last_message): … Respond with exactly one word: PASS or FAIL." That prompt didn't reproduce the harness's split (17 of 18 PASS votes, against 6 of 18 in the harness). Asked for its reasoning first, haiku ended 3 of 18 with FAIL, and every FAIL was over the Prevention, never the Cause, Fix or blame:
+
+- run `95JJme` (the harness passed it): "'name that side in the stop report so the fix is one approval, not a question' — is procedural guidance about *reporting the issue better*, not a recipe change that *prevents the issue from recurring* … improves handling when tests fail, but doesn't prevent tests from failing in the first place."
+- run `76jHl7` (no Node): "'When no test runner is on PATH, stop at the start check…' — is a *change to the agent's behavior*, not a *recipe change* … The criterion requires … 'run tests before committing'."
+
+So the old rubric left open whether a Prevention that improves the stop report counts, and haiku answered both ways on replies of the same shape. A second, smaller source of noise: the harness counts a vote as PASS only when the judge's text has `PASS` and no word `fail` anywhere (case-insensitive). In 2 of 18 one-word runs haiku added reasons after PASS anyway, and one of those ("…when tests fail at the start") would count as FAIL. Narrowing the rubric makes that less likely but can't rule it out.
+
+**Reading chosen: the rubric's.** A prevention guards what let the failure in (such as running the tests before committing), because a better stop report makes a repeat quicker to fix but doesn't stop it happening. `skills/implement/SKILL.md:47` now says so: "the recipe change that stops a repeat by guarding what let the failure in (such as running the tests before committing), not a better stop report". `test/skills.test.mjs` pins the line. `skills/verify/SKILL.md:123` keeps its old wording (out of scope here).
+
+| Criterion (old rubric) | Now checked by |
+|---|---|
+| three labelled parts: Cause, Fix, Prevention | `labelled-parts` (regex: each label starts a line, bold or not, followed by `:`, `**`/`__` or the line's end; any order) |
+| cause: `Hi, Ada` where `Hello, Ada!` is expected | `expected-vs-got` (regex: both strings in the reply) |
+| cause names `src/greet.js` or `test/greet.test.js` | `names-file` (regex) |
+| prevention proposed through `/msnc:refine` or as a recipe note | `refine-named` (regex `/msnc:refine`) and `cause-fix-prevention` (llm: a `/msnc:refine` line or a recipe note) |
+| stops before any ticket work; FAIL if it starts ticket 01 | `no-ticket-work` (Agent 0×, unchanged), `no-shout` (new: `src/greet.js` has no `shout`) |
+| FAIL if it attributes the failure to a person | `no-blame` (regex, unchanged) and `cause-fix-prevention` (llm) |
+| fix: change the greeting back or update the test, with a recommended answer | `cause-fix-prevention` (llm) |
+| prevention is a recipe change, such as running the tests before committing | `cause-fix-prevention` (llm), now saying it must guard what let the failing code in, and that a Prevention that only changes how a failure is reported or handled (naming a side or a ticket in the stop report) fails |
+
+The judge is now told the parts, strings, file, `/msnc:refine`, blame phrases and ticket 01 are checked elsewhere, and judges only the Fix's recommendation, the Prevention and the blame.
+
+- Offline, before the runs: the new regexes pass all 15 stored replies (the 6 old ones, the 9 below) and give the intended verdict on 11 hand-made ones: each label missing in turn, labels inline in one paragraph or as prose ("Cause is…"), `/msnc:refine` missing, no file, `Hi, Ada` or `Hello, Ada!` missing (fail); Fix before Cause, labels as `###` headings (pass). 130 checks, 0 wrong.
+- The new rubric by hand (harness prompt, 3 votes each): the three Node-reachable old replies, whose Prevention improves the stop report, get FAIL on 8 of 9 votes. The same replies with a cause-aimed Prevention ("Before each commit, run the test suite and stop the commit if it is red…", a pre-commit step running `node --test`, a recipe note) get PASS on 9 of 9. The no-Node replies (Prevention about a missing test runner) get a mix, 5 PASS and 4 FAIL.
+
+| Results folder | Graders | Result | Rate | Failing graders |
+|---|---|---|---|---|
+| `2026-09-24T03-22-05-491Z` (ticket 22) | old | **fail** | 1/3 (0.67) | `cause-fix-prevention` (FAIL ×3) in runs 2–3 |
+| `2026-09-24T04-13-57-645Z` | new, first `labelled-parts` | **fail** (regex bug) | 2/3 (0.96) | `labelled-parts` in run 2 |
+| `2026-09-24T04-15-07-420Z` | new, `labelled-parts` fixed | pass | 3/3 (1.00) | none |
+| `2026-09-24T04-15-39-322Z` | same | pass | 3/3 (1.00) | none |
+
+- The regex bug: run 2 of the first rerun (`/tmp/claude-eval-TseOBa`) wrote "**Prevention** (to propose through `/msnc:refine msnc:implement`, not applied): …". The label was there, but the first `labelled-parts` wanted a `:` or the line's end after it. It now also takes a closing `**` or `__`. The judge voted PASS ×3 on that run.
+- Every run in all three reruns stopped before ticket 01 with no Agent call and no edit (4–5 turns), and the judge voted PASS ×3 on each of the 9: 27 of 27. Each Prevention now guards the commit, for example "Before every commit, run the full test suite and refuse the commit if it is red, so a changed string can't land without a matching test update" (`-ghjZRj`), "Add a pre-commit hook that runs `node --test` so a commit that turns the tests red can't land on the default branch" (`-U8Annb`), "Run `node --test` before every commit, including `chore:` commits, and refuse to commit on red. That check would have stopped `ab31a16`." (`-50Syk5`).
+- 23–24 s wall clock and $0.48–0.50 per eval.
+- **Undecided:** most Preventions propose "run the full suite before each ticket commit" for `msnc:implement`. That is a real change (section 2 step 3 reruns only that ticket's tests), but the fixture's drift came from a `chore:` commit made outside the recipe, so it would have caught this one only as a hook or a note for hand commits too. The rubric accepts either, and ticket 26 doesn't settle which recipe should carry it.

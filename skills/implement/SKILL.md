@@ -44,7 +44,7 @@ Say which ticket and the one decision you need, with your recommended answer. Re
 
 - **Cause**: what failed and why, with `file:line`, expected vs got.
 - **Fix**: what makes it pass; your recommended answer when it needs a decision.
-- **Prevention**: the recipe change that stops a repeat, as one line to propose through `/msnc:refine <recipe>` (the ticket's recipe, else `msnc:implement`), which lands as a recipe edit or a recipe note. Proposed, not applied.
+- **Prevention**: the recipe change that stops a repeat by guarding what let the failure in (such as running the tests before committing), not a better stop report, as one line to propose through `/msnc:refine <recipe>` (the ticket's recipe, else `msnc:implement`), which lands as a recipe edit or a recipe note. Proposed, not applied.
 
 Say what happened, not who did it.
 
