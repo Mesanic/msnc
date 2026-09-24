@@ -9,24 +9,24 @@ metadata:
 
 A code map with two graphs: a **file graph** (modules, imports, git state) and a **symbol graph** (functions, calls, line spans, tests). They fail in opposite directions: symbol analysis misses a call made through a variable, the file graph sees the import but not the line. `impact` runs both and hands you the difference.
 
-Run every command as `node "${CLAUDE_SKILL_DIR}/scripts/sextant.mjs" <command>` from the repo root, written `$S <command>` below. `$S --help` lists every command; `$S status` first when anything looks wrong.
+Run every command from the repo root as `node "${CLAUDE_SKILL_DIR}/scripts/sextant.mjs" <command>`, with the full path typed out each time, as below. Type the full command; don't set a shell variable for the path, so the impact call shows as `sextant.mjs impact`. `--help` lists every command; `status` first when anything looks wrong.
 
 ## `/msnc:scope init`
 
-Arguments: `$ARGUMENTS`. When they are `init`, or the repo has no `.atlas/` yet, run `$S scan` and report its summary lines. That is all init does: it builds `.atlas/` and `.map/` and appends their entries to `.gitignore`. This copy writes no hooks and no `CLAUDE.md` block; MSNC's own hook is the edit gate. Run it again to rescan: after a commit, or after multi-file edits.
+Arguments: `$ARGUMENTS`. When they are `init`, or the repo has no `.atlas/` yet, run `node "${CLAUDE_SKILL_DIR}/scripts/sextant.mjs" scan` and report its summary lines. That is all init does: it builds `.atlas/` and `.map/` and appends their entries to `.gitignore`. This copy writes no hooks and no `CLAUDE.md` block; MSNC's own hook is the edit gate. Run it again to rescan: after a commit, or after multi-file edits.
 
 ## The core loop
 
 ```bash
-$S map                        # 1. the repo's orientation card
-$S query "auth session"       #    ranked hits for the task's nouns, before a repo-wide grep
-$S context src/router.ts      #    one card: importers, imports, tests, docs, git
-$S locate createUser          # 2. exact id, file and span
-$S impact createUser          # 3. dependents + cross-check, before EVERY edit to a mapped file
-$S slice fn:89aa5d44a113      # 4. read only what you will touch
-                              # 5. edit
-$S check                      # 6. exits 1 if anything dangles; fix until 0
-$S scan                       # 7. rescan both graphs after multi-file edits
+node "${CLAUDE_SKILL_DIR}/scripts/sextant.mjs" map                         # 1. the repo's orientation card
+node "${CLAUDE_SKILL_DIR}/scripts/sextant.mjs" query "auth session"        #    ranked hits for the task's nouns, before a repo-wide grep
+node "${CLAUDE_SKILL_DIR}/scripts/sextant.mjs" context src/router.ts       #    one card: importers, imports, tests, docs, git
+node "${CLAUDE_SKILL_DIR}/scripts/sextant.mjs" locate createUser           # 2. exact id, file and span
+node "${CLAUDE_SKILL_DIR}/scripts/sextant.mjs" impact createUser           # 3. dependents + cross-check, before EVERY edit to a mapped file
+node "${CLAUDE_SKILL_DIR}/scripts/sextant.mjs" slice fn:89aa5d44a113       # 4. read only what you will touch
+                                                                           # 5. edit
+node "${CLAUDE_SKILL_DIR}/scripts/sextant.mjs" check                       # 6. exits 1 if anything dangles; fix until 0
+node "${CLAUDE_SKILL_DIR}/scripts/sextant.mjs" scan                        # 7. rescan both graphs after multi-file edits
 ```
 
 ## Impact

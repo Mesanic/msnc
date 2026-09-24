@@ -229,7 +229,11 @@ test('scope is model-invoked with a short description and gives the CLI path, in
   assert.ok(body.includes('node "${CLAUDE_SKILL_DIR}/scripts/sextant.mjs"'), 'CLI path');
   assert.match(body, /`\/msnc:scope init`/);
   assert.match(body, /\$ARGUMENTS/);
-  for (const cmd of ['map', 'query', 'locate', 'impact', 'slice', 'check', 'scan']) assert.match(body, new RegExp(`\\$S ${cmd}\\b`), cmd);
+  // Each command written out in full: a `$S` shorthand gets turned into a shell variable that hides `sextant.mjs impact` (ticket 23).
+  for (const cmd of ['map', 'query', 'locate', 'impact', 'slice', 'check', 'scan'])
+    assert.ok(body.includes(`node "\${CLAUDE_SKILL_DIR}/scripts/sextant.mjs" ${cmd}`), cmd);
+  assert.doesNotMatch(body, /\$S\b/, 'no $S shorthand');
+  assert.match(body, /don't set a shell variable/i);
   assert.match(body, /no hooks? and no `CLAUDE\.md` block/i);
   assert.match(body, /CSS|HTML/);
 });

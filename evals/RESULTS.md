@@ -307,3 +307,16 @@ mv ~/.docker.aside ~/.docker
 - **failing-check-reports-cause-fix-prevention** (ticket 26). All 3 runs ran `node --test`, stopped before ticket 01 with no Agent call and no blame, and reported Cause (`test/greet.test.js:4` expected `'Hello, Ada!'`, got `'Hi, Ada'`), Fix (change `src/greet.js:1`, with a reason) and a Prevention proposed for `/msnc:refine msnc:implement`. The judge passed run 1 and failed runs 2–3, though the replies look alike (runs 2–3 even named the alternative fix). Every Prevention improves the stop report ("name that side in the stop report…") rather than what let the drifted commit in, which the rubric's example ("running the tests before committing") points at. **Undecided** whether the judge or the replies are right; ticket 26 settles it.
 
 **Bash `if` filters: confirmed for `sed`.** The probe (Scope fixture, `allowed_tools: [Read, Bash]`, `max_turns: 6`) told the run to execute exactly `sed -i 's/email/email/' src/users.js`. In all 3 runs (`-zd05GQ`, `-M9SW7A`, `-Fk3Cvp`), that one Bash call came back "PreToolUse:Bash hook error: Scope: src/users.js is in the code map and no impact check has run (via Bash)." It's listed in `permission_denials`, and `src/users.js` was unchanged. So `if: "Bash(sed *)"` started the gate, and the gate refused. `cp` and `rm` weren't probed. The other half of user story 13 (the gate doesn't start for commands that don't write) isn't shown: a hook that starts and then allows a command looks the same in a trace.
+
+## Rerun: indexed-repo-runs-impact-before-edit (ticket 23)
+
+**Date:** 2026-09-23 (results folder `evals/results/2026-09-24T03-41-48-227Z`, UTC) · **Claude Code:** 2.1.281, Linux build · **Model under test:** `claude-opus-5-5[1m]` · **Judge:** haiku · **Machine:** WSL2, as in the ticket 22 rerun · `--case indexed-repo-runs-impact-before-edit --ablation none --scaffold --allow-tools Edit Write Bash --trust-plugin --no-publish --keep-temp -j 3` (`~/.docker` moved aside), graders unchanged.
+
+| Scope wording | Result | Rate | Failing graders |
+|---|---|---|---|
+| `$S <command>` shorthand dropped: every command written as `node "${CLAUDE_SKILL_DIR}/scripts/sextant.mjs" <command>`, plus "Type the full command; don't set a shell variable for the path" | **fail** | 0/3 (0.67) | `lower-cased` in every run (ticket 25) |
+
+- `impact-before-edit` passed 3/3 (Bash@2 before Edit@4, Bash@3 before Edit@6, Bash@2 before Edit@4). Each run loaded `msnc:scope` and ran `node "/mnt/c/…/skills/scope/scripts/sextant.mjs" impact createUser` before its first Edit (`/tmp/claude-eval-AsPrDY`, `-TYEdAq`, `-x5cN7d`).
+- No variable form anywhere: all 12 sextant calls across the 3 traces (`impact createUser`, the gate's `impact src/users.js`, `impact test/users.test.js`, `status`) wrote the path out in full. No `S=`, `$S` or `eval`. Before the change it showed up in 1 run in 6 on the graded call, and in later calls too.
+- `lower-cased` failed as in the ticket 22 rerun: the gate refused every Edit, since sandboxed impact logs are invisible to it (ticket 25). No run called `map`, so the `S="tools/sextant/…"` lines in `.atlas/MAP.md`'s how-to section (written by `engine/atlas/scripts/lib/scan.mjs:694-701`) weren't shown to the model here.
+- `skills/scope/SKILL.md` went from 3,111 to 3,688 bytes. 40 s wall clock, $0.63.

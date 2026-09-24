@@ -12,11 +12,12 @@
 
 **Blocked by:** None — can start immediately (ticket 22 is needed to see the case pass end to end)
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] `skills/scope/SKILL.md` no longer leads runs to call sextant through a shell variable, and `npm test` and `npm run check` pass.
-- [ ] With ticket 22 done, `indexed-repo-runs-impact-before-edit` passes `impact-before-edit` in 3 of 3 runs, with the grader unchanged.
+- [x] `skills/scope/SKILL.md` no longer leads runs to call sextant through a shell variable, and `npm test` and `npm run check` pass.
+- [x] With ticket 22 done, `indexed-repo-runs-impact-before-edit` passes `impact-before-edit` in 3 of 3 runs, with the grader unchanged.
 
 ## Comments
 
 - 2026-09-23 · Rerun after ticket 22 (Node reachable): `impact-before-edit` passed 3/3 without this change (Bash@4 before Edit@7, Bash@2 before Edit@4, Bash@4 before Edit@7). Each run's first impact call wrote the path out in full. The variable form still showed up in later calls: `S="…/sextant.mjs"; node "$S" status` (`/tmp/claude-eval-sK45ek` line 29, `-qz4kib` line 36), and `S=…; node "$S" impact src/users.js …` in the gate case (`-sjf75Y` line 22). So the risk stands: it now bit 1 run in 6 on the graded call. Box 2 was met once by chance and stays open until it holds with the change in.
+- 2026-09-23 · Change in: `skills/scope/SKILL.md` drops the `$S` shorthand, writes each command as `node "${CLAUDE_SKILL_DIR}/scripts/sextant.mjs" <command>` and says "Type the full command; don't set a shell variable for the path". The pin in `test/skills.test.mjs` now asserts the full form for map, query, locate, impact, slice, check and scan, no `$S`, and that sentence. `npm test` 109/109, `npm run check` 0 failed. WSL2 rerun (`evals/results/2026-09-24T03-41-48-227Z`, first wording): `impact-before-edit` 3/3 (Bash@2 before Edit@4, Bash@3 before Edit@6, Bash@2 before Edit@4), grader unchanged. All 12 sextant calls across the 3 traces wrote the path out in full, no `S=`/`$S`/`eval`. `lower-cased` still fails in every run (ticket 25). Left open: `.atlas/MAP.md`'s how-to, printed by `sextant map`, still teaches `S="tools/sextant/scripts/sextant.mjs"` / `node $S impact …` (`skills/scope/engine/atlas/scripts/lib/scan.mjs:694-701`, vendored engine). No run called `map` here. See `evals/RESULTS.md`, "Rerun: indexed-repo-runs-impact-before-edit (ticket 23)".
