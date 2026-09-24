@@ -12,7 +12,11 @@
 
 **Blocked by:** None — can start immediately
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] `/msnc:implement` doesn't stop on the sandbox's stub entries and never stages them, and still stops on real uncommitted changes (a test or a skill pin).
-- [ ] `implement-commits-carry-each-why` scores 1.00 over 3 runs under WSL2, with no grader or threshold changed.
+- [x] `/msnc:implement` doesn't stop on the sandbox's stub entries and never stages them, and still stops on real uncommitted changes (a test or a skill pin).
+- [x] `implement-commits-carry-each-why` scores 1.00 over 3 runs under WSL2, with no grader or threshold changed.
+
+## Comments
+
+- 2026-09-23 · Real sandboxed sessions show the stubs too, so the fix is in the skill, not the fixtures. A plain `claude -p` session (2.1.281, WSL2, `--settings '{"sandbox":{"enabled":true,"autoAllowBashIfSandboxed":true,"allowUnsandboxedCommands":false}}'`, no plugin) in a fresh `/tmp` repo with one commit listed 12 untracked entries (`.bash_profile`, `.bashrc`, `.claude/`, `.gitconfig`, `.gitmodules`, `.idea`, `.mcp.json`, `.profile`, `.ripgreprc`, `.vscode`, `.zprofile`, `.zshrc`), each `crw-rw-rw- nobody nogroup 1, 3` (`/dev/null` mounted read-only). `.claude/` holds more of them (`settings.json`, `settings.local.json`, `agents`, `skills`, …). `.eval-artifacts` is the eval harness's extra stub of the same kind. Outside the sandbox the tree is clean. Existing protected files stay real files and show no change, so stubs are always untracked. `git add -A` fails on them ("can only add regular files…"). `skills/implement/SKILL.md:16` now lists changes with `git status --porcelain -uall | while read -r s p; do [ "$s" = '??' ] && [ -c "$p" ] || echo "$s $p"; done`, which skips untracked character devices. Checked in a sandbox: it prints nothing with only stubs, and prints ` M README.md`, `?? real.txt` and `?? "a b/c.txt"` once they exist. The skill says stubs "don't count and are never staged: stage by name, never `git add -A`", and step 7's stray-change check skips them. Pinned in `test/skills.test.mjs`. `implement-commits-carry-each-why` 1.00 and 1.00 (6/6, `evals/results/2026-09-24T04-23-35-351Z`, `…T04-25-38-452Z`), `implement-pace-stops-with-handoff` 1.00 (3/3, `…T04-27-16-574Z`), graders unchanged. Every run staged files by name, never a stub. `npm test` 112/112, `npm run check` 0 failed. Details: `evals/RESULTS.md`, "Rerun: implement-commits-carry-each-why (ticket 27)".

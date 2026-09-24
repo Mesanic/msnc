@@ -84,6 +84,16 @@ test('implement stops with a message, never waits, outside a git repo or with un
   assert.match(body, /never (hang|wait)/i);
 });
 
+// Ticket 27: the Bash sandbox mounts untracked character devices (`.bashrc`, `.mcp.json`, `.claude/settings.local.json`, …) into the repo.
+test('implement skips the sandbox\'s stub files at the start check and the commit, and never stages them', () => {
+  const body = read('skills/implement/SKILL.md');
+  const start = body.split('\n').find((l) => l.startsWith('- Uncommitted changes'));
+  assert.match(start, /→ stop and ask/);
+  assert.match(start, /`git status --porcelain -uall \| while read -r s p; do \[ "\$s" = '\?\?' \] && \[ -c "\$p" \] \|\| echo "\$s \$p"; done`/);
+  assert.match(start, /sandbox.*character devices.*`\.bashrc`.*don't count and are never staged/);
+  assert.match(body, /other stray changes in `git status` → ask; sandbox stubs don't count/);
+});
+
 test('implement runs one foreground msnc:implementer per ticket and uses the Scope index when present', () => {
   const body = read('skills/implement/SKILL.md');
   assert.match(body, /ONE `msnc:implementer` subagent in the foreground/);
