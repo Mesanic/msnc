@@ -17,7 +17,11 @@
 
 **Blocked by:** None — can start immediately
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] The cause of the split is written down in `evals/RESULTS.md` (judge reasoning from the by-hand run, and which reading of "prevention" was chosen).
-- [ ] `failing-check-reports-cause-fix-prevention` scores 1.00 over 3 runs under WSL2 with the default judge, with no criterion removed and no threshold lowered.
+- [x] The cause of the split is written down in `evals/RESULTS.md` (judge reasoning from the by-hand run, and which reading of "prevention" was chosen).
+- [x] `failing-check-reports-cause-fix-prevention` scores 1.00 over 3 runs under WSL2 with the default judge, with no criterion removed and no threshold lowered.
+
+## Comments
+
+- 2026-09-23 · Cause: the Prevention. By hand, with the harness's own judge prompt (copied from the 2.1.280 binary) plus a request for reasons, haiku's only FAIL reason on the stored replies was that a Prevention which improves the stop report "improves handling when tests fail, but doesn't prevent tests from failing in the first place". Minor extra noise: the harness counts any vote whose text contains the word "fail" as FAIL, even after PASS. Reading chosen: the rubric's, since a better stop report doesn't stop a repeat. `skills/implement/SKILL.md:47` now aims the Prevention at what let the failure in (such as running the tests before committing), "not a better stop report", pinned in `test/skills.test.mjs`. Free graders took the mechanical parts: `labelled-parts`, `expected-vs-got`, `names-file`, `refine-named`, `no-shout` (plus `no-blame` and `no-ticket-work`, unchanged). The judge keeps only the Fix's recommendation, the Prevention (now explicitly: guards what let the failing code in, not how it's reported) and blame. No criterion dropped, threshold unchanged. WSL2, default judge: 0.96 (a `labelled-parts` regex bug on "**Prevention** (to propose…):", fixed), then 1.00 and 1.00 (`evals/results/2026-09-24T04-15-07-420Z`, `…T04-15-39-322Z`), judge PASS 27/27 across all 9 runs. `npm test` 111/111, `npm run check` 0 failed. Left open: `skills/verify/SKILL.md:123` still has the old Prevention wording, and which recipe should carry the "tests before every commit" guard for hand commits. Details: `evals/RESULTS.md`, "Rerun: failing-check-reports-cause-fix-prevention (ticket 26)".

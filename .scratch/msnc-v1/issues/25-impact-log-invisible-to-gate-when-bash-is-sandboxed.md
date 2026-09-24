@@ -17,8 +17,12 @@ Keep the 2-hour TTL, and keep blocking when no log is found. Add a test with two
 
 **Blocked by:** None — can start immediately
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] With the Bash sandbox on, running the command the gate prints clears the gate for that file (shown by a test, and by `indexed-repo-runs-impact-before-edit` passing `lower-cased` in 3 of 3 runs under WSL2).
-- [ ] With no impact run, the gate still refuses: a test, plus `indexed-repo-gates-edit-without-impact` run without a shell grant still passing `gate-refused` and `unchanged`. No grader or threshold changed.
-- [ ] `npm test` and `npm run check` pass.
+- [x] With the Bash sandbox on, running the command the gate prints clears the gate for that file (shown by a test, and by `indexed-repo-runs-impact-before-edit` passing `lower-cased` in 3 of 3 runs under WSL2).
+- [x] With no impact run, the gate still refuses: a test, plus `indexed-repo-gates-edit-without-impact` run without a shell grant still passing `gate-refused` and `unchanged`. No grader or threshold changed.
+- [x] `npm test` and `npm run check` pass.
+
+## Comments
+
+- 2026-09-23 · Implemented. **Decision:** the log moves to `<repo>/.atlas/overlays/impact.log`, because the working tree is the one place that sandboxed Bash can write and the hook can read. `.atlas/overlays/` is already machine state (`git.json`), and every scan re-adds it to `.gitignore`, so it isn't committed by accident. It also works with no `.git` at all, with worktrees and on native Windows, which `.git/` wouldn't. `recordImpact` creates `overlays/` when a fresh clone lacks it. TTL (2 h) unchanged; no log still blocks. Recorded upstream-side as `patches/sextant/0003-*.patch`. Test: `test/scope.test.mjs` (impact and gate with different temp dirs; red before, green after). WSL2 `indexed-repo-runs-impact-before-edit`: `lower-cased` 3/3 twice (6/6), `impact-before-edit` 2/3 then 3/3; the miss skipped `msnc:scope`, got refused, ran the printed command, and then the gate cleared. Native Windows `indexed-repo-gates-edit-without-impact`, no shell: 3/3, all graders. `npm test` 111/111, `npm run check` 0 failed. Real (non-eval) sandboxed sessions not checked. Details: `evals/RESULTS.md`, "Rerun: … (ticket 25)".

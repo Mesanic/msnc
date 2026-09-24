@@ -84,6 +84,17 @@ test('implement stops with a message, never waits, outside a git repo or with un
   assert.match(body, /never (hang|wait)/i);
 });
 
+// Ticket 27: the Bash sandbox mounts untracked character devices (`.bashrc`, `.mcp.json`, `.claude/settings.local.json`, …) into the repo.
+test('implement skips the sandbox\'s stub files at the start check and the commit, and never stages them', () => {
+  const body = read('skills/implement/SKILL.md');
+  const start = body.split('\n').find((l) => l.startsWith('- Uncommitted changes'));
+  assert.match(start, /→ stop and ask/);
+  // From the top level: porcelain paths are relative to it, and `-c` tests them against the cwd.
+  assert.match(start, /`\(cd "\$\(git rev-parse --show-toplevel\)" && git status --porcelain -uall \| while read -r s p; do \[ "\$s" = '\?\?' \] && \[ -c "\$p" \] \|\| echo "\$s \$p"; done\)`/);
+  assert.match(start, /sandbox.*character devices.*`\.bashrc`.*don't count and are never staged/);
+  assert.match(body, /other stray changes in `git status` → ask; sandbox stubs don't count/);
+});
+
 test('implement runs one foreground msnc:implementer per ticket and uses the Scope index when present', () => {
   const body = read('skills/implement/SKILL.md');
   assert.match(body, /ONE `msnc:implementer` subagent in the foreground/);
@@ -146,10 +157,13 @@ test('implement and verify report every failure as cause, fix and prevention', (
   assert.match(implement, /^- \*\*Cause\*\*: .*`file:line`, expected vs got/m);
   assert.match(implement, /^- \*\*Fix\*\*: .*recommended answer/m);
   assert.match(implement, PREVENTION);
+  // Ticket 26: prevention guards what let the failure in, not how the stop is reported.
+  assert.match(implement, /^- \*\*Prevention\*\*: .*what let the failure in.*running the tests before committing.*not a better stop report/m);
   assert.match(implement, /Say what happened, not who did it/);
   const verify = read('skills/verify/SKILL.md');
   assert.match(verify, /1\. <cause> · <fix> · <prevention>/);
   assert.match(verify, PREVENTION);
+  assert.match(verify, /\*\*Prevention\*\*: .*what let the failure in.*running the tests before committing.*not a better stop report/);
   assert.match(read('skills/verify/UPSTREAM.md'), /^- Issues to Fix .*cause · fix · prevention/m);
 });
 
@@ -229,9 +243,23 @@ test('scope is model-invoked with a short description and gives the CLI path, in
   assert.ok(body.includes('node "${CLAUDE_SKILL_DIR}/scripts/sextant.mjs"'), 'CLI path');
   assert.match(body, /`\/msnc:scope init`/);
   assert.match(body, /\$ARGUMENTS/);
-  for (const cmd of ['map', 'query', 'locate', 'impact', 'slice', 'check', 'scan']) assert.match(body, new RegExp(`\\$S ${cmd}\\b`), cmd);
+  // Each command written out in full: a `$S` shorthand gets turned into a shell variable that hides `sextant.mjs impact` (ticket 23).
+  for (const cmd of ['map', 'query', 'locate', 'impact', 'slice', 'check', 'scan'])
+    assert.ok(body.includes(`node "\${CLAUDE_SKILL_DIR}/scripts/sextant.mjs" ${cmd}`), cmd);
+  assert.doesNotMatch(body, /\$S\b/, 'no $S shorthand');
+  assert.match(body, /don't set a shell variable/i);
   assert.match(body, /no hooks? and no `CLAUDE\.md` block/i);
   assert.match(body, /CSS|HTML/);
+});
+
+test('scope: when the gate refusal cannot be cleared, the reply quotes the printed impact command exactly, path and file (ticket 24)', () => {
+  const gate = read('skills/scope/SKILL.md').split('## The gate')[1];
+  // Both dead ends: the command can't run, or it ran and the gate still refuses.
+  assert.match(gate, /can't run/i);
+  assert.match(gate, /still refuses/i);
+  assert.match(gate, /quote the refusal's command exactly as printed, absolute path and file included/i);
+  // A shortened path copied into the reply is a command the user can't run.
+  assert.doesNotMatch(gate, /…/, 'no ellipsis example');
 });
 
 // Record: spec "Record" and "ProcessDriven credit".

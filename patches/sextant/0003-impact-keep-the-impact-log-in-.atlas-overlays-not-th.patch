@@ -1,0 +1,152 @@
+From 9a148ca99c3069a4493e9c3f84875c7d24b47d77 Mon Sep 17 00:00:00 2001
+From: Mesanic <7865719+Mesanic@users.noreply.github.com>
+Date: Wed, 23 Sep 2026 18:00:00 -0600
+Subject: [PATCH] impact: keep the impact log in .atlas/overlays/, not the temp
+ dir
+
+With Claude Code's Bash sandbox on, `sextant impact` runs with the
+sandbox's own TMPDIR while the pre-edit hook runs outside it, so the
+hook read a different temp dir and never saw the entry: every edit to
+a mapped file was refused forever. The repo is the one place both can
+reach. impact creates overlays/ when missing (it is gitignored, so a
+fresh clone with a tracked .atlas/graph lacks it) and gives it its own
+`*` .gitignore, so the log stays out of commits even when impact runs
+before any scan has added the root rule. Each record drops entries
+past the TTL, since the log now lives in the repo and the hook reads
+all of it. TTL unchanged; no log still blocks. Tests in
+scripts/impact-fallback.test.mjs.
+---
+ scripts/impact-fallback.test.mjs | 30 ++++++++++++++++++++++++++++--
+ scripts/impact-log.mjs           | 30 ++++++++++++++++++++++++------
+ scripts/sextant.mjs              |  8 ++++----
+ 3 files changed, 56 insertions(+), 12 deletions(-)
+
+diff --git a/scripts/impact-fallback.test.mjs b/scripts/impact-fallback.test.mjs
+index 80a3938..ddf3df3 100644
+--- a/scripts/impact-fallback.test.mjs
++++ b/scripts/impact-fallback.test.mjs
+@@ -1,6 +1,7 @@
+ // Files only the file graph knows (CSS, HTML): `impact` answers from the file graph and
+ // records the impact entry, so the pre-edit gate can clear. And `scan --no-claude-md`
+-// leaves CLAUDE.md alone.
++// leaves CLAUDE.md alone. The impact log (.atlas/overlays/) drops stale entries and stays
++// out of git before any scan adds its rule.
+ //   node --test scripts/impact-fallback.test.mjs
+ import { test } from 'node:test';
+ import assert from 'node:assert/strict';
+@@ -8,7 +9,7 @@ import { spawnSync } from 'node:child_process';
+ import fs from 'node:fs';
+ import os from 'node:os';
+ import path from 'node:path';
+-import { impactLogPath } from './impact-log.mjs';
++import { IMPACT_TTL_MS, impactLogPath, recordImpact } from './impact-log.mjs';
+ 
+ const CLI = path.join(import.meta.dirname, 'sextant.mjs');
+ 
+@@ -70,3 +71,28 @@ test('a path neither graph knows still fails, and records nothing', () => {
+   assert.equal(r.status, 2);
+   assert.doesNotMatch(logged(root), /nope\.css/);
+ });
++
++test('the impact log lives in .atlas/overlays/ and recording drops entries past the TTL', () => {
++  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'sextant-log-'));
++  assert.equal(impactLogPath(dir), path.join(dir, '.atlas', 'overlays', 'impact.log'));
++  const old = Date.now() - IMPACT_TTL_MS - 60_000;
++  const fresh = Date.now() - 60_000;
++  fs.mkdirSync(path.dirname(impactLogPath(dir)), { recursive: true });
++  fs.writeFileSync(impactLogPath(dir), `${old} src/old.ts\n${fresh} src/fresh.ts\n`);
++  recordImpact(dir, 'src/new.ts');
++  const lines = logged(dir).trimEnd().split('\n');
++  assert.equal(lines.length, 2, logged(dir));
++  assert.equal(lines[0], `${fresh} src/fresh.ts`);
++  assert.match(lines[1], /^\d+ src\/new\.ts$/);
++});
++
++test('a log impact creates before any scan is never picked up by git', () => {
++  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'sextant-git-'));
++  const git = (...a) => spawnSync('git', a, { cwd: dir, encoding: 'utf8' });
++  git('init', '-q');
++  recordImpact(dir, 'src/app.ts');
++  assert.match(logged(dir), /^\d+ src\/app\.ts$/m);
++  assert.doesNotMatch(git('status', '--porcelain', '-uall').stdout, /impact\.log/);
++  git('add', '.atlas');
++  assert.doesNotMatch(git('diff', '--cached', '--name-only').stdout, /impact\.log/);
++});
+diff --git a/scripts/impact-log.mjs b/scripts/impact-log.mjs
+index 2fbfbf7..c2463d6 100644
+--- a/scripts/impact-log.mjs
++++ b/scripts/impact-log.mjs
+@@ -1,13 +1,31 @@
+ // Where `sextant impact` records what it answered for, and where the pre-edit hook looks.
+-// In the OS temp dir, not the repo: it is machine state with a lifetime of hours, and a
+-// gitignored file in every project is a file someone eventually commits by accident.
+-import crypto from 'node:crypto';
+-import os from 'node:os';
++// In the repo's .atlas/overlays/, not the OS temp dir: a sandboxed Bash has its own TMPDIR
++// while the hook runs outside the sandbox, so a temp-dir log is never seen by the gate. The
++// repo is the one place both can reach. overlays/ is machine state that scan keeps
++// gitignored (it re-adds the rule on every scan), so the log is never committed by accident.
++import fs from 'node:fs';
+ import path from 'node:path';
+ 
+ export const IMPACT_TTL_MS = (Number(process.env.SEXTANT_IMPACT_TTL_MIN) || 120) * 60 * 1000;
+ 
+ export function impactLogPath(root) {
+-  const key = crypto.createHash('sha256').update(path.resolve(root)).digest('hex').slice(0, 12);
+-  return path.join(os.tmpdir(), `sextant-impact-${key}.log`);
++  return path.join(root, '.atlas', 'overlays', 'impact.log');
++}
++
++// Best-effort: a read-only tree must not fail impact; the gate then keeps blocking.
++// mkdir because overlays/ is gitignored, so a fresh clone with a tracked .atlas/graph lacks it.
++// Its own `*` .gitignore because impact can run before any scan adds the root rule.
++// Entries past the TTL are dropped on each write, since the gate reads the whole log.
++export function recordImpact(root, file) {
++  try {
++    const log = impactLogPath(root);
++    fs.mkdirSync(path.dirname(log), { recursive: true });
++    const ignore = path.join(path.dirname(log), '.gitignore');
++    if (!fs.existsSync(ignore)) fs.writeFileSync(ignore, '*\n');
++    const cutoff = Date.now() - IMPACT_TTL_MS;
++    let kept = [];
++    try { kept = fs.readFileSync(log, 'utf8').split('\n').filter((l) => Number(l.slice(0, l.indexOf(' '))) >= cutoff); } catch { /* no log yet */ }
++    // ponytail: read-then-write, so two impacts at the same instant can lose one entry (that edit is refused once)
++    fs.writeFileSync(log, [...kept, `${Date.now()} ${file}`, ''].join('\n'));
++  } catch { /* gate falls back to blocking */ }
+ }
+diff --git a/scripts/sextant.mjs b/scripts/sextant.mjs
+index 267d62c..19dd22f 100644
+--- a/scripts/sextant.mjs
++++ b/scripts/sextant.mjs
+@@ -17,7 +17,7 @@ import fs from 'node:fs';
+ import path from 'node:path';
+ import { fileURLToPath, pathToFileURL } from 'node:url';
+ import { mergeIntoAtlas } from './merge.mjs';
+-import { impactLogPath } from './impact-log.mjs';
++import { recordImpact } from './impact-log.mjs';
+ 
+ const HELP = `sextant — one instrument for reading and changing a codebase
+ 
+@@ -479,7 +479,7 @@ function resolveTarget(scalpel, root, key, onMiss = die) {
+ // unsatisfiable for exactly those files. Answer from the file graph instead: its
+ // importers, transitively to --depth, and record the entry the gate reads.
+ function fileGraphImpact(root, file, depth) {
+-  try { fs.appendFileSync(impactLogPath(root), `${Date.now()} ${file}\n`); } catch { /* gate falls back to blocking */ }
++  recordImpact(root, file);
+   console.log(`impact ${file} [up] (file graph only — no symbols for this file, so no line spans or tests)`);
+   const max = Number(depth) || 32;
+   const seen = new Set([file]);
+@@ -506,8 +506,8 @@ function cmdImpact(root, { atlas, scalpel }, key, depth) {
+     (atlas && fs.existsSync(path.resolve(root, key)) && readAtlasImporters(root, file) !== null ? null : die(msg)));
+   if (!target) return fileGraphImpact(root, file, depth);
+   // Record the file this answer covers, so the pre-edit hook can tell an edit that was
+-  // analysed from one that was not. Best-effort: a read-only temp dir must not fail impact.
+-  try { fs.appendFileSync(impactLogPath(root), `${Date.now()} ${target.path}\n`); } catch { /* gate falls back to blocking */ }
++  // analysed from one that was not.
++  recordImpact(root, target.path);
+ 
+   // 1. Scalpel's report, passed through verbatim — it is budgeted, carries
+   //    confidence labels and the test list, and must not be re-implemented here.
+-- 
+2.50.0.windows.2
+

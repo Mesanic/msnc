@@ -34,7 +34,7 @@ Runtime of the runs above: 239 s wall clock, $5.77 at list price. Pilots and pro
 | non-code-question-skips-trim | Non-code question never loads Trim | pass | 3/3 |
 | plan-mode-reads-without-ctx | Plan mode makes no `ctx_*` calls (nearest form, see below) | pass | 3/3 |
 | indexed-repo-runs-impact-before-edit | Indexed repo runs impact before an edit | **fail** (WSL2 rerun, ticket 22 section) | 0/3 (0.67) |
-| indexed-repo-gates-edit-without-impact | Nearest shell-free form: the gate refuses the edit | pass | 3/3 |
+| indexed-repo-gates-edit-without-impact | Nearest shell-free form: the gate refuses the edit | pass (ticket 24 rerun) | 3/3 (1.00) |
 | implement-commits-carry-each-why | `/msnc:implement`: two commits, in order | **fail** (WSL2 rerun, ticket 22 section) | 2/3 (0.67) |
 | clear-shapes-first-line | Clear on vs off changes the first line | **fail** | WITH 2/3 (0.78), W/OUT 0.11, Δ +0.67 |
 | subagent-receives-clear | A subagent receives Clear | pass | 3/3 |
@@ -307,3 +307,127 @@ mv ~/.docker.aside ~/.docker
 - **failing-check-reports-cause-fix-prevention** (ticket 26). All 3 runs ran `node --test`, stopped before ticket 01 with no Agent call and no blame, and reported Cause (`test/greet.test.js:4` expected `'Hello, Ada!'`, got `'Hi, Ada'`), Fix (change `src/greet.js:1`, with a reason) and a Prevention proposed for `/msnc:refine msnc:implement`. The judge passed run 1 and failed runs 2–3, though the replies look alike (runs 2–3 even named the alternative fix). Every Prevention improves the stop report ("name that side in the stop report…") rather than what let the drifted commit in, which the rubric's example ("running the tests before committing") points at. **Undecided** whether the judge or the replies are right; ticket 26 settles it.
 
 **Bash `if` filters: confirmed for `sed`.** The probe (Scope fixture, `allowed_tools: [Read, Bash]`, `max_turns: 6`) told the run to execute exactly `sed -i 's/email/email/' src/users.js`. In all 3 runs (`-zd05GQ`, `-M9SW7A`, `-Fk3Cvp`), that one Bash call came back "PreToolUse:Bash hook error: Scope: src/users.js is in the code map and no impact check has run (via Bash)." It's listed in `permission_denials`, and `src/users.js` was unchanged. So `if: "Bash(sed *)"` started the gate, and the gate refused. `cp` and `rm` weren't probed. The other half of user story 13 (the gate doesn't start for commands that don't write) isn't shown: a hook that starts and then allows a command looks the same in a trace.
+
+## Rerun: indexed-repo-runs-impact-before-edit (ticket 23)
+
+**Date:** 2026-09-23 (results folder `evals/results/2026-09-24T03-41-48-227Z`, UTC) · **Claude Code:** 2.1.281, Linux build · **Model under test:** `claude-opus-5-5[1m]` · **Judge:** haiku · **Machine:** WSL2, as in the ticket 22 rerun · `--case indexed-repo-runs-impact-before-edit --ablation none --scaffold --allow-tools Edit Write Bash --trust-plugin --no-publish --keep-temp -j 3` (`~/.docker` moved aside), graders unchanged.
+
+| Scope wording | Result | Rate | Failing graders |
+|---|---|---|---|
+| `$S <command>` shorthand dropped: every command written as `node "${CLAUDE_SKILL_DIR}/scripts/sextant.mjs" <command>`, plus "Type the full command; don't set a shell variable for the path" | **fail** | 0/3 (0.67) | `lower-cased` in every run (ticket 25) |
+
+- `impact-before-edit` passed 3/3 (Bash@2 before Edit@4, Bash@3 before Edit@6, Bash@2 before Edit@4). Each run loaded `msnc:scope` and ran `node "/mnt/c/…/skills/scope/scripts/sextant.mjs" impact createUser` before its first Edit (`/tmp/claude-eval-AsPrDY`, `-TYEdAq`, `-x5cN7d`).
+- No variable form anywhere: all 12 sextant calls across the 3 traces (`impact createUser`, the gate's `impact src/users.js`, `impact test/users.test.js`, `status`) wrote the path out in full. No `S=`, `$S` or `eval`. Before the change it showed up in 1 run in 6 on the graded call, and in later calls too.
+- `lower-cased` failed as in the ticket 22 rerun: the gate refused every Edit, since sandboxed impact logs are invisible to it (ticket 25). No run called `map`, so the `S="tools/sextant/…"` lines in `.atlas/MAP.md`'s how-to section (written by `engine/atlas/scripts/lib/scan.mjs:694-701`) weren't shown to the model here.
+- `skills/scope/SKILL.md` went from 3,111 to 3,688 bytes. 40 s wall clock, $0.63.
+
+## Rerun: indexed-repo-gates-edit-without-impact and indexed-repo-runs-impact-before-edit (ticket 24)
+
+**Date:** 2026-09-23 · **Model under test:** `claude-opus-5-5[1m]` · graders unchanged. One wording change, no iterations: `skills/scope/SKILL.md:41` gained "If you can't run it, or it ran and the gate still refuses, stop and quote the command the refusal printed, file included, in your reply, e.g. `node "…/sextant.mjs" impact src/router.ts`, so the user can run it." The example uses `src/router.ts` (already in the core loop), not the fixture's `src/users.js`, so the eval can't pass by copying the example.
+
+| Case | Machine | Results folder | Result | Rate | Failing graders |
+|---|---|---|---|---|---|
+| indexed-repo-gates-edit-without-impact | native Windows, Claude Code 2.1.280, `--allow-tools Edit Write` (no shell grant) | `2026-09-24T03-46-34-162Z` | pass | 3/3 (1.00) | none |
+| indexed-repo-runs-impact-before-edit | WSL2, Claude Code 2.1.281, `--allow-tools Edit Write Bash` (`~/.docker` moved aside) | `2026-09-24T03-47-59-957Z` | **fail** | 0/3 (0.44) | `lower-cased` ×3 (ticket 25); `impact-before-edit` ×1 |
+| indexed-repo-runs-impact-before-edit | same, plus `--keep-temp` | `2026-09-24T03-48-54-980Z` | **fail** | 0/3 (0.67) | `lower-cased` ×3 (ticket 25) |
+
+- **gates-edit-without-impact**: `gate-refused`, `names-impact` and `unchanged` passed in all 3 runs (8–10 turns, 40 s, $0.68). The eval deleted its sandboxes, so the reply text wasn't kept.
+- **runs-impact-before-edit, `impact-before-edit`**: 2/3 then 3/3, so 5/6. The failing run (first eval, run 1) made its first Edit before running impact ("Bash@8 does NOT precede Edit@6"). It ran without `--keep-temp`, so there's no trace to show why. Before this change the grader passed 6/6 (the ticket 22 and 23 reruns). The new sentence only covers what happens after a refusal, not the order of impact and Edit. **Undecided** whether this is noise or a regression. More runs would settle it.
+- **"Ran and still refused" path** (the ticket's second comment): all 3 kept runs (`/tmp/claude-eval-KGneXJ`, `-km5PqJ`, `-lgJYHE`) ran impact, were refused anyway (ticket 25), and ended with the full command `node "/mnt/c/…/skills/scope/scripts/sextant.mjs" impact src/users.js` in the reply.
+- `skills/scope/SKILL.md` went from 3,688 to 3,901 bytes.
+
+## Rerun: indexed-repo-runs-impact-before-edit and indexed-repo-gates-edit-without-impact (ticket 25)
+
+**Date:** 2026-09-23 · **Model under test:** `claude-opus-5-5[1m]` · graders and thresholds unchanged. One code change: the impact log moved from `os.tmpdir()` to `<repo>/.atlas/overlays/impact.log` (`skills/scope/scripts/impact-log.mjs`), and `sextant impact` creates `overlays/` when it's missing. Sandboxed Bash and the gate hook now share one file. Recorded as `patches/sextant/0003-*.patch`.
+
+| Case | Machine | Results folder | Result | Rate | Failing graders |
+|---|---|---|---|---|---|
+| indexed-repo-runs-impact-before-edit | WSL2, Claude Code 2.1.281, `--allow-tools Edit Write Bash --keep-temp` (`~/.docker` moved aside) | `2026-09-24T03-56-26-139Z` | **fail** | 2/3 (0.78) | `impact-before-edit` ×1 |
+| indexed-repo-runs-impact-before-edit | same | `2026-09-24T03-57-42-911Z` | pass | 3/3 (1.00) | none |
+| indexed-repo-gates-edit-without-impact | native Windows, Claude Code 2.1.280, `--allow-tools Edit Write` (no shell grant) | `2026-09-24T03-57-25-526Z` | pass | 3/3 (1.00) | none |
+
+- **runs-impact-before-edit, `lower-cased`: 6/6** (was 0/3 in the ticket 22, 23 and 24 reruns). In the 5 runs that ran impact first (`/tmp/claude-eval-5fkWL6`, `-o02IcT`, `-h3X79I`, `-BhSfjN`, `-5NRSom`), the gate didn't refuse a single Edit, in 12–13 turns. Each kept tree has `.atlas/overlays/impact.log` with one `… src/users.js` line, next to `git.json`, and the fixture's `.gitignore` has `.atlas/overlays/` (written by the scan). No `sextant-impact-*` file is left in the sandbox's `tmp/`.
+- **runs-impact-before-edit, `impact-before-edit`: 5/6.** The miss (`/tmp/claude-eval-2md8b7`, "Bash@8 does NOT precede Edit@6") loaded `msnc:trim` but never `msnc:scope`. It ran `sextant impact createUser` (not on PATH: "command not found"), guessed `tools/sextant/scripts/sextant.mjs`, fell back to Grep, and edited. The gate refused that Edit, the run ran the printed `node "…/sextant.mjs" impact src/users.js`, and the retried Edit went through. So the fix clears the gate after a refusal too. The miss comes from skill loading, not the log. It has the same grader line as ticket 24's untraced miss, so that one was probably a skipped `msnc:scope` too, not the new sentence (unconfirmed, since that run left no trace). 31 s + 23 s wall clock, $0.51 + $0.48.
+- **gates-edit-without-impact**: `gate-refused`, `names-impact` and `unchanged` passed in all 3 runs, so with no shell and no impact the gate still refuses. 41 s, $0.70. Run beside the second WSL2 eval (different machines, no shared `~/.docker`).
+- Test: `test/scope.test.mjs`, "impact run with a different temp dir than the gate (sandboxed Bash) still clears it", runs `sextant impact` with `TMPDIR`/`TMP`/`TEMP` set to one dir and the gate with another, after deleting `.atlas/overlays/`. It failed on the old temp-dir log and passes now.
+- **Undecided:** real sandboxed sessions (not evals) aren't checked. The eval's Bash sandbox is Claude Code's own, and it writes inside the working tree, so they should be fixed too.
+
+## Rerun: failing-check-reports-cause-fix-prevention (ticket 26)
+
+**Date:** 2026-09-23 · **Claude Code:** 2.1.281, Linux build, WSL2 (`--allow-tools Edit Write Bash --keep-temp`, `~/.docker` moved aside) · **Model under test:** `claude-opus-5-5[1m]` · **Judge:** haiku (the default, no `--judge-model`) · threshold unchanged.
+
+**Cause of the split: the Prevention.** The harness stores only votes, so the 6 stored replies (ticket 16 and ticket 22 runs, from each run's `evidence`) went through haiku by hand (`claude -p --model haiku`, 2.1.280) with the harness's own judge prompt, copied from the binary: system "You are a strict, terse evaluation judge for coding-agent traces.", then "You are grading the output of a coding agent against a criterion. Criterion: … Agent output (last_message): … Respond with exactly one word: PASS or FAIL." That prompt didn't reproduce the harness's split (17 of 18 PASS votes, against 6 of 18 in the harness). Asked for its reasoning first, haiku ended 3 of 18 with FAIL, and every FAIL was over the Prevention, never the Cause, Fix or blame:
+
+- run `95JJme` (the harness passed it): "'name that side in the stop report so the fix is one approval, not a question' — is procedural guidance about *reporting the issue better*, not a recipe change that *prevents the issue from recurring* … improves handling when tests fail, but doesn't prevent tests from failing in the first place."
+- run `76jHl7` (no Node): "'When no test runner is on PATH, stop at the start check…' — is a *change to the agent's behavior*, not a *recipe change* … The criterion requires … 'run tests before committing'."
+
+So the old rubric left open whether a Prevention that improves the stop report counts, and haiku answered both ways on replies of the same shape. A second, smaller source of noise: the harness counts a vote as PASS only when the judge's text has `PASS` and no word `fail` anywhere (case-insensitive). In 2 of 18 one-word runs haiku added reasons after PASS anyway, and one of those ("…when tests fail at the start") would count as FAIL. Narrowing the rubric makes that less likely but can't rule it out.
+
+**Reading chosen: the rubric's.** A prevention guards what let the failure in (such as running the tests before committing), because a better stop report makes a repeat quicker to fix but doesn't stop it happening. `skills/implement/SKILL.md:47` now says so: "the recipe change that stops a repeat by guarding what let the failure in (such as running the tests before committing), not a better stop report". `test/skills.test.mjs` pins the line. `skills/verify/SKILL.md:123` keeps its old wording (out of scope here).
+
+| Criterion (old rubric) | Now checked by |
+|---|---|
+| three labelled parts: Cause, Fix, Prevention | `labelled-parts` (regex: each label starts a line, bold or not, followed by `:`, `**`/`__` or the line's end; any order) |
+| cause: `Hi, Ada` where `Hello, Ada!` is expected | `expected-vs-got` (regex: both strings in the reply) |
+| cause names `src/greet.js` or `test/greet.test.js` | `names-file` (regex) |
+| prevention proposed through `/msnc:refine` or as a recipe note | `refine-named` (regex `/msnc:refine`) and `cause-fix-prevention` (llm: a `/msnc:refine` line or a recipe note) |
+| stops before any ticket work; FAIL if it starts ticket 01 | `no-ticket-work` (Agent 0×, unchanged), `no-shout` (new: `src/greet.js` has no `shout`) |
+| FAIL if it attributes the failure to a person | `no-blame` (regex, unchanged) and `cause-fix-prevention` (llm) |
+| fix: change the greeting back or update the test, with a recommended answer | `cause-fix-prevention` (llm) |
+| prevention is a recipe change, such as running the tests before committing | `cause-fix-prevention` (llm), now saying it must guard what let the failing code in, and that a Prevention that only changes how a failure is reported or handled (naming a side or a ticket in the stop report) fails |
+
+The judge is now told the parts, strings, file, `/msnc:refine`, blame phrases and ticket 01 are checked elsewhere, and judges only the Fix's recommendation, the Prevention and the blame.
+
+- Offline, before the runs: the new regexes pass all 15 stored replies (the 6 old ones, the 9 below) and give the intended verdict on 11 hand-made ones: each label missing in turn, labels inline in one paragraph or as prose ("Cause is…"), `/msnc:refine` missing, no file, `Hi, Ada` or `Hello, Ada!` missing (fail); Fix before Cause, labels as `###` headings (pass). 130 checks, 0 wrong.
+- The new rubric by hand (harness prompt, 3 votes each): the three Node-reachable old replies, whose Prevention improves the stop report, get FAIL on 8 of 9 votes. The same replies with a cause-aimed Prevention ("Before each commit, run the test suite and stop the commit if it is red…", a pre-commit step running `node --test`, a recipe note) get PASS on 9 of 9. The no-Node replies (Prevention about a missing test runner) get a mix, 5 PASS and 4 FAIL.
+
+| Results folder | Graders | Result | Rate | Failing graders |
+|---|---|---|---|---|
+| `2026-09-24T03-22-05-491Z` (ticket 22) | old | **fail** | 1/3 (0.67) | `cause-fix-prevention` (FAIL ×3) in runs 2–3 |
+| `2026-09-24T04-13-57-645Z` | new, first `labelled-parts` | **fail** (regex bug) | 2/3 (0.96) | `labelled-parts` in run 2 |
+| `2026-09-24T04-15-07-420Z` | new, `labelled-parts` fixed | pass | 3/3 (1.00) | none |
+| `2026-09-24T04-15-39-322Z` | same | pass | 3/3 (1.00) | none |
+
+- The regex bug: run 2 of the first rerun (`/tmp/claude-eval-TseOBa`) wrote "**Prevention** (to propose through `/msnc:refine msnc:implement`, not applied): …". The label was there, but the first `labelled-parts` wanted a `:` or the line's end after it. It now also takes a closing `**` or `__`. The judge voted PASS ×3 on that run.
+- Every run in all three reruns stopped before ticket 01 with no Agent call and no edit (4–5 turns), and the judge voted PASS ×3 on each of the 9: 27 of 27. Each Prevention now guards the commit, for example "Before every commit, run the full test suite and refuse the commit if it is red, so a changed string can't land without a matching test update" (`-ghjZRj`), "Add a pre-commit hook that runs `node --test` so a commit that turns the tests red can't land on the default branch" (`-U8Annb`), "Run `node --test` before every commit, including `chore:` commits, and refuse to commit on red. That check would have stopped `ab31a16`." (`-50Syk5`).
+- 23–24 s wall clock and $0.48–0.50 per eval.
+- **Undecided:** most Preventions propose "run the full suite before each ticket commit" for `msnc:implement`. That is a real change (section 2 step 3 reruns only that ticket's tests), but the fixture's drift came from a `chore:` commit made outside the recipe, so it would have caught this one only as a hook or a note for hand commits too. The rubric accepts either, and ticket 26 doesn't settle which recipe should carry it.
+
+## Rerun: implement-commits-carry-each-why (ticket 27)
+
+**Date:** 2026-09-23 · **Claude Code:** 2.1.281, Linux build, WSL2 (`--allow-tools Edit Write Bash --keep-temp -j 3`, `~/.docker` moved aside) · **Model under test:** `claude-opus-5-5[1m]` · graders and thresholds unchanged, fixtures unchanged.
+
+**Real sandboxed sessions show the stubs too, so the fix belongs in the skill.** A plain `claude -p` session (no plugin, no eval) ran in a fresh `/tmp/msnc-sbx-*` repo with one commit and `--settings '{"sandbox":{"enabled":true,"autoAllowBashIfSandboxed":true,"allowUnsandboxedCommands":false}}' --allowedTools Bash`. Its Bash call printed 12 untracked entries from `git status --porcelain`: `.bash_profile`, `.bashrc`, `.claude/`, `.gitconfig`, `.gitmodules`, `.idea`, `.mcp.json`, `.profile`, `.ripgreprc`, `.vscode`, `.zprofile`, `.zshrc`. `ls -la` showed each as `crw-rw-rw- 1 nobody nogroup 1, 3` (`/dev/null`), and `/proc/self/mountinfo` had them as `ro` bind mounts. `.claude/` isn't one stub but a folder of them: `-uall` lists `.claude/settings.json`, `settings.local.json`, `launch.json`, `agents`, `skills`, `hooks` and more, all character devices. The host saw a clean tree before and after, apart from an empty `.claude/.cc-writes/`, which git doesn't list. The eval run had just one more stub, `.eval-artifacts` (a character device too, in `-SbLH5t` and `-fosjLa`), so that one comes from the harness. Two more checks in sandboxed sessions:
+
+- Protected files that exist and are tracked (`.mcp.json`, `.claude/settings.json`) stay real read-only files with no status change. Stubs appear only for missing names, so they're always untracked.
+- `git add -A` fails outright with stubs present ("error: .bash_profile: can only add regular files, symbolic links or git-directories"), so staging has to name files.
+
+**Fix.** `skills/implement/SKILL.md:16` now lists changes with `git status --porcelain -uall | while read -r s p; do [ "$s" = '??' ] && [ -c "$p" ] || echo "$s $p"; done`, which drops untracked character devices, and says the sandbox's stubs "don't count and are never staged: stage by name, never `git add -A`". Step 7's stray-change check now ends "sandbox stubs don't count". A real file is never a character device, so tracked changes and real untracked files still print. In a sandboxed session the filter printed nothing with only stubs, then ` M README.md`, `?? "a b/c.txt"` and `?? real.txt` after those were made. A quoted path (spaces) fails `-c`, so it counts as a change. `test/skills.test.mjs` pins the command, the wording and step 7. The skill went from 6,135 to 6,425 bytes.
+
+| Case | Results folder | Result | Rate | Failing graders |
+|---|---|---|---|---|
+| implement-commits-carry-each-why | `2026-09-24T04-23-35-351Z` | pass | 3/3 (1.00) | none |
+| implement-commits-carry-each-why | `2026-09-24T04-25-38-452Z` | pass | 3/3 (1.00) | none |
+| implement-pace-stops-with-handoff | `2026-09-24T04-27-16-574Z` | pass | 3/3 (1.00) | none |
+
+- **implement-commits-carry-each-why: 6/6** (was 2/3). Every run's first Bash call was `git rev-parse --is-inside-work-tree && git status --porcelain -uall | while read …` from the skill, and every run went on: 2 Agent calls, commits in order (Bash@12 before Bash@19, @9 before @15, @12 before @23; @13 before @24, @12 before @23, @10 before @16), both `Why:` lines matched. Runs `/tmp/claude-eval-DnxfoS`, `-RgSf2S`, `-4o76Rp`, `-mvTG0M`, `-moivwg`, `-ItNi9O`. 89 s + 88 s wall clock, $1.93 + $1.83.
+- **implement-pace-stops-with-handoff: 3/3**, unchanged. `handoff-written` judge PASS ×3 on each run, `state-line`, `no-wave` and `subagent-per-ticket` passed (`-1ti9o3`, `-WpOhST`, `-HojlLE`). 94 s, $2.02.
+- **Never staged:** all 18 commits across the 9 runs staged by name (`git add src/greet.js test/greet.test.js docs/decisions.md "$f"`), never a stub and never `-A`.
+- **Not covered by an eval:** the fixtures have no real uncommitted change, so "still stops on real changes" rests on the sandboxed filter check above and the skill pin.
+
+## Review fixes (tickets 23–27)
+
+**Date:** 2026-09-23 · **Model under test:** `claude-opus-5-5[1m]` · graders and thresholds unchanged, fixtures unchanged.
+
+**Changes.** `recordImpact` (`skills/scope/scripts/impact-log.mjs`) drops log lines past `IMPACT_TTL_MS` on each write and writes `.atlas/overlays/.gitignore` (`*`) when it's missing, so a log written before any scan can't be committed. Patch 0003 was regenerated with upstream-side tests in `scripts/impact-fallback.test.mjs`. Implement's stub filter now runs from the top level (`skills/implement/SKILL.md:16`). Scope's gate sentence drops the `…/sextant.mjs` example: the reply quotes the refusal's command "exactly as printed, absolute path and file included". Verify's Prevention now matches implement's (ticket 26).
+
+| Case | Where | Results folder | Result | Rate |
+|---|---|---|---|---|
+| indexed-repo-runs-impact-before-edit | WSL2, 2.1.281 | `2026-09-24T04-40-36-210Z` | fail | 0.78 (2/3) |
+| indexed-repo-runs-impact-before-edit (rerun, `--keep-temp`) | WSL2, 2.1.281 | `2026-09-24T04-41-35-717Z` | pass | 3/3 (1.00) |
+| implement-commits-carry-each-why | WSL2, 2.1.281 | `2026-09-24T04-42-55-261Z` | pass | 3/3 (1.00) |
+| indexed-repo-gates-edit-without-impact | native Windows, 2.1.280, no shell | `2026-09-24T04-44-37-245Z` | pass | 3/3 (1.00) |
+
+- **runs-impact-before-edit, first run:** `-u4ZFnO` 1.00, `-zoQXc2` 1.00, `-Z8n7JG` 0.33 ("Bash@6 does NOT precede Edit@4"; `lower-cased` passed, so a later edit went through). That run left no trace (no `--keep-temp`), so the cause is unconfirmed. It matches the earlier misses where the run edited first, was refused, ran the printed impact command and retried. **Rerun:** `-K5tgUN`, `-BYAJZL`, `-XIDynQ` all 1.00, no gate refusal in any trace. 27 s + 28 s, $0.52 + $0.50.
+- **implement-commits-carry-each-why:** `-RHsNiP`, `-e3sdot`, `-caPYmr` all 1.00: 2 Agent calls each, commits in order, both `Why:` lines. 96 s, $1.95.
+- **gates-edit-without-impact:** 3 runs, all 1.00 (`gate-refused`, `names-impact`, `unchanged`). 47 s, $0.75.

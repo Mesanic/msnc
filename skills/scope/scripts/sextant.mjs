@@ -17,7 +17,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { mergeIntoAtlas } from './merge.mjs';
-import { impactLogPath } from './impact-log.mjs';
+import { recordImpact } from './impact-log.mjs';
 
 const HELP = `sextant — one instrument for reading and changing a codebase
 
@@ -482,7 +482,7 @@ function resolveTarget(scalpel, root, key, onMiss = die) {
 // unsatisfiable for exactly those files. Answer from the file graph instead: its
 // importers, transitively to --depth, and record the entry the gate reads.
 function fileGraphImpact(root, file, depth) {
-  try { fs.appendFileSync(impactLogPath(root), `${Date.now()} ${file}\n`); } catch { /* gate falls back to blocking */ }
+  recordImpact(root, file);
   console.log(`impact ${file} [up] (file graph only — no symbols for this file, so no line spans or tests)`);
   const max = Number(depth) || 32;
   const seen = new Set([file]);
@@ -509,8 +509,8 @@ function cmdImpact(root, { atlas, scalpel }, key, depth) {
     (atlas && fs.existsSync(path.resolve(root, key)) && readAtlasImporters(root, file) !== null ? null : die(msg)));
   if (!target) return fileGraphImpact(root, file, depth);
   // Record the file this answer covers, so the pre-edit hook can tell an edit that was
-  // analysed from one that was not. Best-effort: a read-only temp dir must not fail impact.
-  try { fs.appendFileSync(impactLogPath(root), `${Date.now()} ${target.path}\n`); } catch { /* gate falls back to blocking */ }
+  // analysed from one that was not.
+  recordImpact(root, target.path);
 
   // 1. Scalpel's report, passed through verbatim — it is budgeted, carries
   //    confidence labels and the test list, and must not be re-implemented here.
