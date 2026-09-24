@@ -1,0 +1,35 @@
+{
+  "name": "msnc",
+  "version": "0.1.0",
+  "description": "More Signal, No Clutter",
+  "author": { "name": "Mesanic" },
+  "repository": "https://github.com/Mesanic/msnc",
+  "license": "MIT",
+  "userConfig": {
+    "clear": {
+      "type": "boolean",
+      "title": "Clear",
+      "description": "Load the Clear reply shape in every session and subagent",
+      "default": true
+    },
+    "trim_default": {
+      "type": "string",
+      "title": "Trim default level",
+      "description": "Trim level at session start: off (on demand), lite, full or ultra",
+      "default": "off"
+    },
+    "scope_gate": {
+      "type": "boolean",
+      "title": "Scope gate",
+      "description": "Refuse edits to files in the Scope index until sextant impact has run on them",
+      "default": true
+    },
+    "pace": {
+      "type": "number",
+      "title": "Pace",
+      "description": "Tickets /msnc:implement works before it offers a stop; 0 = never offer one",
+      "default": 3,
+      "min": 0
+    }
+  }
+}

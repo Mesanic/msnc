@@ -15,8 +15,15 @@
 
 **Blocked by:** 03, 05
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Eval: a reversible naming choice is decided and logged, not asked.
-- [ ] Eval: deleting data triggers exactly one question, with a recommended answer.
-- [ ] `/msnc:grill` accepts "accept all" and logs every accepted recommendation.
+- [x] Eval (written, run in ticket 09): a reversible naming choice is decided and logged, not asked.
+- [x] Eval (written, run in ticket 09): deleting data triggers exactly one question, with a recommended answer.
+- [x] `/msnc:grill` accepts "accept all" and logs every accepted recommendation.
+
+## Comments
+
+- 2026-09-23 · Tuner is at exactly 800 chars (~200 tokens, the cap): bullets removed and lines tightened; log format says `undo` for "how to reverse" · keeps the ticket 12 cap · any new Tuner rule must displace wording or raise the cap.
+- grill logs every settled answer (including ones the user wrote), not only accepted recommendations; in plan mode the log lines wait until plan mode ends.
+- implementer makes reversible choices itself and reports them on a `Decisions:` line; implement writes them to the ticket's `## Comments` and `docs/decisions.md` in the ticket's commit. No `docs/decisions.md` template shipped.
+- Possible tension: Clear's "Real ambiguity → one short question" vs Tuner's "decide". Clear left unchanged.

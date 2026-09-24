@@ -17,9 +17,16 @@ The upstreams are `DietrichGebert/ponytail`, `ayghri/i-have-adhd`, `mattpocock/s
 
 **Blocked by:** 01
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] `node scripts/sync-upstream.mjs --check` lists every upstream and reports "in sync" or the differing files.
-- [ ] The notices file contains all five upstream licenses with exact copyright lines.
-- [ ] A `node:test` case fails if any copied folder lacks LICENSE or UPSTREAM.md.
-- [ ] Runs with Node only, on Windows and POSIX.
+- [x] `node scripts/sync-upstream.mjs --check` lists every upstream and reports "in sync" or the differing files.
+- [x] The notices file contains all five upstream licenses with exact copyright lines.
+- [x] A `node:test` case fails if any copied folder lacks LICENSE or UPSTREAM.md.
+- [x] Runs with Node only, on Windows and POSIX.
+
+## Comments
+
+- 2026-09-23 · Pins: ponytail v4.10.0 `1d95ff7`, i-have-adhd main `839872f`, mattpocock/skills v1.2.3 `6acc160`, ECC v2.2.1 `5064474`, sextant main `2fa30a3` (private; reachable with local git credentials) · latest release tag per the ticket · move a pin in `vendor.json` and regenerate its notices section.
+- mattpocock v1.2.3 differs from the local clone `c55ee46` in 13 files of the skills ticket 05 copies; ticket 05 copies from the pinned commit or moves the pin.
+- `paths` entries are folders only; a single-file copy (ticket 12) needs a small change. sextant's own tree-sitter notices must travel with the engine in ticket 07.
+- Sync/test code uses `import.meta.main` (Node 24.2+). Only run on Windows so far.

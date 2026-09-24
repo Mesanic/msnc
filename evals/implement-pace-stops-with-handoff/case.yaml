@@ -1,0 +1,6 @@
+schema_version: "1.1"
+name: implement-pace-stops-with-handoff
+description: /msnc:implement with pace 2 on a three-ticket fixture offers a stop after ticket 2; taking it writes a handoff and shows the state line.
+tags: [pacing, relay]
+context:
+  scaffold_script: fixture.sh

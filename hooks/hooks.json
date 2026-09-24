@@ -1,0 +1,55 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup|resume|clear|compact",
+        "hooks": [{ "type": "command", "command": "node", "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/msnc.mjs"], "timeout": 5 }]
+      }
+    ],
+    "SubagentStart": [
+      {
+        "hooks": [{ "type": "command", "command": "node", "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/msnc.mjs"], "timeout": 5 }]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [{ "type": "command", "command": "node", "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/msnc.mjs"], "timeout": 5 }]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Skill",
+        "hooks": [{ "type": "command", "command": "node", "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/msnc.mjs"], "timeout": 5 }]
+      }
+    ],
+    "UserPromptExpansion": [
+      {
+        "hooks": [{ "type": "command", "command": "node", "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/msnc.mjs"], "timeout": 5 }]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit|NotebookEdit",
+        "hooks": [{ "type": "command", "command": "node", "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/msnc.mjs"], "timeout": 5 }]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          { "type": "command", "command": "node", "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/msnc.mjs"], "timeout": 5, "if": "Bash(sed *)" },
+          { "type": "command", "command": "node", "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/msnc.mjs"], "timeout": 5, "if": "Bash(perl *)" },
+          { "type": "command", "command": "node", "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/msnc.mjs"], "timeout": 5, "if": "Bash(ruby *)" },
+          { "type": "command", "command": "node", "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/msnc.mjs"], "timeout": 5, "if": "Bash(tee *)" },
+          { "type": "command", "command": "node", "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/msnc.mjs"], "timeout": 5, "if": "Bash(cp *)" },
+          { "type": "command", "command": "node", "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/msnc.mjs"], "timeout": 5, "if": "Bash(mv *)" },
+          { "type": "command", "command": "node", "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/msnc.mjs"], "timeout": 5, "if": "Bash(install *)" },
+          { "type": "command", "command": "node", "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/msnc.mjs"], "timeout": 5, "if": "Bash(rsync *)" },
+          { "type": "command", "command": "node", "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/msnc.mjs"], "timeout": 5, "if": "Bash(rm *)" },
+          { "type": "command", "command": "node", "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/msnc.mjs"], "timeout": 5, "if": "Bash(unlink *)" },
+          { "type": "command", "command": "node", "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/msnc.mjs"], "timeout": 5, "if": "Bash(truncate *)" },
+          { "type": "command", "command": "node", "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/msnc.mjs"], "timeout": 5, "if": "Bash(shred *)" },
+          { "type": "command", "command": "node", "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/msnc.mjs"], "timeout": 5, "if": "Bash(dd *)" }
+        ]
+      }
+    ]
+  }
+}

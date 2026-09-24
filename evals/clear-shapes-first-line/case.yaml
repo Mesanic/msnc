@@ -1,0 +1,8 @@
+schema_version: "1.1"
+name: clear-shapes-first-line
+description: >
+  With Clear on (the default), a how-to reply opens with the action itself, not an announcing line. A case can't
+  set the `clear` option (a run's user config is throwaway, and pluginConfigs in the workspace's
+  .claude/settings.json is ignored), so run it with the no-plugin baseline (--ablation with-without): the W/OUT
+  arm stands in for Clear off, and the delta on first-line is the change Clear makes.
+tags: [clear]

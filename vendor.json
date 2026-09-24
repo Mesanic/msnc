@@ -1,0 +1,98 @@
+[
+  {
+    "repo": "DietrichGebert/ponytail",
+    "ref": "v4.10.0",
+    "commit": "1d95ff7d39de12d87014ea40d4e22201bddc501b",
+    "license": "MIT",
+    "paths": {
+      "skills/trim": "skills/ponytail",
+      "skills/trim-review": "skills/ponytail-review",
+      "skills/trim-audit": "skills/ponytail-audit",
+      "skills/trim-debt": "skills/ponytail-debt"
+    },
+    "changes": [
+      "Skills renamed ponytail, ponytail-review, ponytail-audit, ponytail-debt → trim, trim-review, trim-audit, trim-debt; /ponytail → /msnc:trim, \"stop ponytail\" → \"stop trim\"",
+      "trim: caller check reads \"repo has a Scope index → `sextant impact`; otherwise grep every caller\"",
+      "trim: marker comment `ponytail:` → `trim:`; trim-debt harvests `trim:` and legacy `ponytail:`",
+      "trim: Rules asks the why behind every new file, dependency or abstraction; no why → don't add it",
+      "trim: \"Complex request?\" → \"Open question in a small task?\" (ship the lazy version, never stall), so the Tuner's sizing decides what large work does",
+      "trim: description opens with \"Load before the first edit of any code change, even a one-line fix.\"",
+      "trim-review, trim-audit, trim-debt: disable-model-invocation: true",
+      "trim/levels/{lite,full,ultra}.md added: the skill filtered per level by upstream hooks/ponytail-instructions.js, for the MSNC dispatcher",
+      "Details in each folder's UPSTREAM.md"
+    ]
+  },
+  {
+    "repo": "ayghri/i-have-adhd",
+    "ref": "main",
+    "commit": "839872f9d1cd634fed642b4589ce7226199cc15f",
+    "license": "MIT",
+    "paths": {},
+    "changes": []
+  },
+  {
+    "repo": "mattpocock/skills",
+    "ref": "v1.2.3",
+    "commit": "6acc160e4e0cd062dbbbd7a1b26ae92855edf07e",
+    "license": "MIT",
+    "paths": {
+      "skills/grill": "skills/productivity/grilling",
+      "skills/spec": "skills/engineering/to-spec",
+      "skills/tickets": "skills/engineering/to-tickets",
+      "skills/tdd": "skills/engineering/tdd",
+      "skills/codebase-design": "skills/engineering/codebase-design",
+      "skills/rephrase": "skills/productivity/wait-what",
+      "skills/handoff": "skills/productivity/handoff",
+      "skills/setup": "skills/engineering/setup-matt-pocock-skills"
+    },
+    "changes": [
+      "Skills renamed grilling, to-spec, to-tickets → grill, spec, tickets; tdd and codebase-design keep their names",
+      "grill: grill-me (a typed alias that ran /grilling) merged in; typed as /msnc:grill, still model-invoked",
+      "grill: each round offers \"accept all\" (take every recommendation); each settled answer is appended to docs/decisions.md",
+      "Cross-references: /grilling → /msnc:grill, /setup-matt-pocock-skills → /msnc:setup, /codebase-design → /msnc:codebase-design, the code-review skill → the built-in /code-review",
+      "spec, tickets: tracker read from docs/agents/issue-tracker.md; none there → the local Markdown tracker under .scratch/<feature-slug>/",
+      "tickets: every ticket carries a Why line linked to a user story; a ticket without one is never published",
+      "Skills renamed wait-what, setup-matt-pocock-skills → rephrase, setup; handoff keeps its name. All three stay typed-only",
+      "rephrase: CONTEXT.md vocabulary only when the file exists",
+      "setup: rewritten around MSNC (options, context-mode, local tracker default, /msnc:scope init, subagent model); every settings change shown and confirmed before writing. Not copied: domain.md, triage-labels.md (MSNC ships no triage or domain-modeling skills)",
+      "Not copied: agents/openai.yaml (Codex harness metadata)",
+      "Details in each folder's UPSTREAM.md"
+    ]
+  },
+  {
+    "repo": "affaan-m/ECC",
+    "ref": "v2.2.1",
+    "commit": "5064474d4d762dc9640234a41617cccb79185cec",
+    "license": "MIT",
+    "paths": {
+      "skills/aside": "commands/aside.md",
+      "skills/verify": "skills/verification-loop",
+      "skills/doctor": "skills/context-budget",
+      "skills/declutter": "skills/config-gc"
+    },
+    "changes": [
+      "Renamed: aside command → aside skill; verification-loop, context-budget, config-gc → verify, doctor, declutter. All four typed-only",
+      "verify: sextant check phase when the repo has a Scope index",
+      "doctor: MSNC checks added, run by doctor.mjs (options, always-loaded estimate, duplicate skills, project plugin settings, old Scope layouts)",
+      "declutter: MSNC duplicates and project plugin overrides added as scan channels; trash-first and ask-per-item rules kept",
+      "Details in each folder's UPSTREAM.md"
+    ]
+  },
+  {
+    "repo": "Mesanic/sextant",
+    "ref": "main",
+    "commit": "2fa30a379e707e959cae398a80c553c063b2a0df",
+    "license": "MIT",
+    "paths": {
+      "skills/scope": "."
+    },
+    "changes": [
+      "Copy = pin + patches/sextant/0001 (impact answers CSS/HTML from the file graph and records the entry) and 0002 (scan --no-claude-md); not yet upstream, so sync --check reports scripts/impact-fallback.test.mjs as local only (and part of the scripts/sextant.mjs change) until the pin moves",
+      "Repo root copied to skills/scope as the scope skill; SKILL.md rewritten for MSNC (model-invoked, CLI via ${CLAUDE_SKILL_DIR}, /msnc:scope init)",
+      "sextant.mjs: scan never writes project hooks or a CLAUDE.md block (MSNC dispatcher is the gate, Tuner the routing)",
+      "Edit gate rebuilt in hooks/msnc.mjs from scripts/pre-edit-hook.mjs",
+      "Not copied: grep-nudge-hook.mjs (dropped), pre-edit-hook.mjs, session-hook.mjs, README.md, .gitignore, .gitattributes",
+      "Details in skills/scope/UPSTREAM.md"
+    ]
+  }
+]

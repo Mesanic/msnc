@@ -1,0 +1,6 @@
+schema_version: "1.1"
+name: small-fix-goes-straight-to-edit
+description: A one-line fix is sized small and edited straight away, with no tickets, grill or spec.
+tags: [sizing]
+context:
+  scaffold_script: fixture.sh

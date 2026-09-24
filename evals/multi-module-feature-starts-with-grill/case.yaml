@@ -1,0 +1,6 @@
+schema_version: "1.1"
+name: multi-module-feature-starts-with-grill
+description: A feature request that crosses several modules and leaves open questions is sized large and starts with /msnc:grill, then /msnc:spec, before any code changes.
+tags: [sizing]
+context:
+  scaffold_script: fixture.sh

@@ -1,0 +1,6 @@
+schema_version: "1.1"
+name: trim-loads-before-first-edit
+description: A code task loads msnc:trim through the Skill tool before its first Edit.
+tags: [routing, trim]
+context:
+  scaffold_script: fixture.sh

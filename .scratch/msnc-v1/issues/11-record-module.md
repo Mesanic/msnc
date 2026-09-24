@@ -17,9 +17,17 @@ Credit ProcessDriven as "principles inspired by ProcessDriven by Layla Pomper", 
 
 **Blocked by:** 03, 06
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] In a fixture session, `/msnc:record` produces a recipe with why, when to use, steps and done-check, as a typed-only skill, and writes nothing before a yes.
-- [ ] `/msnc:refine` proposes exactly one change with its evidence, both with and without context-mode installed.
-- [ ] A `node:test` case shows notes returned next to the result after a `Skill` call, and no output when no notes exist.
-- [ ] `/msnc:doctor` lists recipes unused for 30 days and the most-corrected ones.
+- [x] In a fixture session, `/msnc:record` produces a recipe with why, when to use, steps and done-check, as a typed-only skill, and writes nothing before a yes.
+- [x] `/msnc:refine` proposes exactly one change with its evidence, both with and without context-mode installed.
+- [x] A `node:test` case shows notes returned next to the result after a `Skill` call, and no output when no notes exist.
+- [x] `/msnc:doctor` lists recipes unused for 30 days and the most-corrected ones.
+
+## Comments
+
+- 2026-09-23 · Also registered `UserPromptExpansion` (beyond PostToolUse `Skill`) · typing `/name` skips the Skill tool, and recipes are typed-only, so notes would never appear otherwise · drop the hooks.json entry and dispatcher case to reverse.
+- Note files: `plugin:skill` → `notes/<plugin>/<skill>.md` (`:` is invalid on Windows); plain skills → `notes/<skill>.md`. Project notes first, then personal.
+- doctor: a recipe is a skill with `disable-model-invocation: true` in project or personal `.claude/skills`; use and corrections come from all projects' transcripts changed in the last 30 days (via `skills/refine/corrections.mjs`); unused = no use and no `SKILL.md` change in 30 days. doctor now takes ~1.3 s here.
+- Credit links https://processdriven.co (from its About page), with the ® notice and "not affiliated with or endorsed by".
+- Open: `corrections.mjs` ignores `CLAUDE_CONFIG_DIR`; any typed command (even `/model`) counts as a skill use; eval transcripts are hand-built. The context-mode path of refine is covered by a wording test only. Evals written in `evals/`, not run (ticket 09).
