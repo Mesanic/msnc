@@ -10,9 +10,9 @@ Hackathon keeps its local ECC install. Its `SEXTANT_HOOK=off` allow rule can go 
 
 **Blocked by:** 02
 
-**Status:** ready-for-human
+**Status:** done
 
-- [ ] `sextant impact` works in each repo through MSNC.
+- [x] `sextant impact` (now `scope impact`) works in each repo through MSNC.
 - [x] No repo still contains a copied sextant engine or sextant hook entries.
 
 ## Comments
@@ -24,3 +24,4 @@ Hackathon keeps its local ECC install. Its `SEXTANT_HOOK=off` allow rule can go 
 - Scans: `sextant scan` ran twice per repo. The second run showed 0 dead everywhere and 0 changed in all but Roundwell, which keeps reporting 9 changed: those are 9 stale summaries that `sextant verify` should clear. No scan wrote a `CLAUDE.md` block or project hooks, and `grep -rn "sextant\|atlas/scripts\|scalpel" .claude/settings*.json` finds nothing in any repo.
 - **Box 1 left open because of Map v2.** Scope skips any folder that holds a `SKILL.md` (`engine/atlas/scripts/lib/scan.mjs` `skillTreeMatcher`, `engine/scalpel/scripts/lib/walk.mjs:119`). Map v2's product *is* `skills/scalpel/`, so its symbol graph is empty (0 files) and its file graph only sees `.superpowers/sdd` and `.map/index`. `impact` runs through MSNC but has no code to answer about (`no symbol named "skills/scalpel/scripts/lib/walk.mjs"`). Before this passes, Scope needs a way to index a repo whose own source is a skill folder.
 - Left: the `atlas` blocks in the `CLAUDE.md` files still point at the removed `atlas` skill. MSNC's generated `.atlas/MAP.md` howto still says `tools/sextant/scripts/sextant.mjs  # or .claude/skills/sextant/...`. The empty `.claude/skills/` folders were left in place.
+- 2026-09-24 · Done, with Map v2 dropped: it was archived as `Mesanic/map-v2`. Each of the other four repos got a commit for this ticket (Maji `aba8ec5`, Roundwell `cc983b6`, Roundwell v2 `38153be`, Hackathon `5242c10`), then the Scope rename's move to `.scope/` (scope-rename ticket 02). The `atlas:begin` blocks became `## Scope records` sections that keep the project rules they carried. `scope impact` works and the edit gate refuses and then clears in all four.

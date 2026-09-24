@@ -14,10 +14,26 @@ Then close rollout ticket 04 (its progress commit is on MSNC's local branch `cho
 
 **Blocked by:** 01 — Rename Scope inside MSNC (merged).
 
-**Status:** ready-for-human
+**Status:** done
 
-- [ ] Each of the four repos has a ticket-04 commit followed by a move commit on its current branch; the three with remotes are pushed.
-- [ ] No repo has an `.atlas/` or `.map/` folder, an `atlas:begin` block, or an ignore rule naming `.atlas`; `/msnc:doctor` reports no old Scope layout in any of them.
-- [ ] Agent-written node and `relates` edge counts after a rescan match the counts before the move.
-- [ ] `scope.mjs impact` works in each repo.
-- [ ] Rollout ticket 04 is marked done with Map v2 dropped, and the user has been told the backups can go.
+- [x] Each of the four repos has a ticket-04 commit followed by a move commit on its current branch; the three with remotes are pushed.
+- [x] No repo has an `.atlas/` or `.map/` folder, an `atlas:begin` block, or an ignore rule naming `.atlas`; `/msnc:doctor` reports no old Scope layout in any of them.
+- [x] Agent-written node and `relates` edge counts after a rescan match the counts before the move.
+- [x] `scope.mjs impact` works in each repo.
+- [x] Rollout ticket 04 is marked done with Map v2 dropped, and the user has been told the backups can go.
+
+## Comments
+
+- 2026-09-24 · Per repo, on its current branch:
+
+  | Repo | Ticket-04 commit | Move commit | Pushed |
+  |---|---|---|---|
+  | Maji (`master`) | `aba8ec5` | `04a28a9` | yes |
+  | Roundwell (`phase-1-termination-reopen`) | `cc983b6` | `eacbe3a` | yes, no AI trailer (its `CLAUDE.md` forbids one) |
+  | Roundwell v2 (`main`) | `38153be` | `087cda6` | local only |
+  | Hackathon (`claude/audit-remediation`) | `5242c10` | `2c3e5e4` | yes |
+
+- Agent-written nodes and `relates` edges are unchanged: Maji 29/11, Roundwell 104/105, Roundwell v2 149/52, Hackathon 6/0. `scope prune` dropped the dead `.map/` file nodes (the old file graph had indexed them), so 0 dead. No `.scope/` nodes are in any graph. Each `MAP.md` has one overview and one how-to section; the old "— atlas map" titles now read "— repo map", as the engine writes for new maps.
+- The `atlas:begin` blocks were not deleted as first decided: they carried project rules. Each became a `## Scope records` section with the new command names (Roundwell keeps its founder-approval paragraph word for word); the routing lines went, since the Tuner owns routing.
+- Checks with the installed plugin: the gate refuses an unchecked mapped file in each repo and clears after `scope impact` (Maji `maji/config.py` 10 direct, Roundwell `apps/api/src/app.ts` 2, Roundwell v2 `apps/engine/src/trpc.ts` 16, Hackathon `src/engine/cadence.ts` 10); doctor reports `Old Scope layout: none` in all four.
+- The backups `~/.claude/backups/sextant-migration-2026-09-23/` and `~/.claude/backups/tool-comparison-engines-2026-09-24/` can now be deleted by the user.
