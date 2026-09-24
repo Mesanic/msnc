@@ -13,7 +13,7 @@ The pin includes three commits MSNC wrote and pushed to `Mesanic/sextant` (rollo
 2. `9f16c18` `scan --no-claude-md` (or `SEXTANT_NO_CLAUDE_MD=1`) skips the `CLAUDE.md` routing block.
 3. `bf4ceb7` The impact log moves from the OS temp dir to `.atlas/overlays/impact.log` (`scripts/impact-log.mjs`), and impact creates `overlays/` when it's missing. Sandboxed Bash has its own `TMPDIR` and the gate hook runs outside the sandbox, so a temp-dir log never cleared the gate (MSNC ticket 25). Every scan keeps `.atlas/overlays/` gitignored, and impact writes `overlays/.gitignore` (`*`) so the log stays out of commits before any scan. Each record drops entries past the TTL, so the log never grows. Tests: `scripts/impact-fallback.test.mjs` (location, TTL, git) and this repo's `test/scope.test.mjs` (impact and the gate with different temp dirs).
 
-The local copy at `Tool Comparison/tools/sextant` is byte-identical to v2.0.0, so its merge.mjs fix is already in the pin; no separate patch.
+The local copy at `Tool Comparison/tools/sextant` was byte-identical to v2.0.0, so its merge.mjs fix is already in the pin; no separate patch. That copy, with its `atlas` and `scalpel` siblings, moved to `~/.claude/backups/tool-comparison-engines-2026-09-24/` on 2026-09-24.
 
 ## Local changes
 
@@ -21,4 +21,6 @@ The local copy at `Tool Comparison/tools/sextant` is byte-identical to v2.0.0, s
 - `SKILL.md` rewritten for MSNC: named `scope`, short model-invoked description, the CLI path via `${CLAUDE_SKILL_DIR}`, `/msnc:scope init`, the core loop, impact triage and the MSNC gate.
 - The edit gate is rebuilt in `hooks/msnc.mjs` from `scripts/pre-edit-hook.mjs` (`bashTargets` and the lookup at lines 90-99). It imports this copy's `scripts/impact-log.mjs` for the log location.
 - Not copied: `scripts/grep-nudge-hook.mjs` (dropped; Tuner carries that rule), `scripts/pre-edit-hook.mjs` (rebuilt in the dispatcher), `scripts/session-hook.mjs` (Tuner announces Scope), `README.md`, `.gitignore`, `.gitattributes`.
+- Skill-folder skip rule (`engine/atlas/scripts/lib/scan.mjs` `skillTreeMatcher`, `engine/scalpel/scripts/lib/walk.mjs`): a plugin repo (`.claude-plugin/plugin.json` at the root) indexes its own skill folders; skills under `.claude/` stay skipped. Before, a repo like MSNC mapped none of its code. Test in this repo's `test/scope.test.mjs`.
+- `engine/atlas/scripts/lib/scan.mjs` `MAP.md` howto: commands name `<scope>` (the `msnc:scope` skill folder) instead of `tools/sextant/...`, and set no `$S` variable, so the impact call stays visible to the gate.
 - `THIRD-PARTY-NOTICES.md` kept: the tree-sitter runtime and grammars under `engine/scalpel/scripts/vendor/` are MIT, each under its own copyright.

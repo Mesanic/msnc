@@ -1,5 +1,5 @@
 import { open, readdir } from 'node:fs/promises';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { LANGUAGES, languageForFile } from '../parsers/languages.mjs';
 import { cmpStr, toPosix } from './util.mjs';
@@ -101,6 +101,7 @@ export function readIgnoreDirs(rootDir) {
 export async function walkSourceFiles(rootDir, ignoreDirs = readIgnoreDirs(rootDir)) {
   const exts = extensionSet();
   const extra = new Set(ignoreDirs);
+  const plugin = existsSync(path.join(rootDir, '.claude-plugin', 'plugin.json'));
   const found = [];
 
   async function visit(dir) {
@@ -115,8 +116,10 @@ export async function walkSourceFiles(rootDir, ignoreDirs = readIgnoreDirs(rootD
     // any other. Its source is tooling that happens to live in the repo: nothing here calls it,
     // nobody edits it from this project, and its symbols would outnumber the repo's own. The
     // marker file is the test, so it covers skills wherever they are vendored and ones written
-    // later. The ROOT is exempt -- a repo whose product IS a skill still indexes itself.
-    if (dir !== rootDir && entries.some((e) => e.isFile() && e.name === 'SKILL.md')) return;
+    // later. The ROOT is exempt -- a repo whose product IS a skill still indexes itself -- and so
+    // is a plugin repo (.claude-plugin/plugin.json), whose skills are its own code. Vendored
+    // skills under .claude/ never get here: dot directories are pruned below.
+    if (!plugin && dir !== rootDir && entries.some((e) => e.isFile() && e.name === 'SKILL.md')) return;
     for (const entry of entries) {
       const full = path.join(dir, entry.name);
       if (entry.isDirectory()) {

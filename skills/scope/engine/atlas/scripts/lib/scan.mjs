@@ -41,9 +41,13 @@ const TEST_PATTERNS = [
 // Detected by the marker file rather than a name list, so it covers skills wherever they are
 // vendored (.claude/skills/, skills/, tools/) and covers ones not written yet.
 // A SKILL.md at the repo ROOT is not a skill tree -- that is a repo whose product is a skill,
-// and excluding it would empty the graph.
+// and excluding it would empty the graph. Likewise a plugin repo (.claude-plugin/plugin.json at
+// the root) ships its skills: outside .claude/ they are its own code, not vendored tooling.
 export function skillTreeMatcher(rels) {
-  const roots = rels.filter((r) => r.endsWith('/SKILL.md')).map((r) => r.slice(0, -'SKILL.md'.length));
+  const plugin = rels.includes('.claude-plugin/plugin.json');
+  const roots = rels
+    .filter((r) => r.endsWith('/SKILL.md') && (!plugin || r.startsWith('.claude/')))
+    .map((r) => r.slice(0, -'SKILL.md'.length));
   if (!roots.length) return () => false;
   return (rel) => roots.some((r) => rel.startsWith(r));
 }
@@ -693,12 +697,11 @@ function writeMap(root, dir, config, graph, extra) {
   // the session-start budget saying the same thing twice.
   const howto = [
     '```bash',
-    'S="tools/sextant/scripts/sextant.mjs"        # or .claude/skills/sextant/scripts/...',
-    'node $S query "nouns of your task"           # ranked hits, ~40 tokens each',
-    `node $S context ${sample}`,
-    `node $S impact ${sample}                     # REQUIRED before any edit`,
+    'node "<scope>/scripts/sextant.mjs" query "nouns of your task"   # ranked hits, ~40 tokens each',
+    `node "<scope>/scripts/sextant.mjs" context ${sample}`,
+    `node "<scope>/scripts/sextant.mjs" impact ${sample}             # REQUIRED before any edit`,
     '```',
-    'Query before you Grep; impact before you edit. Protocol: the `sextant` skill.',
+    'Query before you Grep; impact before you edit. `<scope>` is the `msnc:scope` skill folder: the skill has the full path and the protocol.',
   ].join('\n');
 
   text = replaceSection(text, 'overview', overview);
