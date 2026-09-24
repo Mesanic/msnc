@@ -1,0 +1,4 @@
+schema_version: "1.1"
+name: non-code-question-skips-trim
+description: A question with no code in it is answered without loading msnc:trim.
+tags: [routing, trim]

@@ -1,0 +1,9 @@
+schema_version: "1.1"
+name: indexed-repo-gates-edit-without-impact
+description: >
+  Shell-free companion of indexed-repo-runs-impact-before-edit, for machines where a run can't be granted a shell
+  (native Windows). With no way to run `sextant impact`, an Edit to a mapped file is refused by the Scope gate,
+  the file stays unchanged, and the reply names the impact command.
+tags: [routing, scope]
+context:
+  scaffold_script: fixture.sh
