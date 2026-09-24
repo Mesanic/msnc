@@ -174,6 +174,19 @@ test('trim asks for the why behind every new file, dependency or abstraction, re
   assert.match(read('skills/trim/UPSTREAM.md'), /^- Why rule \(MSNC ticket 14\): .*new file, dependency or abstraction/m);
 });
 
+// Ticket 18: upstream's "Complex request? Ship the lazy version" beat the Tuner's sizing line, so large work was
+// built straight away. Trim keeps "never stall" for small work only; the Tuner alone says what large work does.
+test('trim defaults open questions only in small work and leaves large work to the Tuner', () => {
+  const skill = read('skills/trim/SKILL.md');
+  assert.doesNotMatch(skill, /Complex request\?/, 'no push to ship a complex request');
+  assert.match(skill, /^- Open question in a small task\? Ship the lazy version and question it in the same response,.* Never stall on an answer you can default\.$/m);
+  assert.doesNotMatch(skill, /grill|\/msnc:spec|Large:/, 'the sizing rule lives in the Tuner only');
+  assert.match(read('context/tuner.md'), /Large: \/msnc:grill → \/msnc:spec/);
+  assert.match(read('skills/trim/UPSTREAM.md'), /^- Sizing \(MSNC ticket 18\): "Complex request\?" → "Open question in a small task\?"/m);
+  const changes = JSON.parse(read('vendor.json')).find((u) => u.repo === 'DietrichGebert/ponytail').changes;
+  assert.ok(changes.some((c) => c.startsWith('trim: ') && c.includes('"Open question in a small task?"')), 'vendor.json change');
+});
+
 // ponytail's hooks/ponytail-instructions.js at the pinned commit: drop the frontmatter, keep only this
 // level's intensity-table row and worked example (`- <level>: "..."`), keep every other line.
 function forLevel(skill, level) {

@@ -15,6 +15,7 @@
       "trim: caller check reads \"repo has a Scope index → `sextant impact`; otherwise grep every caller\"",
       "trim: marker comment `ponytail:` → `trim:`; trim-debt harvests `trim:` and legacy `ponytail:`",
       "trim: Rules asks the why behind every new file, dependency or abstraction; no why → don't add it",
+      "trim: \"Complex request?\" → \"Open question in a small task?\" (ship the lazy version, never stall), so the Tuner's sizing decides what large work does",
       "trim-review, trim-audit, trim-debt: disable-model-invocation: true",
       "trim/levels/{lite,full,ultra}.md added: the skill filtered per level by upstream hooks/ponytail-instructions.js, for the MSNC dispatcher",
       "Details in each folder's UPSTREAM.md"

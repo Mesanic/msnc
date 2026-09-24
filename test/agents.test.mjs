@@ -107,6 +107,17 @@ test('Tuner sizes multi-step work before planning', () => {
   assertSizing(read('context/tuner.md'), 'Tuner');
 });
 
+// Ticket 18: "Multi-step → one line first", below the Trim line, lost: runs loaded Trim and built a large feature
+// unsized. Sizing now gates the first edit, ahead of the Trim line.
+test('Tuner sizes a task before any edit, ahead of loading Trim', () => {
+  const lines = read('context/tuner.md').split('\n');
+  const size = lines.findIndex((l) => /^Before any edit → one line: size \+ why/.test(l));
+  assert.ok(size > 0, 'sizing gates every edit');
+  // A run that sized "Medium: 3 modules crossed" built straight away; the planner's "several → large" settles it.
+  assert.match(lines[size], /\(worst of files, unknowns, irreversible steps, modules crossed; several → large\)/);
+  assert.ok(size < lines.findIndex((l) => l.includes('`msnc:trim`')), 'sizing comes before the Trim line');
+});
+
 test('the planner sizes the task the same way and opens its plan with the size', () => {
   const { body } = agent('planner');
   assertSizing(body, 'planner');

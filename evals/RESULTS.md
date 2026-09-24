@@ -98,3 +98,19 @@ Probes were throwaway single-run cases, not part of the suite.
 - The first wording's failing run opened with "Run these from inside the repo, replacing `old-name` and `new-name`:". The judge failed it FAIL FAIL FAIL.
 - With rule 3 anchored to line 1, all 3 WITH runs opened with "1. Rename the local branch:" (or "…the branch locally:") plus the command. No-plugin runs opened with "Here are the steps…", "Sure. Here's the full sequence…" and "I can't run shell commands in this session…".
 - `context/clear.md` went from 1,748 to 1,746 bytes. Both runs: 16 s wall clock, $0.35–0.36 each.
+
+## Rerun: multi-module-feature-starts-with-grill (ticket 18)
+
+**Date:** 2026-09-23 · **Claude Code:** 2.1.280 · **Model under test:** `claude-opus-5-5[1m]` · **Judge:** haiku · `--case multi-module-feature-starts-with-grill --ablation none --scaffold --allow-tools Edit Write --no-publish --trust-plugin -j 3`, graders unchanged.
+
+| Wording | Result | Rate |
+|---|---|---|
+| Before the change | **fail** | 0/3 (0.25) |
+| Trim's "Complex request?" → "Open question in a small task?" | **fail** | 0/3 (0.25) |
+| Plus the Tuner's size line moved above the Trim line, triggered "Before any edit" instead of "Multi-step" | **fail** | 1/3 (0.50) |
+| Plus "several → large" after the signals, and the Tuner header cut to "MSNC is active." to stay under 200 tokens | pass | 3/3 (1.00) |
+
+- Every failing run wrote `teams.js`, `subscriptions.js` and a test (4 Writes), and none opened with a size. Most logged "the choices I made" to `docs/decisions.md`: the Tuner's Reversible rule decides the open questions, so the unknowns signal reads as none and only modules crossed can still make the task large. The one earlier run that sized it said "Medium size: 3 modules crossed". "Several → large" (the planner's threshold) closes that gap.
+- Passing runs made no Edit or Write and opened with round 1 of the grill (for example "Step 1 of 3 (grill → spec → tickets): round 1 of the design questions."). The stored `evidence` is cut at about 2,150 characters, so the size line and `/msnc:spec` weren't visible there; the judge voted PASS 9 of 9 on the full reply. Runs had no `--keep-temp`, so there are no traces.
+- Regression, `small-fix-goes-straight-to-edit` with `--judge-model sonnet` (the haiku judge is flaky, ticket 21): pass, 3/3 (1.00). Each run called Edit once, wrote no `.scratch/`, and opened with the fix ("`greet` in `src/greet.js:1` now returns `Hello, ${name}!`."), with no size overshoot.
+- `context/tuner.md` went from 800 to 783 characters. Wall clock 29–54 s per run; $0.44–0.61 per 3-run eval, $0.28 for the regression.

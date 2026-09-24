@@ -164,7 +164,7 @@ test('the shipped Tuner and Clear texts load from the plugin root, with credits'
     env: { ...baseEnv, CLAUDE_PLUGIN_DATA: mkdtempSync(join(tmpdir(), 'msnc-data-')) },
     encoding: 'utf8',
   });
-  assert.match(r.stdout, /^MSNC is active\. Load only what the moment needs:/);
+  assert.match(r.stdout, /^MSNC is active\.\n/);
   assert.match(r.stdout, /`msnc:trim`/);
   assert.match(r.stdout, /i-have-adhd/);
   assert.match(r.stdout, /ponytail/);

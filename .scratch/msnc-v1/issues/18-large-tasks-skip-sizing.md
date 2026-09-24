@@ -12,7 +12,11 @@
 
 **Blocked by:** None — can start immediately
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] `claude plugin eval . --case multi-module-feature-starts-with-grill --scaffold --allow-tools Edit Write` scores 1.00 over 3 runs, with no grader changed.
-- [ ] `small-fix-goes-straight-to-edit` still edits straight away (no sizing overshoot).
+- [x] `claude plugin eval . --case multi-module-feature-starts-with-grill --scaffold --allow-tools Edit Write` scores 1.00 over 3 runs, with no grader changed.
+- [x] `small-fix-goes-straight-to-edit` still edits straight away (no sizing overshoot).
+
+## Comments
+
+- 2026-09-23 · The Tuner's size line now reads "Before any edit → one line: size + why (worst of files, unknowns, irreversible steps, modules crossed; several → large)" and sits above the Trim line; Trim's "Complex request?" bullet now reads "Open question in a small task?" (recorded in `skills/trim/UPSTREAM.md` and `vendor.json`) · the Trim change alone scored 0/3 and moving the size line scored 1/3; "several → large" made it 3/3 (1.00), and `small-fix-goes-straight-to-edit` stayed 3/3 with the sonnet judge. The failing runs decided the open questions themselves under the Reversible rule, so only modules crossed could make the task large · to stay within 200 tokens, the Tuner header dropped "Load only what the moment needs:" (`test/dispatcher.test.mjs` now pins "MSNC is active."). `test/agents.test.mjs` and `test/skills.test.mjs` pin the new wording. One 3-run sample; rerun if it flakes.
