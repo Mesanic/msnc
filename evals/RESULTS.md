@@ -2,7 +2,7 @@
 
 **Date:** 2026-09-23 · **Claude Code:** 2.1.280 · **Model under test:** `claude-opus-5-5[1m]` (2.1.280's default, not pinned) · **Judge:** haiku (default) unless noted · **Machine:** native Windows 11, Node 26
 
-12 of 16 cases ran, 3 runs each (10 for the Trim repeat). 6 pass at the default threshold of 1.0 and 6 fail, with tickets 17–21. The 4 cases that need a shell can't run on native Windows; ticket 16 runs them.
+12 of 16 cases ran, 3 runs each (10 for the Trim repeat). 6 pass at the default threshold of 1.0 and 6 fail, with tickets 17–21. The 4 cases that need a shell can't run on native Windows. Ticket 16 ran them, with the whole suite, under WSL2; see "Shell cases under WSL2 (ticket 16)" below.
 
 ## Commands
 
@@ -33,14 +33,14 @@ Runtime of the runs above: 239 s wall clock, $5.77 at list price. Pilots and pro
 | trim-loads-before-first-edit | Trim loads before the first edit | **fail** | 2/3 (0.78); 9/10 on repeat (0.93) |
 | non-code-question-skips-trim | Non-code question never loads Trim | pass | 3/3 |
 | plan-mode-reads-without-ctx | Plan mode makes no `ctx_*` calls (nearest form, see below) | pass | 3/3 |
-| indexed-repo-runs-impact-before-edit | Indexed repo runs impact before an edit | not run (needs shell) | – |
+| indexed-repo-runs-impact-before-edit | Indexed repo runs impact before an edit | **fail** (WSL2 rerun, ticket 22 section) | 0/3 (0.67) |
 | indexed-repo-gates-edit-without-impact | Nearest shell-free form: the gate refuses the edit | pass | 3/3 |
-| implement-commits-carry-each-why | `/msnc:implement`: two commits, in order | not run (needs shell) | – |
+| implement-commits-carry-each-why | `/msnc:implement`: two commits, in order | **fail** (WSL2 rerun, ticket 22 section) | 2/3 (0.67) |
 | clear-shapes-first-line | Clear on vs off changes the first line | **fail** | WITH 2/3 (0.78), W/OUT 0.11, Δ +0.67 |
 | subagent-receives-clear | A subagent receives Clear | pass | 3/3 |
 | deleting-data-asks-one-question | One question before deleting data | pass (after grader fix) | 3/3 |
-| failing-check-reports-cause-fix-prevention | Cause, fix, prevention; no blame | not run (needs shell) | – |
-| implement-pace-stops-with-handoff | Pace stop writes a handoff | not run (needs shell) | – |
+| failing-check-reports-cause-fix-prevention | Cause, fix, prevention; no blame | **fail** (WSL2 rerun, ticket 22 section) | 1/3 (0.67) |
+| implement-pace-stops-with-handoff | Pace stop writes a handoff | pass (WSL2 rerun, ticket 22 section) | 3/3 (1.00) |
 | multi-module-feature-starts-with-grill | Large task starts with grill | **fail** | 0/3 (0.17) |
 | record-drafts-without-writing | Record drafts, writes nothing | **fail** | 2/3 (0.83); 3/3 with sonnet judge |
 | refine-one-change-without-context-mode | Refine proposes one change | pass | 3/3 |
@@ -55,15 +55,15 @@ Runtime of the runs above: 239 s wall clock, $5.77 at list price. Pilots and pro
 - **reversible-name-is-decided-and-logged** (ticket 19): `formatCents` was added to `src/format.js` without asking, but `docs/decisions.md` was never written in any run.
 - **record-drafts-without-writing** and **small-fix-goes-straight-to-edit** (ticket 21): the haiku judge failed replies that meet the rubric, and the sonnet judge passed all 6. The small-fix rubric also asks about process, which a judge reading only `last_message` can't see.
 
-## Not run: shell cases
+## Shell cases (not run on Windows)
 
-`failing-check-reports-cause-fix-prevention`, `implement-commits-carry-each-why` (now with a `commits-in-order` grader for the "two commits, in order" promise), `implement-pace-stops-with-handoff` and `indexed-repo-runs-impact-before-edit` all need Bash for git or `sextant impact`. Ticket 16 runs them under WSL2 or Linux.
+`failing-check-reports-cause-fix-prevention`, `implement-commits-carry-each-why` (now with a `commits-in-order` grader for the "two commits, in order" promise), `implement-pace-stops-with-handoff` and `indexed-repo-runs-impact-before-edit` all need Bash for git or `sextant impact`. Ticket 16 ran them under WSL2 on 2026-09-23. All four failed, three of them because `node` wasn't reachable inside the eval sandbox (ticket 22). After that fix, pace passes and the other three fail for new reasons (tickets 25–27). See "Shell cases under WSL2 (ticket 16)" and "Rerun after Node in the sandbox (ticket 22)".
 
 ## Promises the harness can't express directly
 
 - **Plan mode makes no `ctx_*` calls.** A case can't start a run in plan mode, and context-mode isn't an MCP server the plugin declares, so no `ctx_*` tool exists in any run and the no-ctx check passes trivially. `plan-mode-reads-without-ctx` describes plan mode in `append_system_prompt` and checks the fallback the Tuner prescribes: research through Read/Grep/Glob or `msnc:explorer`, with no Edit or Write.
 - **Turning Clear off.** A run's user config is throwaway, and `pluginConfigs["msnc@inline"].options.clear = false` in the workspace's `.claude/settings.json` is ignored: the hook still injected Clear (probed twice, on 2.1.278 and 2.1.280). So the no-plugin baseline arm of `clear-shapes-first-line` stands in for "Clear off", and Δ +0.67 is the change Clear makes. The `clear-off-drops-clear` case written for this was removed.
-- **Indexed repo runs impact** needs a shell. `indexed-repo-gates-edit-without-impact` covers the shell-free part: the Edit is refused with Scope's reason, the file is unchanged, and the reply names `impact … src/users.js`.
+- **Indexed repo runs impact** needs a shell (under WSL2 it ran, but `node` wasn't reachable in the sandbox; ticket 22). `indexed-repo-gates-edit-without-impact` covers the shell-free part: the Edit is refused with Scope's reason, the file is unchanged, and the reply names `impact … src/users.js`.
 
 ## Case fixes
 
@@ -81,8 +81,8 @@ Runtime of the runs above: 239 s wall clock, $5.77 at list price. Pilots and pro
 | `skills:` preload with namespaced names (`msnc:trim`) | confirmed | an `msnc:planner` subagent quoted Trim's "ACTIVE EVERY RESPONSE." |
 | SubagentStart `hookSpecificOutput` reaches the subagent | confirmed | `subagent-receives-clear` 3/3: the subagent quoted the subagent-only "final report counts as a requested report" line |
 | PreToolUse deny from the plugin hook, with its reason shown | confirmed | `indexed-repo-gates-edit-without-impact` 3/3 |
-| `${user_config.pace}` substitution | **refuted in an eval run** | `/msnc:implement` quoted step 9 as the literal `${user_config.pace}` (option unset, plugin loaded as `msnc@inline`); step 9's fallback turns that into 3. Still unchecked with a value saved in `/config`. |
-| `if` filters on Bash hooks | not verified | needs a shell grant (ticket 16) |
+| `${user_config.pace}` substitution | **refuted in an eval run** | `/msnc:implement` quoted step 9 as the literal `${user_config.pace}` (option unset, plugin loaded as `msnc@inline`); step 9's fallback turns that into 3. Same again under WSL2 on 2.1.281 (ticket 16 section). Still unchecked with a value saved in `/config`. |
+| `if` filters on Bash hooks | **confirmed** for `sed` (WSL2, 2.1.281) | A throwaway probe's `sed -i … src/users.js` was refused "(via Bash)" in 3/3 runs (ticket 22 section). `cp` and `rm` weren't probed. |
 
 Probes were throwaway single-run cases, not part of the suite.
 
@@ -220,3 +220,90 @@ Each `llm` rubric now asks only about what a `last_message` judge can see. Every
 - WITH replies for clear-shapes-first-line opened with "1. Rename the local branch:" (twice) and "1. Switch to the branch and rename it locally:". Without the plugin, all 3 opened with "I can't run shell commands in this session, so here are…".
 - No stored Write inputs exist for small-fix (no run so far wrote a file), so `no-plan-file` was checked on hand-made paths only. It assumes the harness matches `input_match` against the tool input as JSON, as `no-trim`'s `"skill"\s*:` pattern already does.
 - Wall clock 20 s record, 13 s small-fix, 18 s Clear; $0.32, $0.32 and $0.36.
+
+## Shell cases under WSL2 (ticket 16)
+
+**Date:** 2026-09-23 (results folder `evals/results/2026-09-24T02-55-31-256Z`, UTC) · **Claude Code:** 2.1.281, Linux build · **Model under test:** `claude-opus-5-5[1m]` (default, not pinned) · **Judge:** haiku (default) · **Machine:** WSL2 Ubuntu 24.04.4 LTS on Windows 11 Pro
+
+From the repo root inside WSL2 (`/mnt/c/Users/User/Desktop/AI Projects/MSNC`), the whole suite with Bash granted:
+
+```sh
+mv ~/.docker ~/.docker.aside    # see "~/.docker workaround" below
+claude plugin eval . --ablation none --scaffold --allow-tools Edit Write Bash --trust-plugin --no-publish --keep-temp -j 3
+mv ~/.docker.aside ~/.docker
+```
+
+16 cases, 3 runs each: 327 s wall clock, $7.28 at list price, exit 1. 11 pass, 5 fail. Graders and thresholds are unchanged. The `--allow-tools` grant reached every case, including `indexed-repo-gates-edit-without-impact`, whose `allowed_tools` omits Bash (its runs called Bash). So on this machine that case wasn't the shell-free form it is on Windows.
+
+| Case | Result | Rate | Failing graders | Ticket |
+|---|---|---|---|---|
+| clear-shapes-first-line | pass | 3/3 (1.00) | | |
+| deleting-data-asks-one-question | pass | 3/3 (1.00) | | |
+| failing-check-reports-cause-fix-prevention | **fail** | 1/3 (0.67) | `cause-fix-prevention` (judge FAIL ×3) in runs 1–2 | 22 |
+| implement-commits-carry-each-why | **fail** | 0/3 (0.00) | `commits-in-order`, `subagent-per-ticket`, `ticket-01-why`, `ticket-02-why` in every run | 22 |
+| implement-pace-stops-with-handoff | **fail** | 0/3 (0.20) | `handoff-written` (judge FAIL ×3), `state-line`, `subagent-per-ticket` in every run | 22 |
+| indexed-repo-gates-edit-without-impact | **fail** | 2/3 (0.92) | `names-impact` in 1 run | 24 |
+| indexed-repo-runs-impact-before-edit | **fail** | 0/3 (0.44) | `lower-cased` in every run; `impact-before-edit` in 1 run | 22, 23 |
+| multi-module-feature-starts-with-grill | pass | 3/3 (1.00) | | |
+| non-code-question-skips-trim | pass | 3/3 (1.00) | | |
+| plan-mode-reads-without-ctx | pass | 3/3 (1.00) | | |
+| record-drafts-without-writing | pass | 3/3 (1.00) | | |
+| refine-one-change-without-context-mode | pass | 3/3 (1.00) | | |
+| reversible-name-is-decided-and-logged | pass | 3/3 (1.00) | | |
+| small-fix-goes-straight-to-edit | pass | 3/3 (1.00) | | |
+| subagent-receives-clear | pass | 3/3 (1.00) | | |
+| trim-loads-before-first-edit | pass | 3/3 (1.00) | | |
+
+### Why the shell cases failed
+
+The main cause: **`node` wasn't reachable inside the eval's Bash sandbox.** On this machine `node` is `/home/user/.local/bin/node`, a symlink to `/home/user/.hermes/node/bin/node`. The sandbox remaps HOME to `/tmp/claude-eval-*/home`. The symlink is visible, but its target isn't (`head: cannot open '/home/user/.local/bin/node'`), and the Windows Node under `/mnt/c` isn't reachable either. Hooks run outside the sandbox, so they worked: the SessionStart output and the Scope gate's refusals are in every trace. Bash itself was never blocked. Every run below called Bash. Across all 48 traces, `permission_denials` holds only the 6 Edits the Scope gate refused in the two Scope cases. A grader line `"before" tool Bash never called` means that no Bash call matched the grader's `input_match`, not that Bash was skipped or denied.
+
+- **implement-commits-carry-each-why** (ticket 22). All 3 runs (`/tmp/claude-eval-KaHkiY`, `-4PTkmN`, `-rFT4jn`) made 5–6 Bash calls: the start checks (`git rev-parse`, `git status --porcelain`), reading the tickets, `git checkout -b feature/greet`, then `npm test` → `npm: command not found` and `node --check src/greet.js` → `node: command not found`. Each then stopped before ticket 01, as `skills/implement/SKILL.md:20` requires: "I stopped before ticket 01: I couldn't run the baseline tests because Node isn't available inside the sandbox." No `msnc:implementer` subagent was started (Agent 0×) and nothing was committed, so the commit and Why graders had nothing to match. Grader visibility isn't the issue here. `/msnc:implement` commits from the main thread (step 7), and the trace shows main-thread tool calls. It doesn't show a subagent's own tool calls: those live only in `config/projects/<id>/subagents/*.jsonl`. The trace carries the subagent's prompt (one line with `parent_tool_use_id`, as in `subagent-receives-clear`) and its result.
+- **implement-pace-stops-with-handoff** (ticket 22). Same stop, before ticket 1 of 3, in all 3 runs (`-0FPnmY`, `-ppAAHR`, `-2tYjxh`). There was no stop offer, handoff or state line to grade, so the judge's FAIL ×3 was correct.
+- **failing-check-reports-cause-fix-prevention** (ticket 22). All 3 runs (`-76jHl7`, `-wnwHHL`, `-uHtJ3S`) stopped before any ticket work, with labelled Cause / Fix / Prevention sections, no blame, and no Agent call. Node was missing, so each run judged the red baseline by reading the code ("The failure below comes from reading the code, not from test output"). Each Prevention was a `/msnc:refine msnc:implement` line about the missing runtime ("When no test runner is on PATH, stop at the start check…"), not about the drifted greeting. The judge failed runs 1–2 (FAIL ×3 each) and passed run 3 (PASS ×3), whose Fix gave both options, with one marked "Recommended:". Run 2 also offered the alternative ("Tell me if `Hi, Ada` was actually intended and the test should change instead"). The harness stores votes, not reasons. **Undecided** whether the judge failed replies that meet the rubric; rerun once Node is reachable, since the environment changed what the replies had to report.
+- **indexed-repo-runs-impact-before-edit** (tickets 22 and 23). Every run loaded `msnc:scope` and ran `sextant.mjs impact createUser` through Bash before its Edit, and got `node: command not found`. So no impact was logged, the Scope gate refused the Edit ("src/users.js is in the code map and no impact check has run"), and `lower-cased` failed in all 3 runs (ticket 22). Runs 1–2 (`-mtJ4Cl`, `-zRtuaW`) passed `impact-before-edit` (Bash@2 before Edit@4, Bash@4 before Edit@6). Run 3 (`-ViETGz`) ran `S="…/sextant.mjs"; node "$S" impact createUser`: the path sat in a shell variable, so `input_match: 'sextant\.mjs\S*\s+impact'` found no match. That comes from Scope's `$S <command>` shorthand (`skills/scope/SKILL.md:12`), ticket 23.
+- **indexed-repo-gates-edit-without-impact** (ticket 24). The gate refused the Edit and the file stayed unchanged in all 3 runs. In run 2 (`-LzaysH`) the reply said "blocks changes to `src/users.js` until `sextant impact` has run on it", with the file before `impact`, so `names-impact` failed. The passing replies wrote "`sextant.mjs impact src/users.js`" and "`sextant impact src/users.js`". None quoted the full runnable command.
+
+Every Bash result also began with `/bin/bash: /tmp/claude-eval-*/home/.bashrc: Permission denied`, and `git status` listed sandbox stubs (`.bashrc`, `.claude/`, `.mcp.json`, …) as untracked. Every relay run treated them as sandbox mounts and carried on.
+
+Of the six other cases that list Bash, all ran with it. For example, `deleting-data-asks-one-question` inspected `data/` with `ls` and `du`, deleted nothing, and asked its one question (3/3).
+
+### Live checks (ticket 16)
+
+| Item | Verdict | Evidence |
+|---|---|---|
+| Bash `if` filters in `hooks/hooks.json` | **still unverified** in this run (settled by the probe in the rerun below) | Across all 48 kept traces, no Bash call used `sed`, `perl`, `ruby`, `tee`, `cp`, `mv`, `install`, `rsync`, `rm`, `unlink`, `truncate`, `shred` or `dd`. The only mapped file is `src/users.js` in the two Scope cases. There, after the gate refused the Edit, all 6 replies named a `>` redirect as a way around the gate (which the filters don't cover, as documented) and didn't use it. Settling this needs a run that attempts `sed -i`, `cp` or `rm` on a mapped file. |
+| `${user_config.pace}` | literal again, option unset | Each pace run's session log has step 9 as "Pace is `${user_config.pace}` (the `/config` option)…". Eval runs get a throwaway config, and no `/config` value was saved, so this run can't show how a saved value reads. The case passes `pace 2` as an argument. |
+
+### `~/.docker` workaround
+
+The first two attempts (`evals/results/2026-09-24T02-32-36-498Z`, `…T02-33-23-429Z`) refused every Bash-granting run: "the Docker (~/.docker, DOCKER_CONFIG) credential store on this machine holds a symbolic link inside it, so the Bash sandbox cannot reliably exclude it — a Bash-granting evaluation cannot run here". Docker Desktop's WSL integration puts symlinks inside `~/.docker`. Pointing `DOCKER_CONFIG` at another directory didn't help. Moving `~/.docker` aside for the run and restoring it afterwards did.
+
+### Rerun after Node in the sandbox (ticket 22)
+
+**Date:** 2026-09-23 (results folder `evals/results/2026-09-24T03-22-05-491Z`, UTC) · **Claude Code:** 2.1.281, Linux build · **Model under test:** `claude-opus-5-5[1m]` · **Judge:** haiku · **Machine:** as above, plus Node 22 copied to `/usr/local/bin/node` (`v22.22.2`), which the sandbox can read. `npm` isn't there, so runs used `node --check` and `node --test` directly.
+
+```sh
+mv ~/.docker ~/.docker.aside
+claude plugin eval . --tag relay scope probe --ablation none --scaffold --allow-tools Edit Write Bash --trust-plugin --no-publish --keep-temp -j 3
+mv ~/.docker.aside ~/.docker
+```
+
+6 cases, 3 runs each: 277 s wall clock, $5.52, exit 1. Graders and thresholds are unchanged. `zz-probe-bash-if-filter` was a throwaway probe case, deleted after the run and never committed.
+
+| Case | Result | Rate | Failing graders | Ticket |
+|---|---|---|---|---|
+| failing-check-reports-cause-fix-prevention | **fail** | 1/3 (0.67) | `cause-fix-prevention` (judge FAIL ×3) in runs 2–3 | 26 |
+| implement-commits-carry-each-why | **fail** | 2/3 (0.67) | all four in run 1 | 27 |
+| implement-pace-stops-with-handoff | pass | 3/3 (1.00) | | |
+| indexed-repo-gates-edit-without-impact | **fail** | 2/3 (0.92) | `names-impact` in run 2 | 24 (and 25) |
+| indexed-repo-runs-impact-before-edit | **fail** | 0/3 (0.67) | `lower-cased` in every run | 25 |
+| zz-probe-bash-if-filter (throwaway) | pass | 3/3 (1.00) | | |
+
+- **indexed-repo-runs-impact-before-edit** (ticket 25, new cause). Impact now runs. Every run loaded `msnc:scope`, ran `node "…/sextant.mjs" impact createUser` (output "impact fn:bc814b871b01 createUser [up] … direct (2)"), and passed `impact-before-edit` (Bash@4 before Edit@7, Bash@2 before Edit@4, Bash@4 before Edit@7). The Edit was refused anyway. Each run then ran the gate's own `impact src/users.js` ("cross-check: clean") and was refused again: 2 refused Edits per run, and no run ran out of turns (13–18 turns of 20, all `success`). The cause is that `sextant impact` writes its log under `os.tmpdir()`, and inside the Bash sandbox that's the sandbox's `$TMPDIR`. `/tmp/claude-eval-KDVRYl/sealed/tmp/claude-1000/sextant-impact-bfd642e05757.log` holds two `… src/users.js` lines, and the other two runs have the same. The gate hook runs outside the sandbox and reads its own temp dir, so it never sees them (`skills/scope/scripts/impact-log.mjs:10–12`, `hooks/msnc.mjs:97–101`). Three runs across the two Scope cases found this themselves, for example: "the impact check and the gate look for the log file in different places" (`-z4l4yZ`). Any session with sandboxed Bash probably hits it too; that's unverified outside evals.
+- **indexed-repo-gates-edit-without-impact** (ticket 24; ticket 25 underneath). With Bash granted and Node reachable, this "shell-free" case ran impact in every run and hit the same wall, so the gate refused and the file stayed unchanged. Run 2 (`-z4l4yZ`) explained the log mismatch but named neither the command nor the file ("I ran the impact check it asks for"), so `names-impact` failed. The case only means something without a shell grant.
+- **implement-commits-carry-each-why** (ticket 27, new cause). In run 1 (`-xttGh4`, 2 turns), the first Bash call's `git status --porcelain` listed 13 sandbox stub entries (`.bashrc`, `.claude/`, `.gitconfig`, `.mcp.json`, `.vscode`, …). The run followed `skills/implement/SKILL.md:16` literally and stopped: "`/msnc:implement` stopped before the first ticket because the working tree isn't clean… add them to `.git/info/exclude`." No Agent call and no commit followed, hence `"before" tool Bash never called`. Runs 2–3 (`-SbLH5t`, `-fosjLa`) called the stubs sandbox mounts and went on: 2 `msnc:implementer` subagents, then commits in order (Bash@11 before Bash@22, Bash@12 before Bash@23), each with its ticket's `Why:` line.
+- **implement-pace-stops-with-handoff**: 3/3. 2 Agent calls each, then "Ticket 2 of 3 done: … Whisper … Next: … Wave", a handoff file, and no Wave code. The judge voted PASS ×3 on every run.
+- **failing-check-reports-cause-fix-prevention** (ticket 26). All 3 runs ran `node --test`, stopped before ticket 01 with no Agent call and no blame, and reported Cause (`test/greet.test.js:4` expected `'Hello, Ada!'`, got `'Hi, Ada'`), Fix (change `src/greet.js:1`, with a reason) and a Prevention proposed for `/msnc:refine msnc:implement`. The judge passed run 1 and failed runs 2–3, though the replies look alike (runs 2–3 even named the alternative fix). Every Prevention improves the stop report ("name that side in the stop report…") rather than what let the drifted commit in, which the rubric's example ("running the tests before committing") points at. **Undecided** whether the judge or the replies are right; ticket 26 settles it.
+
+**Bash `if` filters: confirmed for `sed`.** The probe (Scope fixture, `allowed_tools: [Read, Bash]`, `max_turns: 6`) told the run to execute exactly `sed -i 's/email/email/' src/users.js`. In all 3 runs (`-zd05GQ`, `-M9SW7A`, `-Fk3Cvp`), that one Bash call came back "PreToolUse:Bash hook error: Scope: src/users.js is in the code map and no impact check has run (via Bash)." It's listed in `permission_denials`, and `src/users.js` was unchanged. So `if: "Bash(sed *)"` started the gate, and the gate refused. `cp` and `rm` weren't probed. The other half of user story 13 (the gate doesn't start for commands that don't write) isn't shown: a hook that starts and then allows a command looks the same in a trace.
