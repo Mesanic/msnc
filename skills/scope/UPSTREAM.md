@@ -2,18 +2,18 @@
 
 - Repo: https://github.com/Mesanic/sextant (Mesanic, MIT, see `LICENSE`)
 - Path: the repo root (`engine/`, `scripts/`, `THIRD-PARTY-NOTICES.md`)
-- Commit: `2fa30a379e707e959cae398a80c553c063b2a0df` (main, v2.0.0, committed 2026-08-31)
+- Commit: `bf4ceb7e18bb406671b0bc2fc8e460b0f43a9671` (main, committed 2026-09-23)
 - Copied: 2026-09-23
 
-## This copy = pin + three patches
+## MSNC's upstream commits
 
-Upstream at the pin plus `patches/sextant/0001-*.patch`, `0002-*.patch` and `0003-*.patch` (repo root), not yet pushed to `Mesanic/sextant` (rollout ticket 01). Until they land and the pin moves, `sync-upstream --check` reports `scripts/impact-fallback.test.mjs` as local only, and part of the `scripts/sextant.mjs` change and all of the `scripts/impact-log.mjs` change come from them.
+The pin includes three commits MSNC wrote and pushed to `Mesanic/sextant` (rollout ticket 01), on top of v2.0.0 (`2fa30a3`). They were carried as `patches/sextant/000{1,2,3}` until then.
 
-1. `impact` on a file only the file graph knows (CSS, HTML, anything without a grammar) answers from the file graph: its importers, transitively to `--depth`, marked `file graph only`, and records the impact entry, so the edit gate can clear. Before, impact died at `locate` and the gate could never clear. New test `scripts/impact-fallback.test.mjs`.
-2. `scan --no-claude-md` (or `SEXTANT_NO_CLAUDE_MD=1`) skips the `CLAUDE.md` routing block.
-3. The impact log moves from the OS temp dir to `.atlas/overlays/impact.log` (`scripts/impact-log.mjs`), and impact creates `overlays/` when it's missing. Sandboxed Bash has its own `TMPDIR` and the gate hook runs outside the sandbox, so a temp-dir log never cleared the gate (MSNC ticket 25). Every scan keeps `.atlas/overlays/` gitignored, and impact writes `overlays/.gitignore` (`*`) so the log stays out of commits before any scan. Each record drops entries past the TTL, so the log never grows. Tests: `scripts/impact-fallback.test.mjs` (location, TTL, git) and this repo's `test/scope.test.mjs` (impact and the gate with different temp dirs).
+1. `bc8b321` `impact` on a file only the file graph knows (CSS, HTML, anything without a grammar) answers from the file graph: its importers, transitively to `--depth`, marked `file graph only`, and records the impact entry, so the edit gate can clear. Before, impact died at `locate` and the gate could never clear. New test `scripts/impact-fallback.test.mjs`.
+2. `9f16c18` `scan --no-claude-md` (or `SEXTANT_NO_CLAUDE_MD=1`) skips the `CLAUDE.md` routing block.
+3. `bf4ceb7` The impact log moves from the OS temp dir to `.atlas/overlays/impact.log` (`scripts/impact-log.mjs`), and impact creates `overlays/` when it's missing. Sandboxed Bash has its own `TMPDIR` and the gate hook runs outside the sandbox, so a temp-dir log never cleared the gate (MSNC ticket 25). Every scan keeps `.atlas/overlays/` gitignored, and impact writes `overlays/.gitignore` (`*`) so the log stays out of commits before any scan. Each record drops entries past the TTL, so the log never grows. Tests: `scripts/impact-fallback.test.mjs` (location, TTL, git) and this repo's `test/scope.test.mjs` (impact and the gate with different temp dirs).
 
-The local copy at `Tool Comparison/tools/sextant` is byte-identical to the pin, so its merge.mjs fix is already in the pin; no separate patch.
+The local copy at `Tool Comparison/tools/sextant` is byte-identical to v2.0.0, so its merge.mjs fix is already in the pin; no separate patch.
 
 ## Local changes
 

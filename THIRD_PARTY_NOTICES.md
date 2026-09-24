@@ -118,7 +118,7 @@ SOFTWARE.
 
 ## Mesanic/sextant
 
-https://github.com/Mesanic/sextant at `2fa30a379e707e959cae398a80c553c063b2a0df` (main). License: MIT.
+https://github.com/Mesanic/sextant at `bf4ceb7e18bb406671b0bc2fc8e460b0f43a9671` (main). License: MIT.
 
 The engine in `skills/scope/` also bundles the web-tree-sitter runtime and seven tree-sitter grammars (MIT, each under its own copyright). Their notices travel with it in `skills/scope/THIRD-PARTY-NOTICES.md`.
 
