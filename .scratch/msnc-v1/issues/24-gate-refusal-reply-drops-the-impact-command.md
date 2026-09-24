@@ -15,4 +15,8 @@
 **Status:** ready-for-agent
 
 - [ ] `indexed-repo-gates-edit-without-impact` scores 1.00 over 3 runs, with no grader changed.
-- [ ] `indexed-repo-runs-impact-before-edit` doesn't regress (with ticket 22 done, the gate should never need to refuse there).
+- [ ] `indexed-repo-runs-impact-before-edit` doesn't regress (once ticket 25 is done, the gate should never need to refuse there after impact has run).
+
+## Comments
+
+- 2026-09-23 · Rerun after ticket 22 (Node reachable): 2/3 (0.92) again. This time every run could run impact and did, but the gate kept refusing because of ticket 25. The failing run (`/tmp/claude-eval-z4l4yZ`) explained the log mismatch and said "I ran the impact check it asks for", without the command or the file, so `names-impact` failed. The passing runs (`-KZCr6F`, `-sjf75Y`) named `impact src/users.js`. The ask is the same, and now covers "the command ran and the gate still refused" too. With Bash granted and ticket 25 fixed, this case would clear the gate and fail `unchanged`, so judge it from a run without a shell grant (native Windows, or `--allow-tools Edit Write`).

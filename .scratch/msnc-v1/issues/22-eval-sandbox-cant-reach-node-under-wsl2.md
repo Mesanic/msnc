@@ -19,8 +19,12 @@
 
 **Blocked by:** None — can start immediately
 
-**Status:** ready-for-human
+**Status:** done
 
-- [ ] Inside an eval run, `command -v node` prints a path and `node --test` runs.
-- [ ] `implement-commits-carry-each-why`, `implement-pace-stops-with-handoff`, `failing-check-reports-cause-fix-prevention` and `indexed-repo-runs-impact-before-edit` have rerun 3 times each with Node reachable, and the results are in `evals/RESULTS.md`, with no grader or threshold changed.
-- [ ] Each case that still fails has its own follow-up ticket, with the cause taken from its traces. If `failing-check-reports-cause-fix-prevention` still splits on the judge, handle it the way ticket 21 did.
+- [x] Inside an eval run, `command -v node` prints a path and `node --test` runs.
+- [x] `implement-commits-carry-each-why`, `implement-pace-stops-with-handoff`, `failing-check-reports-cause-fix-prevention` and `indexed-repo-runs-impact-before-edit` have rerun 3 times each with Node reachable, and the results are in `evals/RESULTS.md`, with no grader or threshold changed.
+- [x] Each case that still fails has its own follow-up ticket, with the cause taken from its traces. If `failing-check-reports-cause-fix-prevention` still splits on the judge, handle it the way ticket 21 did.
+
+## Comments
+
+- 2026-09-23 · Fix applied by the user: Node 22 copied to `/usr/local/bin/node` in WSL (`v22.22.2`), which the sandbox can read. Rerun with `--tag relay scope probe` (Claude Code 2.1.281, `evals/results/2026-09-24T03-22-05-491Z`). Node now runs inside the sandbox: `node --test` → "# tests 1 … # pass 1" (`/tmp/claude-eval-KDVRYl` line 28), and `sextant.mjs impact` printed its report in every Scope run. `npm` still isn't there (only `node` was copied), and runs fell back to `node --check` and `node --test`. Results: `implement-pace-stops-with-handoff` 1.00 (3/3); `implement-commits-carry-each-why` 0.67 (2/3, the failing run stopped on sandbox stub files → ticket 27); `failing-check-reports-cause-fix-prevention` 0.67 (judge split on replies that look alike → ticket 26); `indexed-repo-runs-impact-before-edit` 0.67 (0/3: impact ran, but the gate can't see a log written in sandboxed Bash → ticket 25). No grader or threshold changed. Details in `evals/RESULTS.md`, "Rerun after Node in the sandbox (ticket 22)".

@@ -16,3 +16,7 @@
 
 - [ ] `skills/scope/SKILL.md` no longer leads runs to call sextant through a shell variable, and `npm test` and `npm run check` pass.
 - [ ] With ticket 22 done, `indexed-repo-runs-impact-before-edit` passes `impact-before-edit` in 3 of 3 runs, with the grader unchanged.
+
+## Comments
+
+- 2026-09-23 · Rerun after ticket 22 (Node reachable): `impact-before-edit` passed 3/3 without this change (Bash@4 before Edit@7, Bash@2 before Edit@4, Bash@4 before Edit@7). Each run's first impact call wrote the path out in full. The variable form still showed up in later calls: `S="…/sextant.mjs"; node "$S" status` (`/tmp/claude-eval-sK45ek` line 29, `-qz4kib` line 36), and `S=…; node "$S" impact src/users.js …` in the gate case (`-sjf75Y` line 22). So the risk stands: it now bit 1 run in 6 on the graded call. Box 2 was met once by chance and stays open until it holds with the change in.
