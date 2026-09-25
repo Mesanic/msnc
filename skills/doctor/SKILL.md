@@ -37,7 +37,7 @@ It prints one line per finding. Put the lines at the top of the report, and give
 - `Duplicate skills: plugin <id> has …` another enabled plugin ships a skill MSNC ships (by MSNC name or by the upstream name MSNC copied). Turn that plugin off with `/plugin`, or keep it and accept two skills answering the same prompt.
 - `Duplicate skills: <folder> has …` personal (`~/.claude/skills`) or project skills MSNC now ships. `/msnc:declutter` moves them to trash.
 - `Project settings: <file> turns on <id>` that project re-enables a plugin that duplicates MSNC. Remove the entry unless that project needs the plugin. `turns off <id>` is an override to review: it only matters while the plugin is on for the user, so it can go once the user-level entry is off. `turns off msnc@…` means MSNC is off in that project.
-- `Old Scope layout:` vendored `.claude/skills/atlas`, `.claude/skills/scalpel` or `.claude/skills/sextant` folders, sextant project hooks, the `<!-- sextant:begin -->` or `<!-- atlas:begin -->` block in `CLAUDE.md`, or `.atlas/` and `.map/` index folders. Remove the folders, hooks and blocks. Move the index data from the repo root:
+- `Old Scope layout:` vendored `.claude/skills/atlas` or `.claude/skills/scalpel` folders, the `<!-- atlas:begin -->` block in `CLAUDE.md`, or `.atlas/` and `.map/` index folders. Remove the folders and the block. Move the index data from the repo root:
   ```bash
   mkdir -p .scope
   git mv .atlas .scope/files

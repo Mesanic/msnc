@@ -4,13 +4,13 @@
 - **aside:** from ECC `commands\aside.md`.
 - **rephrase:** from mattpocock `wait-what`. It should work without a `CONTEXT.md` when the repo has none.
 - **handoff:** from mattpocock.
-- **verify:** ECC verification-loop, plus a `sextant check` step when the repo is indexed.
+- **verify:** ECC verification-loop, plus a `scope check` step when the repo is indexed.
 - **doctor:** ECC context-budget, plus MSNC checks:
   - which MSNC options are on
   - an estimate of the always-loaded tokens
   - duplicate skills from other enabled plugins, such as `mattpocock-skills` or `ecc`
   - project-level plugin settings that conflict with MSNC
-  - old three-folder atlas/scalpel/sextant layouts in the current repo
+  - old three-folder atlas/scalpel/scope layouts in the current repo
 - **declutter:** ECC config-gc. Keep its rules: move to trash first, ask per item.
 - **setup:**
   - walks through the three options
@@ -38,6 +38,6 @@
 - 2026-09-23 · Copied from pinned ECC v2.2.1 `5064474` and mattpocock v1.2.3 `6acc160`; `sync-upstream` now also handles a single-file upstream path (aside).
 - doctor's mechanical checks live in `skills/doctor/doctor.mjs` (read-only). Option values come from `~/.claude/settings.json` `pluginConfigs["msnc@…"].options`, falling back to `plugin.json` defaults. Projects come from `~/.claude.json` `projects`. A project that turns a duplicating plugin off is reported as an override, not a conflict.
 - A duplicate is a skill or command named like an MSNC skill or like the upstream folder it was copied from (`vendor.json` `paths`); `~/.claude/skills` and the repo's `.claude/skills` are checked too.
-- Old layout = `.claude/skills/{atlas,scalpel,sextant}`, sextant project hooks, or a `sextant:begin` block.
+- Old layout = `.claude/skills/{atlas,scalpel,scope}`, Scope project hooks, or a `scope:begin` block.
 - setup explains options but never writes them (`/config` does); dropped upstream's CLAUDE.md block, triage labels, domain docs, PR triage and Wayfinding. Unconfirmed against docs: subagent model fallback wording and `/plugin marketplace add mksglu/context-mode`.
 - Real run: always-loaded ~655 tokens (Tuner ~148, Clear ~395, 4 model-invoked descriptions ~112). Skills not run live (CLI auth expired).

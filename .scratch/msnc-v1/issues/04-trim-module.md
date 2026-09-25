@@ -7,7 +7,7 @@
 Changes to make:
 - Rename commands and phrases: `/ponytail` → `/msnc:trim`, and "stop ponytail" → "stop trim".
 - Keep the lite, full and ultra levels.
-- Change the caller-check sentence to "repo has a Scope index → `sextant impact`; otherwise grep every caller".
+- Change the caller-check sentence to "repo has a Scope index → `scope impact`; otherwise grep every caller".
 - Make `trim-debt` harvest both `trim:` and legacy `ponytail:` marker comments.
 - Provide the per-level Trim text that the dispatcher (ticket 03) injects when Trim is forced on.
 

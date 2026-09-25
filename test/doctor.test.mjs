@@ -111,16 +111,13 @@ test('project check flags project settings that turn on a plugin duplicating MSN
   assert.deepEqual(doctor({ home: fixture(), cwd: fixture(), root: msnc() }).filter((l) => l.startsWith('Project settings:')), ['Project settings: no conflicts']);
 });
 
-test('layout check flags vendored atlas/scalpel/sextant skill folders, sextant project hooks and the sextant and atlas CLAUDE.md blocks', () => {
+test('layout check flags vendored atlas/scalpel skill folders and the atlas CLAUDE.md block', () => {
   const cwd = fixture({
-    '.claude/skills/atlas/SKILL.md': 'x', '.claude/skills/sextant/SKILL.md': 'x', '.claude/skills/mine/SKILL.md': 'x',
-    '.claude/settings.json': { hooks: { PreToolUse: [{ hooks: [{ type: 'command', command: 'node ".claude/skills/sextant/scripts/pre-edit-hook.mjs"' }] }] } },
-    'CLAUDE.md': '# Repo\n\n<!-- sextant:begin -->\nrouting\n<!-- sextant:end -->\n\n<!-- atlas:begin -->\natlas-first\n<!-- atlas:end -->\n',
+    '.claude/skills/atlas/SKILL.md': 'x', '.claude/skills/scalpel/SKILL.md': 'x', '.claude/skills/mine/SKILL.md': 'x',
+    'CLAUDE.md': '# Repo\n\n<!-- atlas:begin -->\natlas-first\n<!-- atlas:end -->\n',
   });
   assert.deepEqual(doctor({ home: fixture(), cwd, root: msnc() }).filter((l) => l.startsWith('Old Scope layout:')), [
-    'Old Scope layout: .claude/skills/atlas, .claude/skills/sextant',
-    'Old Scope layout: .claude/settings.json runs sextant hooks',
-    'Old Scope layout: CLAUDE.md has a <!-- sextant:begin --> block',
+    'Old Scope layout: .claude/skills/atlas, .claude/skills/scalpel',
     'Old Scope layout: CLAUDE.md has a <!-- atlas:begin --> block',
   ]);
   const clean = fixture({ '.scope/files/graph/nodes.jsonl': '', '.claude/settings.json': { hooks: {} } });

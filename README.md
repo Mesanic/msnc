@@ -146,7 +146,7 @@ MSNC copies from these projects. Each copied folder keeps the upstream `LICENSE`
 | [ECC](https://github.com/affaan-m/ECC) | Affaan Mustafa (affaan-m) | MIT | verify, doctor, declutter, aside; the sizing idea (orch-pipeline) |
 | [context-mode](https://github.com/mksglu/context-mode) | mksglu | ELv2 | Quiet, as an optional companion. Not bundled |
 
-Scope began as [Mesanic/sextant](https://github.com/Mesanic/sextant) (archived).
+Scope began as a standalone repo, now an archived snapshot at [Mesanic/msnc-scope](https://github.com/Mesanic/msnc-scope).
 
 Record, recipe notes, just-enough sizing, Decide to Decide, the why rule and pacing follow principles inspired by [ProcessDriven](https://processdriven.co) by Layla Pomper. ProcessDriven® is a registered trademark. MSNC is not affiliated with or endorsed by ProcessDriven or Layla Pomper, and copies none of its templates or course material.
 

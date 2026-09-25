@@ -23,8 +23,8 @@ MSNC is one Claude Code plugin, installed from one marketplace (`Mesanic/msnc`),
 | Trim | Smallest change that works. Loads when code work starts; `/msnc:trim full` forces it for the session, subagents included | ponytail (Dietrich Gebert) |
 | Quiet | Raw tool output stays out of the chat when the optional context-mode plugin is installed | context-mode (mksglu), companion only |
 | Relay | Grill, spec, tickets, then one ticket per subagent | skills (Matt Pocock), MSNC implement |
-| Scope | A code map and a what-breaks check before every edit | sextant (Mesanic) |
-| Proof | Nothing counts as done until a check proves it | ECC verification-loop (affaan-m), sextant check |
+| Scope | A code map and a what-breaks check before every edit | Scope (Mesanic) |
+| Proof | Nothing counts as done until a check proves it | ECC verification-loop (affaan-m), scope check |
 | Calibrate | Setup, health check, token audit, cleanup | ECC context-budget and config-gc (affaan-m) |
 | Record | Turns a task that went well into a recipe (a small skill), and turns later corrections into recipe fixes | Principles inspired by ProcessDriven (Layla Pomper); no ProcessDriven material copied |
 
@@ -41,7 +41,7 @@ Only Clear and Tuner are always loaded. Everything else loads on demand. Every b
 7. As a user, I want `/msnc:trim full` to apply Trim to every subagent for the rest of the session and to survive `/compact`, so that delegated work stays minimal.
 8. As a user, I want Trim's default level (off, lite, full, ultra) as a `/config` option, so that I choose between on-demand and always-on.
 9. As a user, I want Trim's on/off state kept per session, so that one session never switches it off in another.
-10. As a user in a repo with a Scope index, I want `sextant query` or `locate` used before repo-wide greps, so that searches cost less.
+10. As a user in a repo with a Scope index, I want `scope query` or `locate` used before repo-wide greps, so that searches cost less.
 11. As a user, I want an impact check before any edit to a mapped file, so that callers made through variables are not missed.
 12. As a user editing CSS or HTML, I want the impact gate to be clearable, so that edits never dead-end.
 13. As a user, I want Scope's gate to start only for commands that write files, so that ordinary Bash calls stay fast.
@@ -79,12 +79,12 @@ Only Clear and Tuner are always loaded. Everything else loads on demand. Every b
 - **Always loaded: Clear and Tuner only.** MSNC's hook injects both at session start (sources startup, resume, clear, compact) and at subagent start. Everything else is a skill.
 - **Clear is on by default, with opt-out.** A `userConfig` option `clear` (default on) shows as a `/config` row (Claude Code 2.1.269+). The hook reads it from `CLAUDE_PLUGIN_OPTION_CLEAR`. `force-for-plugin` is not used because it blocks opting out. The exact message "normal mode" drops Clear and Trim for the current session.
 - **One hook script.** Every MSNC hook event goes to a single Node dispatcher: SessionStart, SubagentStart, UserPromptSubmit and PreToolUse (Scope gate). It exits fast when nothing applies. Per-session state (Trim level, normal mode) is keyed by session id in the plugin's data directory, never in a machine-wide flag.
-- **Trim is ponytail, copied in.** ponytail's skill family is copied (MIT) and renamed. Its three hook jobs are rebuilt in the dispatcher: re-add Trim after `/compact` or `/clear` while it's on, push it into subagents while it's on, and the switch itself. The default level is a `userConfig` option `trim_default` (default off, meaning on demand). The caller check becomes "repo has a Scope index → `sextant impact`; otherwise grep every caller". `/msnc:trim-debt` harvests `trim:` and legacy `ponytail:` marker comments.
+- **Trim is ponytail, copied in.** ponytail's skill family is copied (MIT) and renamed. Its three hook jobs are rebuilt in the dispatcher: re-add Trim after `/compact` or `/clear` while it's on, push it into subagents while it's on, and the switch itself. The default level is a `userConfig` option `trim_default` (default off, meaning on demand). The caller check becomes "repo has a Scope index → `scope impact`; otherwise grep every caller". `/msnc:trim-debt` harvests `trim:` and legacy `ponytail:` marker comments.
 - **Quiet is a companion, not bundled.** context-mode is ELv2 and ~140 MB with native parts, so MSNC never copies it and doesn't declare it as a dependency. Tuner routes to `ctx_*` tools only when they exist, and never in plan mode. `/msnc:setup` offers the install and suggests `ask` rules for `ctx_purge` and `ctx_upgrade`.
-- **Scope is sextant, inside the core.** The sextant engine (file graph, symbol graph, all seven grammars) ships in the plugin. Repos keep only their index data. Two fixes land in `Mesanic/sextant` first, then get copied: (1) `impact` on a file known only to the file graph (CSS, HTML) answers from the file graph and records the impact entry, so the gate can clear; (2) `scan` can skip writing its CLAUDE.md routing block. MSNC always scans with no project hook and no routing block. The edit gate runs in the dispatcher with `if` filters so only writing commands start it; `>` redirects are not caught (a miss falls open, as upstream). The grep nudge hook is dropped; Tuner carries that rule.
-- **Relay.** grill (grill-me and grilling merged), spec, tickets, tdd and codebase-design are copied from mattpocock/skills. Tracker setup moves into `/msnc:setup`, with the local Markdown tracker as the default. `/msnc:implement` runs one foreground `msnc:implementer` subagent per ticket; the main agent verifies and makes one commit per ticket, and stops on repeated failure or a missing decision. With a Scope index it scans first, runs impact before edits, uses impact's covering tests, adds `sextant check` to verification, and rescans after each commit.
+- **Scope ships inside the core.** The Scope engine (file graph, symbol graph, all seven grammars) ships in the plugin. Repos keep only their index data. Two fixes land in `Mesanic/msnc-scope` first, then get copied: (1) `impact` on a file known only to the file graph (CSS, HTML) answers from the file graph and records the impact entry, so the gate can clear; (2) `scan` can skip writing its CLAUDE.md routing block. MSNC always scans with no project hook and no routing block. The edit gate runs in the dispatcher with `if` filters so only writing commands start it; `>` redirects are not caught (a miss falls open, as upstream). The grep nudge hook is dropped; Tuner carries that rule.
+- **Relay.** grill (grill-me and grilling merged), spec, tickets, tdd and codebase-design are copied from mattpocock/skills. Tracker setup moves into `/msnc:setup`, with the local Markdown tracker as the default. `/msnc:implement` runs one foreground `msnc:implementer` subagent per ticket; the main agent verifies and makes one commit per ticket, and stops on repeated failure or a missing decision. With a Scope index it scans first, runs impact before edits, uses impact's covering tests, adds `scope check` to verification, and rescans after each commit.
 - **Agents.** `explorer`: read-only; Scope and Quiet first; never scans. `planner`: loads Trim; scopes with `impact --depth 2`; Read, Grep and Glob in plan mode. `implementer`: one ticket, test-first, typecheck after every change, never commits.
-- **Proof.** Tuner carries "done means verified". `/msnc:verify` is ECC's verification loop plus `sextant check` when the repo is indexed.
+- **Proof.** Tuner carries "done means verified". `/msnc:verify` is ECC's verification loop plus `scope check` when the repo is indexed.
 - **Calibrate.** `/msnc:setup`, `/msnc:doctor` (ECC context-budget plus MSNC checks) and `/msnc:declutter` (ECC config-gc).
 - **Record.** `/msnc:record` writes a recipe from the current session: a typed-only skill with its why, when to use it, the steps and a done-check, saved to the project's skills (shared through git) or to the user's personal skills. `/msnc:refine` reads recent corrections, failed checks and rejected approaches (context-mode session memory when installed, the transcript otherwise) and proposes one recipe fix at a time. Recipe notes: after any Skill tool call, the dispatcher adds the user's notes for that skill next to the result, so any recipe, MSNC's included, improves without a fork. `/msnc:doctor` reports recipe use: unused recipes are clutter, often-corrected ones are refine candidates.
 - **"Just enough" sizing.** Before planning, Tuner has the task sized: small means just do it with Trim and Proof; medium means tickets, then `/msnc:implement`; large means grill, spec, tickets, then implement. The planner agent applies the same sizing. The size-classifier idea comes from ECC's orch-pipeline.
@@ -100,7 +100,7 @@ Only Clear and Tuner are always loaded. Everything else loads on demand. Every b
 
 - Test behavior at the highest seam: the dispatcher's stdin-to-stdout contract per event (given the event JSON, option env vars and session state, expect this output), not its internals.
 - Unit tests use `node:test` only, with no frameworks. Cover: the dispatcher per event; per-session state; message parsing (whole-message match only); Scope gate target detection; and a references test that every `/msnc:<name>`, skill name and README command resolves to something that exists.
-- sextant keeps its own tests, plus a new one for the CSS/HTML impact fallback.
+- Scope keeps its own tests, plus a new one for the CSS/HTML impact fallback.
 - Behavior evals with `claude plugin eval`:
   - Trim loads before the first edit on a code task, and never on a non-code question.
   - Plan mode makes no `ctx_*` calls.
@@ -108,7 +108,7 @@ Only Clear and Tuner are always loaded. Everything else loads on demand. Every b
   - `/msnc:implement` on a two-ticket fixture makes two commits in order.
   - Clear on vs off changes the reply's first line.
   - A subagent receives Clear.
-- Prior art: sextant's `merge.test.mjs`; the author's subagent-style hook, verified live on 2026-09-23.
+- Prior art: Scope's `merge.test.mjs`; the author's subagent-style hook, verified live on 2026-09-23.
 
 ## Out of Scope
 
