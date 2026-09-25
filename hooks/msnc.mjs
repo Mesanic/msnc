@@ -26,15 +26,29 @@ const trimLevel = (s) => {
   return LEVELS.includes(level) ? level : 'off';
 };
 
+// context-mode's server can still be connecting at session start, so its tools look absent. Enabled = a
+// `context-mode@*` key true in enabledPlugins: user, then project, then local settings, later keys win.
+// An unreadable or malformed file counts as absent.
+function ctxEnabled(cwd) {
+  const plugins = {};
+  const project = typeof cwd === 'string' && cwd ? cwd : process.cwd();
+  for (const f of [join(process.env.CLAUDE_CONFIG_DIR || join(homedir(), '.claude'), 'settings.json'),
+    join(project, '.claude', 'settings.json'), join(project, '.claude', 'settings.local.json')]) {
+    try { Object.assign(plugins, JSON.parse(readFileSync(f, 'utf8').replace(/^\uFEFF/, '')).enabledPlugins); } catch { /* absent */ }
+  }
+  return Object.entries(plugins).some(([k, v]) => k.startsWith('context-mode@') && v === true);
+}
+
 // Tuner always (subagents: minus sizing and the decisions log, which their caller owns); Clear unless
 // opted out or in normal mode; Trim at its level. Per-level Trim text is ticket 04's
 // skills/trim/levels/<level>.md; a missing file injects nothing.
-function context(sid, subagent) {
+function context(sid, subagent, cwd) {
   const s = sid ? readState(sid) : {};
   const clear = !['false', '0'].includes(opt('CLEAR')) && !s.normal;
   const level = trimLevel(s);
   return [
     text('context/tuner.md'),
+    ctxEnabled(cwd) && 'context-mode is on: before the first filter, file-analysis or URL step (outside plan mode), load the `ctx_*` tools with ToolSearch; it waits for a server still connecting. Only if none come back, use Read/Grep.',
     subagent && "You're a subagent: skip the Tuner's size line and don't write docs/decisions.md; report sizes and decisions to your caller.",
     clear && subagent && 'Your final report counts as a requested report: keep it complete, in the Clear shape below.',
     clear && text('context/clear.md'),
@@ -138,9 +152,9 @@ function handle(e) {
     case 'PostToolUse': return e.tool_name === 'Skill' ? notes(e, e.tool_input?.skill, 'PostToolUse') : undefined;
     // A typed /name never goes through the Skill tool; this is where typed-only recipes load.
     case 'UserPromptExpansion': return notes(e, e.command_name, 'UserPromptExpansion');
-    case 'SessionStart': return context(e.session_id);
+    case 'SessionStart': return context(e.session_id, false, e.cwd);
     // SubagentStart drops plain stdout; only the hookSpecificOutput form reaches the subagent.
-    case 'SubagentStart': return JSON.stringify({ hookSpecificOutput: { hookEventName: 'SubagentStart', additionalContext: context(e.session_id, true) } });
+    case 'SubagentStart': return JSON.stringify({ hookSpecificOutput: { hookEventName: 'SubagentStart', additionalContext: context(e.session_id, true, e.cwd) } });
     case 'UserPromptSubmit': return onPrompt(e.session_id, e.prompt);
   }
 }
@@ -151,7 +165,7 @@ async function finish() {
   if (done) return;
   done = true;
   try {
-    const out = await handle(JSON.parse(input.replace(/^﻿/, '')));
+    const out = await handle(JSON.parse(input.replace(/^\uFEFF/, '')));
     if (out) process.stdout.write(out);
   } catch { /* bad input or unwritable data dir: say nothing */ }
   process.stdin.destroy();

@@ -18,13 +18,18 @@ writeFileSync(join(root, 'context', 'tuner.md'), 'TUNER-TEXT\n');
 writeFileSync(join(root, 'context', 'clear.md'), 'CLEAR-TEXT\n');
 for (const l of ['lite', 'full', 'ultra']) writeFileSync(join(root, 'skills', 'trim', 'levels', `${l}.md`), `TRIM-${l.toUpperCase()}\n`);
 
-// Real CLAUDE_PLUGIN_* vars from a host session must not leak into the cases.
-const baseEnv = Object.fromEntries(Object.entries(process.env).filter(([k]) => !k.startsWith('CLAUDE_PLUGIN_')));
+// Real CLAUDE_PLUGIN_* vars and the real user/project settings from a host session must not leak into the cases.
+const empty = mkdtempSync(join(tmpdir(), 'msnc-empty-'));
+const baseEnv = {
+  ...Object.fromEntries(Object.entries(process.env).filter(([k]) => !k.startsWith('CLAUDE_PLUGIN_'))),
+  CLAUDE_CONFIG_DIR: empty, HOME: empty, USERPROFILE: empty,
+};
 
 function run(event, { env = {}, data = mkdtempSync(join(tmpdir(), 'msnc-data-')) } = {}) {
   const r = spawnSync(process.execPath, [SCRIPT], {
     input: typeof event === 'string' ? event : JSON.stringify(event),
     env: { ...baseEnv, CLAUDE_PLUGIN_ROOT: root, CLAUDE_PLUGIN_DATA: data, ...env },
+    cwd: empty,
     encoding: 'utf8',
     timeout: 5000,
   });
@@ -266,6 +271,64 @@ test('no notes, another tool, or a name that escapes the notes folder: no output
     assert.equal(code, 0);
     assert.equal(out, '', JSON.stringify(e.tool_input));
   }
+});
+
+// context-mode's MCP server can still be connecting at session start and its tools arrive deferred, so when
+// it's enabled (a `context-mode@*` key true in enabledPlugins: user, then project, then local settings, last
+// wins) the context tells Claude to load the ctx_* tools with ToolSearch, which waits for the server.
+const WAIT = /ToolSearch/;
+const cm = (on) => JSON.stringify({ enabledPlugins: { 'context-mode@context-mode': on, 'other@x': true } });
+function withSettings({ user, project, local }) {
+  const config = notesFixture(user === undefined ? {} : { 'settings.json': user });
+  const cwd = notesFixture({
+    ...(project === undefined ? {} : { '.claude/settings.json': project }),
+    ...(local === undefined ? {} : { '.claude/settings.local.json': local }),
+  });
+  return { event: (e) => ({ ...e, cwd }), env: { CLAUDE_CONFIG_DIR: config } };
+}
+
+test('context-mode enabled in user settings: session and subagent start carry the ToolSearch wait line', () => {
+  const s = withSettings({ user: cm(true) });
+  const main = run(s.event(start()), { env: s.env }).out;
+  const ctx = subContext(run(s.event(sub()), { env: s.env }));
+  assert.match(main, WAIT);
+  assert.match(main, /CLEAR-TEXT$/, 'normal output still there');
+  const line = main.split('\n\n').find((p) => WAIT.test(p));
+  assert.ok(ctx.split('\n\n').includes(line), 'subagents get the same line');
+  // Enabled only in the project or local file counts too.
+  for (const where of ['project', 'local']) {
+    const p = withSettings({ [where]: cm(true) });
+    assert.match(run(p.event(start()), { env: p.env }).out, WAIT, where);
+  }
+  // A malformed later file counts as absent, not as an override.
+  const m = withSettings({ user: cm(true), local: '{' });
+  assert.match(run(m.event(start()), { env: m.env }).out, WAIT, 'malformed local');
+  // No CLAUDE_CONFIG_DIR: user settings come from ~/.claude/settings.json.
+  const home = notesFixture({ '.claude/settings.json': cm(true) });
+  assert.match(run(start(), { env: { CLAUDE_CONFIG_DIR: '', ...homeEnv(home) } }).out, WAIT, 'home fallback');
+});
+
+test('context-mode missing, false, overridden to false, or settings malformed: no wait line, usual output', () => {
+  const cases = {
+    'not installed': {},
+    'other plugins only': { user: JSON.stringify({ enabledPlugins: { 'other@x': true } }) },
+    false: { user: cm(false) },
+    'truthy but not true': { user: cm('yes') },
+    'project overrides to false': { user: cm(true), project: cm(false) },
+    'local overrides to false': { user: cm(true), project: cm(true), local: cm(false) },
+    'malformed user': { user: '{ not json' },
+    'malformed project and local': { project: cm(true).slice(0, -2), local: '{' },
+    'null settings': { user: 'null', project: '[]', local: '"x"' },
+  };
+  for (const [name, files] of Object.entries(cases)) {
+    const s = withSettings(files);
+    const r = run(s.event(start()), { env: s.env });
+    assert.equal(r.code, 0, name);
+    assert.equal(r.out, 'TUNER-TEXT\n\nCLEAR-TEXT', name);
+    assert.doesNotMatch(subContext(run(s.event(sub()), { env: s.env })), WAIT, name);
+  }
+  // No cwd in the event: falls back to the hook's working directory, still no line and exit 0.
+  assert.equal(run(start(), { env: withSettings({}).env }).out, 'TUNER-TEXT\n\nCLEAR-TEXT');
 });
 
 test('a typed slash command gets its notes too (UserPromptExpansion bypasses the Skill tool)', () => {

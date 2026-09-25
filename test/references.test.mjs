@@ -15,12 +15,12 @@ const exists = (name) =>
   [join('skills', name, 'SKILL.md'), join('commands', `${name}.md`), join('agents', `${name}.md`)]
     .some((p) => existsSync(join(root, p)));
 
-// Everything that ships: the whole repo minus git, planning notes, tests and dependencies.
+// Everything that ships: the whole repo minus git, planning notes, the local Scope index, tests and dependencies.
 // The credit records (vendor.json, UPSTREAM.md) are exempt from the ponytail check: they record the rename on purpose.
 const shipped = readdirSync(root, { recursive: true, withFileTypes: true })
   .filter((e) => e.isFile())
   .map((e) => relative(root, join(e.parentPath, e.name)).replaceAll('\\', '/'))
-  .filter((f) => !/^(\.git|\.scratch|test|node_modules)\//.test(f));
+  .filter((f) => !/^(\.git|\.scratch|\.scope|test|node_modules)\//.test(f));
 const read = (f) => readFileSync(join(root, f), 'utf8');
 
 test('every msnc:<name> in skills, context, hooks and the README resolves to a skill, command or agent', () => {
