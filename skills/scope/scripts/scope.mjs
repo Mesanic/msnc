@@ -159,7 +159,7 @@ function readFileImporters(root, targetFile) {
 
 // --- commands ---------------------------------------------------------------
 
-function cmdScan(root, { files, symbols }) {
+async function cmdScan(root, { files, symbols }) {
   // No project hooks and no CLAUDE.md block: MSNC's dispatcher is the gate and its Tuner the routing.
   if (!files && !symbols) die('no engine found — this install is incomplete. See `scope status`');
   // Both inits are documented idempotent and additive, but both append to .gitignore — so
@@ -190,6 +190,8 @@ function cmdScan(root, { files, symbols }) {
   };
   if (symbols) summarize('symbol graph ', run(symbols, ['scan'], root, { merge: true }));
   if (files) summarize('file graph   ', run(files, ['scan'], root, { merge: true }));
+  // The viewer is a snapshot; regenerating it here keeps it from silently lagging the stores.
+  if (files && symbols) await cmdView(root, { files, symbols });
 }
 
 // One picture, both tiers. The file graph's viewer is the full-featured one -- node-type
@@ -459,7 +461,7 @@ const positional = rest.filter((a, i) => {
   return !(i > 0 && ['--root', '--depth', '--out'].includes(rest[i - 1]));
 });
 
-if (cmd === 'scan') cmdScan(root, found);
+if (cmd === 'scan') await cmdScan(root, found);
 else if (cmd === 'status') cmdStatus(root, found);
 else if (cmd === 'view') await cmdView(root, found, flag('--out'));
 else if (cmd === 'impact') {
