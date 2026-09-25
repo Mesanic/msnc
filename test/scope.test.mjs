@@ -3,7 +3,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -43,6 +43,10 @@ test('/msnc:scope init writes only .scope/ (files/, symbols/, MAP.md) and .gitig
   assert.ok(gitignore.startsWith(FILES['.gitignore']), 'existing lines kept');
   assert.deepEqual(gitignore.slice(FILES['.gitignore'].length).split('\n').filter(Boolean).sort(),
     ['.scope/files/overlays/', '.scope/files/view/', '.scope/symbols/index/', '.scope/symbols/view-data.html'], 'only index and view entries appended');
+});
+
+test('scan regenerates the viewer', () => {
+  assert.ok(existsSync(join(repo, '.scope/files/view/scope.html')));
 });
 
 test('scope --help offers no hook or CLAUDE.md options: MSNC\'s own hook is the gate', () => {
