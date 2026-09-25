@@ -10,7 +10,7 @@
   - When the repo has a Scope index:
     - It runs `/msnc:scope init` if the index is missing.
     - The subagent brief says to run impact before each edit.
-    - Verification uses the covering tests impact names, plus `sextant check`.
+    - Verification uses the covering tests impact names, plus `scope check`.
     - It rescans after each commit.
   - Drop the CSS/HTML stop condition once ticket 07 lands.
 - **Cross-references:** update every one to MSNC names:

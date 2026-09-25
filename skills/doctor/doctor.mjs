@@ -102,17 +102,16 @@ function projectSettings(home, names) {
   return out.length ? out : ['Project settings: no conflicts'];
 }
 
-// Pre-rename Scope in this repo: vendored skill folders, sextant's project hooks, the sextant and atlas CLAUDE.md
-// routing blocks, and the index folders .atlas/ and .map/ that now live under .scope/.
+// Pre-rename Scope in this repo: vendored skill folders, the atlas CLAUDE.md routing block, and the index folders
+// .atlas/ and .map/ that now live under .scope/.
 function oldScope(cwd) {
-  const vendored = ['atlas', 'scalpel', 'sextant'].map((d) => `.claude/skills/${d}`).filter((d) => existsSync(join(cwd, d)));
+  const vendored = ['atlas', 'scalpel'].map((d) => `.claude/skills/${d}`).filter((d) => existsSync(join(cwd, d)));
   const indexes = ['.atlas', '.map'].filter((d) => existsSync(join(cwd, d))).map((d) => `${d}/`);
   const claudeMd = read(join(cwd, 'CLAUDE.md'));
   const out = [
     vendored.length && vendored.join(', '),
     indexes.length && `${indexes.join(', ')} index folders (move them into .scope/)`,
-    ...layers(cwd).filter(([, s]) => JSON.stringify(s.hooks ?? {}).includes('sextant')).map(([f]) => `.claude/${f} runs sextant hooks`),
-    ...['sextant', 'atlas'].filter((t) => claudeMd.includes(`<!-- ${t}:begin -->`)).map((t) => `CLAUDE.md has a <!-- ${t}:begin --> block`),
+    claudeMd.includes('<!-- atlas:begin -->') && 'CLAUDE.md has a <!-- atlas:begin --> block',
   ].filter(Boolean);
   return (out.length ? out : ['none']).map((l) => `Old Scope layout: ${l}`);
 }

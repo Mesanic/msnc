@@ -114,7 +114,7 @@ test('README "Built on" credits every pinned upstream with author, repo link and
     assert.match(line, new RegExp(`\\b${license}\\b`), `${repo}: license`);
   }
   // MSNC is Scope's only source now; the archived repo it began as is named, not pinned.
-  assert.ok(lines.includes('Scope began as [Mesanic/sextant](https://github.com/Mesanic/sextant) (archived).'), 'Scope origin line');
+  assert.ok(lines.includes('Scope began as a standalone repo, now an archived snapshot at [Mesanic/msnc-scope](https://github.com/Mesanic/msnc-scope).'), 'Scope origin line');
   const companion = lines.find((l) => l.includes('](https://github.com/mksglu/context-mode)')) ?? '';
   assert.match(companion, /\bELv2\b/, 'context-mode companion and its license');
 });
