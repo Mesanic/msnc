@@ -120,7 +120,7 @@ Change these in `/config` (the MSNC rows need Claude Code 2.1.269+). The hook re
 /plugin install context-mode@context-mode
 ```
 
-Tuner routes to its `ctx_*` tools only when they exist, and never in plan mode (Read, Grep and Glob avoid approval prompts there). `/msnc:setup` offers `ask` rules for its two destructive tools, `ctx_purge` and `ctx_upgrade`.
+Tuner routes to its `ctx_*` tools only when they exist, and never in plan mode (Read, Grep and Glob avoid approval prompts there). When context-mode is enabled in your settings, MSNC has Claude load the `ctx_*` tools with ToolSearch before its first filtering step, so work waits for a server that's still connecting instead of falling back to Bash and Read. `/msnc:setup` offers `ask` rules for its two destructive tools, `ctx_purge` and `ctx_upgrade`.
 
 ## Windows notes
 
