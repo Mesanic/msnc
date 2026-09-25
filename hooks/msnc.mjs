@@ -34,7 +34,7 @@ function ctxEnabled(cwd) {
   const project = typeof cwd === 'string' && cwd ? cwd : process.cwd();
   for (const f of [join(process.env.CLAUDE_CONFIG_DIR || join(homedir(), '.claude'), 'settings.json'),
     join(project, '.claude', 'settings.json'), join(project, '.claude', 'settings.local.json')]) {
-    try { Object.assign(plugins, JSON.parse(readFileSync(f, 'utf8').replace(/^﻿/, '')).enabledPlugins); } catch { /* absent */ }
+    try { Object.assign(plugins, JSON.parse(readFileSync(f, 'utf8').replace(/^\uFEFF/, '')).enabledPlugins); } catch { /* absent */ }
   }
   return Object.entries(plugins).some(([k, v]) => k.startsWith('context-mode@') && v === true);
 }
@@ -165,7 +165,7 @@ async function finish() {
   if (done) return;
   done = true;
   try {
-    const out = await handle(JSON.parse(input.replace(/^﻿/, '')));
+    const out = await handle(JSON.parse(input.replace(/^\uFEFF/, '')));
     if (out) process.stdout.write(out);
   } catch { /* bad input or unwritable data dir: say nothing */ }
   process.stdin.destroy();

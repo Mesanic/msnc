@@ -19,17 +19,17 @@ writeFileSync(join(root, 'context', 'clear.md'), 'CLEAR-TEXT\n');
 for (const l of ['lite', 'full', 'ultra']) writeFileSync(join(root, 'skills', 'trim', 'levels', `${l}.md`), `TRIM-${l.toUpperCase()}\n`);
 
 // Real CLAUDE_PLUGIN_* vars and the real user/project settings from a host session must not leak into the cases.
-const empty = () => mkdtempSync(join(tmpdir(), 'msnc-empty-'));
+const empty = mkdtempSync(join(tmpdir(), 'msnc-empty-'));
 const baseEnv = {
   ...Object.fromEntries(Object.entries(process.env).filter(([k]) => !k.startsWith('CLAUDE_PLUGIN_'))),
-  CLAUDE_CONFIG_DIR: empty(), HOME: empty(), USERPROFILE: empty(),
+  CLAUDE_CONFIG_DIR: empty, HOME: empty, USERPROFILE: empty,
 };
 
 function run(event, { env = {}, data = mkdtempSync(join(tmpdir(), 'msnc-data-')) } = {}) {
   const r = spawnSync(process.execPath, [SCRIPT], {
     input: typeof event === 'string' ? event : JSON.stringify(event),
     env: { ...baseEnv, CLAUDE_PLUGIN_ROOT: root, CLAUDE_PLUGIN_DATA: data, ...env },
-    cwd: empty(),
+    cwd: empty,
     encoding: 'utf8',
     timeout: 5000,
   });
