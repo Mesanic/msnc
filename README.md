@@ -132,7 +132,7 @@ Tuner routes to its `ctx_*` tools only when they exist, and never in plan mode (
 
 ## Status
 
-v0.1.1. Unit tests: `npm test`; syntax check: `npm run check`. Behavior evals live in `evals/` and have not been run yet. Not yet verified in a live session: the `/config` rows, and Claude Code honoring the hook `if` filters.
+v0.1.2. Unit tests: `npm test`; syntax check: `npm run check`. Behavior evals live in `evals/` and have not been run yet. Not yet verified in a live session: the `/config` rows, and Claude Code honoring the hook `if` filters.
 
 ## Built on
 
