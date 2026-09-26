@@ -212,7 +212,7 @@ Tuner routes to its `ctx_*` tools only when they exist, and never in plan mode (
 
 ## Status
 
-v0.1.2. Unit tests: `npm test`; syntax check: `npm run check`. All 16 behavior evals in `evals/` have run: 12 on native Windows, and the 4 that need a shell under WSL2. After the fix reruns of 2026-09-23 and 2026-09-24, every case passed its latest run. `indexed-repo-runs-impact-before-edit` is flaky: twice it scored 2/3 on the first run and 3/3 on the rerun. [evals/RESULTS.md](evals/RESULTS.md) has each failure and fix. The Scope gate's Bash filter is confirmed for `sed` but not yet probed for `cp` or `rm`, and options saved in `/config` haven't been checked in a live session.
+v0.1.3. Unit tests: `npm test`; syntax check: `npm run check`. All 16 behavior evals in `evals/` have run: 12 on native Windows, and the 4 that need a shell under WSL2. After the fix reruns of 2026-09-23 and 2026-09-24, every case passed its latest run. `indexed-repo-runs-impact-before-edit` is flaky: twice it scored 2/3 on the first run and 3/3 on the rerun. [evals/RESULTS.md](evals/RESULTS.md) has each failure and fix. The Scope gate's Bash filter is confirmed for `sed` but not yet probed for `cp` or `rm`, and options saved in `/config` haven't been checked in a live session.
 
 ## Built on
 
