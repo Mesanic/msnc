@@ -1,8 +1,36 @@
 # MSNC: More Signal, No Clutter
 
-One Claude Code plugin that bundles a blend of community add-ons: minimal code, lean context, focused replies, safe edits, one ticket at a time.
+A Claude Code plugin for getting more done with less noise. Replies lead with the result. Code changes stay as small as they can. A code map shows what an edit will break before it's made. Nothing counts as done until a check proves it.
 
-Only two short texts load in every session (Clear and Tuner). Everything else is a skill that loads when the task needs it. Every borrowed piece keeps its license and names its author (see [Built on](#built-on)).
+Only two short texts load in every session (Clear and Tuner), about 700 tokens in all. Everything else is a skill that loads when the task needs it. MSNC bundles pieces of several community plugins, and each one keeps its license and names its author (see [Built on](#built-on)).
+
+## What it looks like
+
+The same failing test, reported with and without Clear (illustrative):
+
+```text
+Without Clear
+  Great question! Let me take a look at what's going on here. I ran the test suite and it
+  looks like there might be an issue with how discounts are being calculated. There are a
+  few possibilities we could explore...
+
+With Clear
+  src/cart.test.js:14 fails: expected total 1250, got 1200.
+  Cause: applyCoupon applies the discount twice (src/cart.js:31).
+  Fix: drop the second call in checkout(); the test passes.
+  Try: npm test -- cart
+```
+
+`/msnc:doctor` shows what your sessions actually load:
+
+```text
+Options: clear on, trim_default off, scope_gate on, pace 3
+Always loaded: ~692 tokens (Tuner ~152, Clear ~395, 5 skill descriptions ~145)
+Duplicate skills: none
+Old Scope layout: none
+Recipes unused 30+ days: none
+Most-corrected recipes: none
+```
 
 ## Install
 
@@ -56,6 +84,59 @@ Only two short texts load in every session (Clear and Tuner). Everything else is
 | | `/msnc:declutter` | Clean stale config: moves items to a trash folder, asks per item |
 
 Agents: `msnc:explorer` (read-only search, safe in plan mode), `msnc:planner` (plans with Trim loaded), `msnc:implementer` (one ticket, test-first, never commits). None pins a model, so your default subagent model and effort apply.
+
+## Scope: what an edit will break
+
+Scope maps the repo twice. The **file graph** holds modules, imports, git state and GitHub issues. The **symbol graph** holds functions, calls, line spans and tests, parsed with tree-sitter for TypeScript and JavaScript, Python, Go, Rust, Java and C#. Each graph has a blind spot. The symbol graph misses a call made through a variable. The file graph sees the import but not the line. `impact` runs both and lists the difference as a cross-check, so a caller that one graph misses still turns up.
+
+`/msnc:scope init` builds the map in `.scope/`. Claude then runs the commands as `node <skill>/scripts/scope.mjs …`; you rarely type them. A real run on this repo:
+
+```text
+$ scope impact mergeIntoFileGraph
+impact fn:3603fcc07430 mergeIntoFileGraph [up]
+def: skills/scope/scripts/merge.mjs:47-429 (function, exact)
+direct (2)
+  exact fn:a90fada09f17 cmdView skills/scope/scripts/scope.mjs:202-254
+  exact mod:6bf94d825518 skills/scope/scripts/merge.test skills/scope/scripts/merge.test.mjs:1-81
+tests (1)
+  exact skills/scope/scripts/merge.test.mjs
+transitive (2, by module)
+  skills/scope/scripts/scope (2):
+    heuristic cmdScan skills/scope/scripts/scope.mjs:162
+    heuristic skills/scope/scripts/scope skills/scope/scripts/scope.mjs:1
+
+cross-check: clean — every importer the file graph sees is accounted for.
+```
+
+| Step | Commands | Does |
+|---|---|---|
+| Orient | `map`, `query "terms"`, `context <path>` | Orientation card, ranked hits for the task's nouns, one card per file (importers, imports, tests, docs, git) |
+| Find | `locate <name>`, `slice <id>`, `brief <id>` | Exact file and line span, then only the lines you'll touch |
+| Before an edit | `impact <name\|path>` | Dependents, covering tests and the cross-check |
+| After an edit | `check`, `scan` | `check` exits 1 if anything dangles; `scan` refreshes both graphs and the viewer |
+| Explore | `view`, `neighbors <id>`, `path <a> <b>`, `issues`, `stats` | The viewer, adjacency, how two nodes connect, GitHub issues, counts |
+| Keep it tidy | `note`, `verify`, `prune` | Notes that survive moves, drifted summaries, dead nodes |
+
+**The gate.** MSNC's hook refuses an edit to a mapped file until `impact` has run on it in the last 2 hours, and prints the command to run:
+
+```text
+Scope: src/users.js is in the code map and no impact check has run.
+Run this first, then repeat the edit:
+  node ".../skills/scope/scripts/scope.mjs" impact src/users.js
+Resolve every entry in its cross-check list before editing: those are the callers symbol analysis cannot see.
+```
+
+New files and files outside the map are never gated. The gate covers Edit, Write, MultiEdit, NotebookEdit and file-writing Bash commands (`sed`, `cp`, `mv`, `rm` and similar), but not `>` redirects. Turn it off with the `scope_gate` option.
+
+**The viewer.** `scope view`, and every `scope scan`, writes `.scope/files/view/scope.html`: one self-contained page that makes no network requests. The knowledge graph draws modules as territories and zooms from modules to files to symbols. The Flow view lays the code out from entry points to leaves. Three lenses sit in the sidebar: *Work in flight* (uncommitted files and open issues), *Impact mode* (what breaks if the selection changes) and *Only one tool sees it* (where the two graphs disagree). Press `/` to search and `f` to fit.
+
+![Scope knowledge graph in Impact mode, zoomed to the symbols of scope.mjs, with its blast radius and connections in the side panel](docs/images/scope-graph.png)
+
+*Impact mode on Scope's own CLI, `skills/scope/scripts/scope.mjs`: its symbols and imports, and the side panel's blast radius ("5 things break if this changes").*
+
+![Scope Flow view: this repo's code laid out from entry points to leaves, in nine depth lanes](docs/images/scope-flow.png)
+
+*The Flow view of this repo: entry points and tests on the left, leaves on the right.*
 
 ## When each skill loads
 
@@ -128,11 +209,10 @@ Tuner routes to its `ctx_*` tools only when they exist, and never in plan mode (
 - `hooks/hooks.json` uses exec form (`"command": "node"` plus `args`), so plugin paths with spaces need no shell quoting.
 - `.gitattributes` checks text files out with LF line endings on every OS; the copy checks compare bytes.
 - The Scope engine (about 11 MB, mostly WebAssembly grammars) uses Node built-ins only, no native binaries.
-- Scope's edit gate catches file-writing Bash commands (`sed`, `cp`, `mv`, `rm` and similar) but not `>` redirects; a miss lets the edit through.
 
 ## Status
 
-v0.1.2. Unit tests: `npm test`; syntax check: `npm run check`. Behavior evals live in `evals/` and have not been run yet. Not yet verified in a live session: the `/config` rows, and Claude Code honoring the hook `if` filters.
+v0.1.2. Unit tests: `npm test`; syntax check: `npm run check`. All 16 behavior evals in `evals/` have run: 12 on native Windows, and the 4 that need a shell under WSL2. After the fix reruns of 2026-09-23 and 2026-09-24, every case passed its latest run. `indexed-repo-runs-impact-before-edit` is flaky: twice it scored 2/3 on the first run and 3/3 on the rerun. [evals/RESULTS.md](evals/RESULTS.md) has each failure and fix. The Scope gate's Bash filter is confirmed for `sed` but not yet probed for `cp` or `rm`, and options saved in `/config` haven't been checked in a live session.
 
 ## Built on
 
