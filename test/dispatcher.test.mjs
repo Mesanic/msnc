@@ -206,7 +206,7 @@ test('the shipped Trim texts load per level and keep Tuner + Clear + Trim under 
 
 test('hooks.json sends exactly the ticket-03, Scope gate and recipe-note events to the dispatcher, exec form', () => {
   const { hooks } = JSON.parse(readFileSync(new URL('../hooks/hooks.json', import.meta.url), 'utf8'));
-  assert.deepEqual(Object.keys(hooks).sort(), ['PostToolUse', 'PreToolUse', 'SessionStart', 'SubagentStart', 'UserPromptExpansion', 'UserPromptSubmit']);
+  assert.deepEqual(Object.keys(hooks).sort(), ['PostToolUse', 'PreToolUse', 'SessionStart', 'Stop', 'SubagentStart', 'UserPromptExpansion', 'UserPromptSubmit']);
   assert.deepEqual(hooks.PostToolUse.map((g) => g.matcher), ['Skill']);
   assert.deepEqual(hooks.UserPromptExpansion.map((g) => g.matcher), [undefined]);
   assert.equal(hooks.SessionStart[0].matcher, 'startup|resume|clear|compact');
@@ -221,7 +221,8 @@ test('hooks.json sends exactly the ticket-03, Scope gate and recipe-note events 
   for (const [event, groups] of Object.entries(hooks)) {
     for (const h of groups.flatMap((g) => g.hooks)) {
       assert.equal(h.command, 'node', event);
-      assert.deepEqual(h.args, ['${CLAUDE_PLUGIN_ROOT}/hooks/msnc.mjs'], event);
+      const ship = ['${CLAUDE_PLUGIN_ROOT}/skills/ship/scripts/ship.mjs', 'hook'];
+      assert.ok([JSON.stringify(['${CLAUDE_PLUGIN_ROOT}/hooks/msnc.mjs']), JSON.stringify(ship)].includes(JSON.stringify(h.args)), event);
     }
   }
 });

@@ -55,6 +55,7 @@ Most-corrected recipes: none
 | Proof | Nothing counts as done until a check proves it | Tuner rule; `/msnc:verify` for the full gate |
 | Calibrate | Setup, health check, token audit, cleanup | When typed |
 | Record | Turns a task that went well into a recipe; turns later corrections into recipe fixes | When typed |
+| Ship | One goal, run to shipped: research, the Relay cycle, the running app exercised, a fresh review | When typed (`/msnc:ship`) |
 
 `/msnc:doctor` shows what your sessions actually load before work starts.
 
@@ -70,6 +71,8 @@ Most-corrected recipes: none
 | | `/msnc:codebase-design` | Vocabulary for designing deep modules |
 | Build | `/msnc:implement` | One fresh `msnc:implementer` subagent per ticket; verified and committed before the next |
 | | `/msnc:tdd` | Red → green, one test at a time |
+| | `/msnc:ship <goal>` | Goal to shipped without stopping: research → grill, spec, tickets → implement → exercise → verify → finish. Decides reversible choices; queues one-way doors as questions |
+| | `/msnc:ship grill <goal>` | Same, but you answer the grill first; `S go` then makes the run autonomous |
 | | `/msnc:trim [lite\|full\|ultra\|off]` | Set Trim for this session; bare `/msnc:trim` reports the level. "stop trim" turns it off |
 | Check | `/msnc:verify` | Full pre-PR gate: build, types, lint, tests, security, diff, plus `scope check` with a Scope index |
 | | `/msnc:trim-review` | Review a diff for over-engineering |
@@ -83,7 +86,7 @@ Most-corrected recipes: none
 | Upkeep | `/msnc:doctor` | Always-loaded cost, duplicate skills, conflicting project settings, old Scope layouts, recipe use |
 | | `/msnc:declutter` | Clean stale config: moves items to a trash folder, asks per item |
 
-Agents: `msnc:explorer` (read-only search, safe in plan mode), `msnc:planner` (plans with Trim loaded), `msnc:implementer` (one ticket, test-first, never commits). None pins a model, so your default subagent model and effort apply.
+Agents: `msnc:explorer` (read-only search, safe in plan mode), `msnc:planner` (plans with Trim loaded), `msnc:implementer` (one ticket, test-first, never commits). None of these pins a model, so your default subagent model and effort apply. `/msnc:ship` adds `msnc:researcher`, `msnc:exerciser` and `msnc:reviewer`, pinned to Opus 5.5 like the skill itself.
 
 ## Scope: what an edit will break
 
@@ -192,6 +195,18 @@ Change these in `/config` (the MSNC rows need Claude Code 2.1.269+). The hook re
 - **A why in every delegation.** Tickets carry a Why line tied to a user story; every implementer brief and commit message carries the why; Trim asks the why behind every new file, dependency or abstraction.
 - **Pacing.** `/msnc:implement` offers a stopping point every `pace` tickets. Failures are reported as cause, fix and the recipe change that prevents a repeat, never as blame.
 
+## Ship: goal to shipped
+
+`/msnc:ship <goal>` runs one goal from research to a committed, reviewed result. Define and Build are MSNC's own grill → spec → tickets → implement cycle, in the same tracker, with one `msnc:implementer` per ticket at `pace 0`. It picks up a feature that's already grilled, specced or ticketed, and skips what exists.
+
+- **Decisions.** Reversible choices are made and logged in `docs/decisions.md`. One-way doors (data loss, spend, publishing, pushing) go to `.ship/questions.json` and stay undone. It pushes only when the goal asks, or when `.ship/config.json` holds `{ "push": "allow" }`.
+- **Proof.** It uses the running app (playwright-cli, then agent-browser), replays each journey on a fresh server, probes new tests by breaking the code they cover, and a fresh `msnc:reviewer` decides when it's done.
+- **State in code.** `skills/ship/scripts/ship.mjs` (`S`) keeps the run in `.ship/`, so it survives compaction and restarts. Its Stop hook sends an early stop back to work, capped at 40 stops and 3 stalled turns.
+- **Unattended.** Use auto mode. Headless: `claude -p "/msnc:ship <goal>" --permission-mode auto --permission-prompts none --max-budget-usd 20`. For a hard guard against pushing, add `Bash(git push*)` to `permissions.ask` or `permissions.deny`.
+- **context-mode.** Use 2.0 or later (below). 1.0.x rewrites every subagent prompt in a hook, and auto mode then denies each subagent, so medium and large runs stop in Build.
+
+Contract tests: `node --test skills/ship/scripts/ship.test.mjs` (Windows runs commands in Git Bash). Evals: `claude plugin eval --tag decide,tests,exercise,verify,safety`.
+
 ## Quiet: the context-mode companion
 
 [context-mode](https://github.com/mksglu/context-mode) keeps raw tool output in a sandbox so only the answer reaches the chat. MSNC doesn't bundle or depend on it: it's ELv2 and about 140 MB with native parts. Install it separately if you want Quiet:
@@ -200,6 +215,17 @@ Change these in `/config` (the MSNC rows need Claude Code 2.1.269+). The hook re
 /plugin marketplace add mksglu/context-mode
 /plugin install context-mode@context-mode
 ```
+
+That installs the stable 1.0 line. For `/msnc:ship` in auto mode, use 2.0 or later instead (a prerelease today; it needs Node 24.15+). Remove the plugin copy first, or setup fails and rolls back:
+
+```
+claude plugin uninstall context-mode@context-mode
+claude plugin marketplace remove context-mode
+npm install -g context-mode@2.0.0-next.8
+context-mode setup --agents claude-code
+```
+
+Setup installs it as a Claude Code plugin from the npm package, so it appears in `/plugin` and in the desktop app as before. 2.0.0-next.8 is the version `/msnc:ship` was tested with; `@next` gets the latest prerelease.
 
 Tuner routes to its `ctx_*` tools only when they exist, and never in plan mode (Read, Grep and Glob avoid approval prompts there). When context-mode is enabled in your settings, MSNC has Claude load the `ctx_*` tools with ToolSearch before its first filtering step, so work waits for a server that's still connecting instead of falling back to Bash and Read. `/msnc:setup` offers `ask` rules for its two destructive tools, `ctx_purge` and `ctx_upgrade`.
 
@@ -212,7 +238,7 @@ Tuner routes to its `ctx_*` tools only when they exist, and never in plan mode (
 
 ## Status
 
-v0.1.3. Unit tests: `npm test`; syntax check: `npm run check`. All 16 behavior evals in `evals/` have run: 12 on native Windows, and the 4 that need a shell under WSL2. After the fix reruns of 2026-09-23 and 2026-09-24, every case passed its latest run. `indexed-repo-runs-impact-before-edit` is flaky: twice it scored 2/3 on the first run and 3/3 on the rerun. [evals/RESULTS.md](evals/RESULTS.md) has each failure and fix. The Scope gate's Bash filter is confirmed for `sed` but not yet probed for `cp` or `rm`, and options saved in `/config` haven't been checked in a live session.
+v0.1.4 adds `/msnc:ship`. Unit tests: `npm test` and `node --test skills/ship/scripts/ship.test.mjs`; syntax check: `npm run check`. All 16 behavior evals in `evals/` have run: 12 on native Windows, and the 4 that need a shell under WSL2. After the fix reruns of 2026-09-23 and 2026-09-24, every case passed its latest run. `indexed-repo-runs-impact-before-edit` is flaky: twice it scored 2/3 on the first run and 3/3 on the rerun. [evals/RESULTS.md](evals/RESULTS.md) has each failure and fix. The Scope gate's Bash filter is confirmed for `sed` but not yet probed for `cp` or `rm`, and options saved in `/config` haven't been checked in a live session.
 
 ## Built on
 
