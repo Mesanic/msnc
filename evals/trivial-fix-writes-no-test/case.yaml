@@ -1,0 +1,6 @@
+schema_version: "1.1"
+name: trivial-fix-writes-no-test
+description: "A one-character copy fix gets no new test: the check suite and the change itself are the proof."
+tags: [tests]
+context:
+  scaffold_script: fixture.sh

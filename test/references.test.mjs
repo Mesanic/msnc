@@ -32,7 +32,7 @@ test('every msnc:<name> in skills, context, hooks and the README resolves to a s
 });
 
 // Claude Code built-ins that MSNC texts may name as bare slash commands.
-const BUILTIN = new Set(['plugin', 'code-review', 'config']);
+const BUILTIN = new Set(['plugin', 'code-review', 'config', 'run', 'verify', 'run-skill-generator']);
 
 // Bare `/name` commands and `name` skills that are neither msnc:<name> nor a built-in: leftover upstream names.
 function strayRefs(text) {

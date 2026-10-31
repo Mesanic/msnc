@@ -4,11 +4,23 @@
       {
         "matcher": "startup|resume|clear|compact",
         "hooks": [{ "type": "command", "command": "node", "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/msnc.mjs"], "timeout": 5 }]
+      },
+      {
+        "matcher": "resume|compact",
+        "hooks": [{ "type": "command", "command": "node", "args": ["${CLAUDE_PLUGIN_ROOT}/skills/ship/scripts/ship.mjs", "hook"], "timeout": 5 }]
       }
     ],
     "SubagentStart": [
       {
         "hooks": [{ "type": "command", "command": "node", "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/msnc.mjs"], "timeout": 5 }]
+      },
+      {
+        "hooks": [{ "type": "command", "command": "node", "args": ["${CLAUDE_PLUGIN_ROOT}/skills/ship/scripts/ship.mjs", "hook"], "timeout": 5 }]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [{ "type": "command", "command": "node", "args": ["${CLAUDE_PLUGIN_ROOT}/skills/ship/scripts/ship.mjs", "hook"], "timeout": 10 }]
       }
     ],
     "UserPromptSubmit": [
