@@ -543,6 +543,7 @@ test('medium and large runs build only from a committed MSNC spec and tickets; s
   ticket(d, 'habits', '01', 'ready-for-agent');
   assert.match(run(d, ['phase', 'build']).stdout, /build needs the spec and tickets committed: \.scratch\/habits\//);
   g(d, 'add', '.scratch'); g(d, 'commit', '-qm', 'spec and tickets');
+  run(d, ['hook'], JSON.stringify({ hook_event_name: 'SubagentStart', session_id: 's1', agent_type: 'msnc:respondent', cwd: d })); // this run grilled the feature
   assert.match(run(d, ['phase', 'build']).stdout, /phase build/);
   const e = started('small'); run(e, ['size', 'small']);
   assert.match(run(e, ['phase', 'build']).stdout, /phase build/, 'small runs have no spec or tickets');
@@ -595,6 +596,43 @@ test('medium tickets must be built by msnc:implementer; the SubagentStart hook c
   assert.equal(sub('s1', 'msnc:implementer').stdout, '', 'the hook prints nothing');
   assert.match(run(d, ['phase', 'exercise']).stdout, /phase exercise/);
   assert.equal(J(d, 'state.json').agents['msnc:implementer'], 1);
+});
+
+test('an autonomous grill needs an msnc:respondent before build; decide logs its answer and the hidden recommendation', () => {
+  const d = started('medium'); run(d, ['size', 'medium']);
+  assert.equal(J(d, 'state.json').grillBy, 'respondent');
+  run(d, ['feature', 'habits']);
+  mkdirSync(join(d, '.scratch', 'habits'), { recursive: true }); writeFileSync(join(d, '.scratch', 'habits', 'spec.md'), '# spec');
+  ticket(d, 'habits', '01', 'ready-for-agent'); g(d, 'add', '-A'); g(d, 'commit', '-qm', 'spec');
+  assert.match(run(d, ['phase', 'build']).stdout, /build needs the grill answered by an msnc:respondent/, 'the orchestrator answered its own grill');
+  const sub = (sid, type) => run(d, ['hook'], JSON.stringify({ hook_event_name: 'SubagentStart', session_id: sid, agent_type: type, cwd: d }));
+  sub('s1', 'msnc:researcher'); sub('other', 'msnc:respondent');
+  assert.match(run(d, ['phase', 'build']).stdout, /msnc:respondent/, 'another worker or session does not count');
+  sub('s1', 'msnc:respondent');
+  assert.match(run(d, ['phase', 'build']).stdout, /phase build/);
+  assert.equal(run(d, ['decide', 'define.ui', 'forms', 'r', 'u', '--rec', 'forms']).status, 1, '--rec needs --by respondent');
+  assert.equal(run(d, ['decide', 'define.ui', 'forms', 'r', 'u', '--by', 'someone']).status, 1);
+  run(d, ['decide', 'define.ui', 'server forms', 'FRD §3', 'add a client', '--by', 'respondent', '--rec', 'SPA']);
+  run(d, ['decide', 'define.db', 'sqlite', 'easier to undo', 'swap', '--by', 'respondent', '--rec', 'sqlite']);
+  const log = readFileSync(join(d, '.ship', 'decisions.jsonl'), 'utf8').trim().split('\n').map((l) => JSON.parse(l));
+  assert.deepEqual(log.map((x) => [x.by, x.rec, x.agreed]), [['respondent', 'SPA', false], ['respondent', 'sqlite', true]]);
+  const md = readFileSync(join(d, 'docs', 'decisions.md'), 'utf8');
+  assert.match(md, /define\.ui: server forms · FRD §3 · undo: add a client · by respondent \(overrode: SPA\)/);
+  assert.match(md, /define\.db: sqlite · easier to undo · undo: swap · by respondent\n/);
+});
+
+test('the respondent gate skips a spec picked up at bind, an empty frontier, grill mode and older runs', () => {
+  const spec = (d) => { mkdirSync(join(d, '.scratch', 'habits'), { recursive: true }); writeFileSync(join(d, '.scratch', 'habits', 'spec.md'), '# spec'); ticket(d, 'habits', '01', 'ready-for-agent'); g(d, 'add', '-A'); g(d, 'commit', '-qm', 'spec'); };
+  const a = started('medium'); run(a, ['size', 'medium']); spec(a); run(a, ['feature', 'habits']);
+  assert.match(run(a, ['phase', 'build']).stdout, /phase build/, 'an existing spec skipped the grill');
+  const b = started('medium'); run(b, ['size', 'medium']); run(b, ['feature', 'habits']); spec(b);
+  run(b, ['decide', 'define.grill', 'none open', 'decisions.md settles every branch', 'grill again']);
+  assert.match(run(b, ['phase', 'build']).stdout, /phase build/, 'an empty frontier, logged');
+  const c = repo(); run(c, ['init', '--session', 's1', '--grill', '--size', 'medium', 'goal']); run(c, ['go']); run(c, ['feature', 'habits']); spec(c);
+  assert.match(run(c, ['phase', 'build']).stdout, /phase build/, 'the user answered the grill');
+  const e = started('medium'); run(e, ['size', 'medium']); run(e, ['feature', 'habits']); spec(e);
+  const st = J(e, 'state.json'); delete st.grillBy; writeFileSync(join(e, '.ship', 'state.json'), JSON.stringify(st));
+  assert.match(run(e, ['phase', 'build']).stdout, /phase build/, 'a run started before the gate is not stopped mid-run');
 });
 
 test('a survived probe blocks review and done until the test is strengthened or deleted', () => {
@@ -780,7 +818,7 @@ test('instructions follow STYLE.md: sentences of 20 words or fewer, active voice
   const dir = join(dirname(SHIP), '..');
   const agents = join(dir, '..', '..', 'agents');
   const files = [join(dir, 'SKILL.md'), ...['phases', 'rules'].flatMap((s) => readdirSync(join(dir, s)).map((f) => join(dir, s, f))),
-    ...['researcher', 'exerciser', 'reviewer'].map((a) => join(agents, `${a}.md`))];
+    ...['researcher', 'respondent', 'exerciser', 'reviewer'].map((a) => join(agents, `${a}.md`))];
   const problems = [];
   const banned = /\b(may|should|ensure|via|utilize)\b|\be\.g\.|\bi\.e\.|\betc\.|\b\w+n't\b|\b\w+'(re|ll|ve|m|d)\b|\b(it|that|there|here|what|who|let)'s\b/i;
   const passive = /\b(is|are|was|were|be|been|being)\s+(\w+ed|done|made|run|written|given|taken|seen|shown|known|kept|built|found|left|put|read|sent|told)\b/i;

@@ -50,5 +50,5 @@ Put the trigger first, so the reader can skip rules that do not apply.
 | ask | Queue a one-way-door question with `S ask`. |
 | block | Stop the run with `S block`, because only questions or an outside dependency remain. |
 | one-way door | A step that is hard to undo. `rules/decide.md` lists them. |
-| worker | A subagent: researcher, exerciser, reviewer or implementer. |
+| worker | A subagent: researcher, respondent, exerciser, reviewer or implementer. |
 | evidence | A file path, a ref or an output line that proves a result. |
