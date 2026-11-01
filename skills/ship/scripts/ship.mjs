@@ -181,6 +181,14 @@ function inlineBuild(r) {
   const built = feature(r, s.feature).done - (s.doneAtBind ?? 0);
   return built > implementers(s) ? `${built} ticket(s) done in this run but ${implementers(s)} msnc:implementer subagent(s) started: one per ticket (build.md step 2)` : null;
 }
+// An autonomous run's grill is answered by a blind msnc:respondent, not by the orchestrator (define.md step 1).
+// A spec at bind skipped the grill; a logged define.grill decision says the frontier was empty.
+function grillGap(r) {
+  const s = state(r);
+  if (s.grillBy !== 'respondent' || s.specAtBind || (s.agents?.['msnc:respondent'] ?? 0) > 0) return null;
+  const logged = read(P(r, 'decisions.jsonl')).split('\n').some((l) => { try { return JSON.parse(l).point === 'define.grill'; } catch { return false; } });
+  return logged ? null : 'the grill answered by an msnc:respondent, or S decide define.grill when the frontier is empty (define.md step 1)';
+}
 // What medium and large runs owe MSNC's cycle before build, and again at done.
 function msncGap(r, { atDone } = {}) {
   const s = state(r);
@@ -223,15 +231,18 @@ const capReset = (r) => (state(r).status === 'blocked' && state(r).reason?.start
 function flag(args, name) { const i = args.indexOf(`--${name}`); if (i < 0) return undefined; const v = args[i + 1]; args.splice(i, 2); return v; }
 
 function decide(r, [point, choice, why, undo, ...rest], extra = {}) {
-  if (!point || !choice || !why || !undo) die('usage: decide <phase.topic> "<choice>" "<why>" "<undo>" [--options "a|b"] [--by user]');
+  if (!point || !choice || !why || !undo) die('usage: decide <phase.topic> "<choice>" "<why>" "<undo>" [--options "a|b"] [--by user|respondent [--rec "<your recommendation>"]]');
   const options = flag(rest, 'options');
   const by = flag(rest, 'by');
-  if (by && by !== 'user') die('--by takes only "user": a decision the user made, such as a one-way door the goal itself asked for.');
+  const rec = flag(rest, 'rec');
+  if (by && !['user', 'respondent'].includes(by)) die('--by takes "user" (a decision the user made, such as a one-way door the goal asked for) or "respondent" (an msnc:respondent grill answer).');
+  if (rec && by !== 'respondent') die('--rec goes with --by respondent: your recommendation, written before the respondent answered.');
   // JSONL keeps a stable, machine-readable record: it doubles as training data for a separate decider (PiLaya/Laya).
   appendFileSync(P(r, 'decisions.jsonl'), JSON.stringify({ ts: new Date().toISOString(), phase: state(r).phase, point, choice,
-    options: options ? options.split('|') : undefined, why, undo, by: by ?? 'claude', ...extra }) + '\n');
+    options: options ? options.split('|') : undefined, why, undo, by: by ?? 'claude', rec, agreed: rec === undefined ? undefined : rec.trim() === choice.trim(), ...extra }) + '\n');
   mkdirSync(join(r, 'docs'), { recursive: true });
-  appendFileSync(join(r, 'docs', 'decisions.md'), `- ${today()} · ${point}: ${choice} · ${why} · undo: ${undo}\n`);
+  const who = by === 'respondent' ? ` · by respondent${rec !== undefined && rec.trim() !== choice.trim() ? ` (overrode: ${rec})` : ''}` : '';
+  appendFileSync(join(r, 'docs', 'decisions.md'), `- ${today()} · ${point}: ${choice} · ${why} · undo: ${undo}${who}\n`);
   console.log(`ship: logged ${point} = ${choice}`);
 }
 
@@ -642,7 +653,8 @@ switch (cmd) {
       if (spawnSync('git', ['switch', '-q', '-c', branch], { cwd: here }).status !== 0) branch = git(here, ['branch', '--show-current']).trim();
     }
     // --grill: the user answers the grill (define.md step 1); the run is autonomous only after S go.
-    writeJ(P(here, 'state.json'), { goal, status: grill ? 'grilling' : 'running', grill, phase: grill ? 'define' : 'intake', size, session, base, branch, started: new Date().toISOString(), stops: 0 });
+    // Otherwise a blind msnc:respondent answers it (grillBy), and the build gate checks that one started.
+    writeJ(P(here, 'state.json'), { goal, status: grill ? 'grilling' : 'running', grill, grillBy: grill ? 'user' : 'respondent', phase: grill ? 'define' : 'intake', size, session, base, branch, started: new Date().toISOString(), stops: 0 });
     writeJ(P(here, 'checks.json'), detectChecks(here));
     writeJ(P(here, 'journeys.json'), []);
     writeJ(P(here, 'questions.json'), []);
@@ -669,7 +681,8 @@ switch (cmd) {
     const f = feature(need(r), slug), s = state(r);
     if (s.built && s.feature && s.feature !== slug) die(`feature ${s.feature} is already being built; a run builds one feature.`);
     if (spec && !/^\.(ship|scratch)\//.test(spec.replace(/\\/g, '/'))) die('--spec takes a copy under .ship/ (a remote tracker\'s spec, fetched with its CLI) or a file under .scratch/.');
-    save(r, { feature: slug, spec: spec ?? `.scratch/${slug}/spec.md`, doneAtBind: s.feature === slug ? s.doneAtBind : f.done });
+    save(r, { feature: slug, spec: spec ?? `.scratch/${slug}/spec.md`, doneAtBind: s.feature === slug ? s.doneAtBind : f.done,
+      specAtBind: s.feature === slug ? s.specAtBind : Boolean(spec || f.spec) });
     log(r, `feature: ${slug}`);
     console.log(`${status(r)}\nfeature ${slug}: ${f.spec || f.tickets ? `spec ${f.spec ? '✓' : '✗'} · tickets ${f.done}/${f.tickets} done → continue at ${f.next}` : 'new → define'}`);
     break;
@@ -690,6 +703,7 @@ switch (cmd) {
     if (['exercise', 'verify', 'finish'].includes(to) && inlineBuild(r)) die(`${to} needs every ticket built the MSNC way: ${inlineBuild(r)}`);
     // Medium and large runs build from MSNC's spec and tickets, in the tracker, committed (define.md steps 0, 2, 5).
     if (['build', 'exercise', 'verify', 'finish'].includes(to) && msncGap(r)) die(`${to} needs ${msncGap(r)}.`);
+    if (['build', 'exercise', 'verify', 'finish'].includes(to) && msncRun(state(r)) && grillGap(r)) die(`${to} needs ${grillGap(r)}.`);
     if (to === 'finish' && journeys(r).some((j) => !j.passes)) die('finish needs every journey passing. Failing: ' + journeys(r).filter((j) => !j.passes).map((j) => j.id).join(', '));
     save(r, { phase: to, reason: undefined, ...(to === 'build' ? { built: true } : {}) });
     log(r, `phase → ${to}`);

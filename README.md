@@ -86,7 +86,7 @@ Most-corrected recipes: none
 | Upkeep | `/msnc:doctor` | Always-loaded cost, duplicate skills, conflicting project settings, old Scope layouts, recipe use |
 | | `/msnc:declutter` | Clean stale config: moves items to a trash folder, asks per item |
 
-Agents: `msnc:explorer` (read-only search, safe in plan mode), `msnc:planner` (plans with Trim loaded), `msnc:implementer` (one ticket, test-first, never commits). None of these pins a model, so your default subagent model and effort apply. `/msnc:ship` adds `msnc:researcher`, `msnc:exerciser` and `msnc:reviewer`, pinned to Opus 5.5 like the skill itself.
+Agents: `msnc:explorer` (read-only search, safe in plan mode), `msnc:planner` (plans with Trim loaded), `msnc:implementer` (one ticket, test-first, never commits). None of these pins a model, so your default subagent model and effort apply. `/msnc:ship` adds `msnc:researcher`, `msnc:respondent`, `msnc:exerciser` and `msnc:reviewer`, pinned to Opus 5.5 like the skill itself.
 
 ## Scope: what an edit will break
 
@@ -199,7 +199,8 @@ Change these in `/config` (the MSNC rows need Claude Code 2.1.269+). The hook re
 
 `/msnc:ship <goal>` runs one goal from research to a committed, reviewed result. Define and Build are MSNC's own grill → spec → tickets → implement cycle, in the same tracker, with one `msnc:implementer` per ticket at `pace 0`. It picks up a feature that's already grilled, specced or ticketed, and skips what exists.
 
-- **Decisions.** Reversible choices are made and logged in `docs/decisions.md`. One-way doors (data loss, spend, publishing, pushing) go to `.ship/questions.json` and stay undone. It pushes only when the goal asks, or when `.ship/config.json` holds `{ "push": "allow" }`.
+- **Grill.** The grill still runs, round by round. In an autonomous run a fresh `msnc:respondent` answers it in your place: it sees the questions, the goal and the source docs, never the orchestrator's recommendation. Its answer is the decision; `docs/decisions.md` marks each one `by respondent`, with `(overrode: …)` where it disagreed. Build refuses until one has answered. `/msnc:ship grill <goal>` puts the grill to you instead.
+- **Decisions.** Other reversible choices are made and logged in `docs/decisions.md`. One-way doors (data loss, spend, publishing, pushing) go to `.ship/questions.json` and stay undone. It pushes only when the goal asks, or when `.ship/config.json` holds `{ "push": "allow" }`.
 - **Proof.** It uses the running app (playwright-cli, then agent-browser), replays each journey on a fresh server, probes new tests by breaking the code they cover, and a fresh `msnc:reviewer` decides when it's done.
 - **State in code.** `skills/ship/scripts/ship.mjs` (`S`) keeps the run in `.ship/`, so it survives compaction and restarts. Its Stop hook sends an early stop back to work, capped at 40 stops and 3 stalled turns.
 - **Unattended.** Use auto mode. Headless: `claude -p "/msnc:ship <goal>" --permission-mode auto --permission-prompts none --max-budget-usd 20`. For a hard guard against pushing, add `Bash(git push*)` to `permissions.ask` or `permissions.deny`.
@@ -238,7 +239,7 @@ Tuner routes to its `ctx_*` tools only when they exist, and never in plan mode (
 
 ## Status
 
-v0.1.4 adds `/msnc:ship`. Unit tests: `npm test` and `node --test skills/ship/scripts/ship.test.mjs`; syntax check: `npm run check`. All 16 behavior evals in `evals/` have run: 12 on native Windows, and the 4 that need a shell under WSL2. After the fix reruns of 2026-09-23 and 2026-09-24, every case passed its latest run. `indexed-repo-runs-impact-before-edit` is flaky: twice it scored 2/3 on the first run and 3/3 on the rerun. [evals/RESULTS.md](evals/RESULTS.md) has each failure and fix. The Scope gate's Bash filter is confirmed for `sed` but not yet probed for `cp` or `rm`, and options saved in `/config` haven't been checked in a live session.
+v0.1.5: `/msnc:ship`'s grill is answered by a blind `msnc:respondent`. v0.1.4 added `/msnc:ship`. Unit tests: `npm test` and `node --test skills/ship/scripts/ship.test.mjs`; syntax check: `npm run check`. All 16 behavior evals in `evals/` have run: 12 on native Windows, and the 4 that need a shell under WSL2. After the fix reruns of 2026-09-23 and 2026-09-24, every case passed its latest run. `indexed-repo-runs-impact-before-edit` is flaky: twice it scored 2/3 on the first run and 3/3 on the rerun. [evals/RESULTS.md](evals/RESULTS.md) has each failure and fix. The Scope gate's Bash filter is confirmed for `sed` but not yet probed for `cp` or `rm`, and options saved in `/config` haven't been checked in a live session.
 
 ## Built on
 

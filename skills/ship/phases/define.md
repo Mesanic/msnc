@@ -9,7 +9,16 @@ This phase is MSNC's grill → spec → tickets cycle. It uses MSNC's tracker, s
    - When no feature matches, run `S feature <slug>` with a new slug from the goal.
    - Log it: `S decide intake.pickup "<slug> from <step>" "<what exists>" "S feature <other>"`.
 1. **Grill.** Walk the design tree, one frontier at a time, as `${CLAUDE_SKILL_DIR}/../grill/SKILL.md` shows. Read that file, but do not invoke it. Decisions in `docs/decisions.md` or earlier in this conversation are final. Grill only the frontier that they leave open.
-   - **Normal run:** answer each question yourself with the recommended answer. Log each answer: `S decide define.<topic> …`. Send one-way doors to `S ask`. If a reversible stand-in exists, continue with it.
+   - **Normal run:** an `msnc:respondent` answers the grill for the user. It never sees your recommendations. Do these steps for each round:
+     1. Find the facts that the frontier needs.
+     2. Write the frontier to `.ship/grill/round-<n>.md` in the grill skill's format, without the `➡️` lines.
+     3. Write your recommended answers to `.ship/grill/round-<n>.rec.md`. Do this before you start the respondent.
+     4. Start one `msnc:respondent` in the foreground. Give it the round file, the goal and the paths of the source documents.
+     5. Take each answer as the decision: `S decide define.<topic> "<answer>" "<its reason>" "<undo>" --by respondent --rec "<your recommendation>"`.
+     6. When it answers `fact`, find the fact and put the question in the next round. When it answers `user`, run `S ask` with its recommendation.
+   - Send one-way doors to `S ask` yourself. Never give them to the respondent. If a reversible stand-in exists, continue with it.
+   - Use 4 rounds or fewer. Then decide the rest yourself, and log them without `--by`.
+   - If the frontier is empty at the start, log `S decide define.grill "none open" "<why>" "grill again"`. Without a respondent or this line, `S phase build` refuses.
    - **Grill mode** (`S status` shows `grilling`): ask the user each round, in the grill skill's format. End your turn to wait. Log each answer with `S decide define.<topic> … --by user`. You still find the facts yourself. When the frontier is empty and the user agrees, run `S go`. After that, decide everything yourself.
 2. **Spec.** Write the spec as `${CLAUDE_SKILL_DIR}/../spec/SKILL.md` shows. Read that file, but do not invoke it. Put the spec in `.scratch/<slug>/spec.md`, or where `docs/agents/issue-tracker.md` says.
    - Decide the test seams yourself, without the user's check-in. Use 3 or fewer, at the highest public interface. Log `S decide define.seams …`.
